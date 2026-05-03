@@ -295,9 +295,9 @@ const en = {
       BASIC: { label: "Basic", description: "For regular practice and medical students.",
         features: ["Everything in Free", "15 AI exams per month", "Up to 25 questions per exam", "Exam history"] },
       PRO: { label: "Pro", description: "For exam candidates who need volume and file-based questions.",
-        features: ["Everything in Basic", "50 AI exams per month (up to 1,500 questions)", "Up to 30 questions per exam", "Upload up to 2 files / month (coming soon)"] },
+        features: ["Everything in Basic", "50 AI exams per month (up to 1,500 questions)", "Up to 30 questions per exam", "Upload up to 2 files / month"] },
       PREMIUM: { label: "Premium", description: "For specialists, consultants, and educators.",
-        features: ["Everything in Pro", "100 AI exams per month (up to 4,000 questions)", "Up to 40 questions per exam", "Upload up to 10 files / month (coming soon)", "Advanced analytics (coming soon)"] },
+        features: ["Everything in Pro", "100 AI exams per month (up to 4,000 questions)", "Up to 40 questions per exam", "Upload up to 10 files / month", "Advanced analytics"] },
     },
   },
 };
@@ -355,9 +355,9 @@ const ar = {
       BASIC: { label: "أساسي", description: "للتدريب المنتظم وطلاب الطب.",
         features: ["كل ما في الخطة المجانية", "15 امتحانًا شهريًا", "حتى 25 سؤالاً لكل امتحان", "سجل الامتحانات"] },
       PRO: { label: "احترافي", description: "للمرشحين للامتحانات الذين يحتاجون إلى حجم وأسئلة من ملفات.",
-        features: ["كل ما في الخطة الأساسية", "50 امتحانًا شهريًا (حتى 1,500 سؤال)", "حتى 30 سؤالاً لكل امتحان", "رفع حتى ملفين شهريًا (قريبًا)"] },
+        features: ["كل ما في الخطة الأساسية", "50 امتحانًا شهريًا (حتى 1,500 سؤال)", "حتى 30 سؤالاً لكل امتحان", "رفع حتى ملفين شهريًا"] },
       PREMIUM: { label: "متميز", description: "للأخصائيين والاستشاريين والمعلمين.",
-        features: ["كل ما في الخطة الاحترافية", "100 امتحان شهريًا (حتى 4,000 سؤال)", "حتى 40 سؤالاً لكل امتحان", "رفع حتى 10 ملفات شهريًا (قريبًا)", "تحليلات متقدمة (قريبًا)"] },
+        features: ["كل ما في الخطة الاحترافية", "100 امتحان شهريًا (حتى 4,000 سؤال)", "حتى 40 سؤالاً لكل امتحان", "رفع حتى 10 ملفات شهريًا", "تحليلات متقدمة"] },
     },
   },
 };
@@ -415,9 +415,9 @@ const fr = {
       BASIC: { label: "Basique", description: "Pour la pratique régulière et les étudiants en médecine.",
         features: ["Tout ce qui est inclus dans Gratuit", "15 examens IA par mois", "Jusqu'à 25 questions par examen", "Historique des examens"] },
       PRO: { label: "Pro", description: "Pour les candidats qui ont besoin de volume et de questions à partir de fichiers.",
-        features: ["Tout ce qui est inclus dans Basique", "50 examens IA par mois (jusqu'à 1 500 questions)", "Jusqu'à 30 questions par examen", "Téléverser jusqu'à 2 fichiers / mois (bientôt)"] },
+        features: ["Tout ce qui est inclus dans Basique", "50 examens IA par mois (jusqu'à 1 500 questions)", "Jusqu'à 30 questions par examen", "Téléverser jusqu'à 2 fichiers / mois"] },
       PREMIUM: { label: "Premium", description: "Pour les spécialistes, consultants et formateurs.",
-        features: ["Tout ce qui est inclus dans Pro", "100 examens IA par mois (jusqu'à 4 000 questions)", "Jusqu'à 40 questions par examen", "Téléverser jusqu'à 10 fichiers / mois (bientôt)", "Analyses avancées (bientôt)"] },
+        features: ["Tout ce qui est inclus dans Pro", "100 examens IA par mois (jusqu'à 4 000 questions)", "Jusqu'à 40 questions par examen", "Téléverser jusqu'à 10 fichiers / mois", "Analyses avancées"] },
     },
   },
 };
@@ -475,9 +475,9 @@ const es = {
       BASIC: { label: "Básico", description: "Para práctica regular y estudiantes de medicina.",
         features: ["Todo lo de Gratis", "15 exámenes IA al mes", "Hasta 25 preguntas por examen", "Historial de exámenes"] },
       PRO: { label: "Pro", description: "Para candidatos a exámenes que necesitan volumen y preguntas desde archivos.",
-        features: ["Todo lo de Básico", "50 exámenes IA al mes (hasta 1,500 preguntas)", "Hasta 30 preguntas por examen", "Subir hasta 2 archivos / mes (próximamente)"] },
+        features: ["Todo lo de Básico", "50 exámenes IA al mes (hasta 1,500 preguntas)", "Hasta 30 preguntas por examen", "Subir hasta 2 archivos / mes"] },
       PREMIUM: { label: "Premium", description: "Para especialistas, consultores y educadores.",
-        features: ["Todo lo de Pro", "100 exámenes IA al mes (hasta 4,000 preguntas)", "Hasta 40 preguntas por examen", "Subir hasta 10 archivos / mes (próximamente)", "Analítica avanzada (próximamente)"] },
+        features: ["Todo lo de Pro", "100 exámenes IA al mes (hasta 4,000 preguntas)", "Hasta 40 preguntas por examen", "Subir hasta 10 archivos / mes", "Analítica avanzada"] },
     },
   },
 };
@@ -535,9 +535,9 @@ const de = {
       BASIC: { label: "Basic", description: "Für regelmäßiges Üben und Medizinstudenten.",
         features: ["Alles aus Kostenlos", "15 KI-Prüfungen pro Monat", "Bis zu 25 Fragen pro Prüfung", "Prüfungsverlauf"] },
       PRO: { label: "Pro", description: "Für Prüfungskandidaten mit hohem Volumen und Datei-Fragen.",
-        features: ["Alles aus Basic", "50 KI-Prüfungen pro Monat (bis 1.500 Fragen)", "Bis zu 30 Fragen pro Prüfung", "Bis zu 2 Datei-Uploads / Monat (bald)"] },
+        features: ["Alles aus Basic", "50 KI-Prüfungen pro Monat (bis 1.500 Fragen)", "Bis zu 30 Fragen pro Prüfung", "Bis zu 2 Datei-Uploads / Monat"] },
       PREMIUM: { label: "Premium", description: "Für Fachärzte, Consultants und Lehrende.",
-        features: ["Alles aus Pro", "100 KI-Prüfungen pro Monat (bis 4.000 Fragen)", "Bis zu 40 Fragen pro Prüfung", "Bis zu 10 Datei-Uploads / Monat (bald)", "Erweiterte Analytik (bald)"] },
+        features: ["Alles aus Pro", "100 KI-Prüfungen pro Monat (bis 4.000 Fragen)", "Bis zu 40 Fragen pro Prüfung", "Bis zu 10 Datei-Uploads / Monat", "Erweiterte Analytik"] },
     },
   },
 };
@@ -655,9 +655,9 @@ const pt = {
       BASIC: { label: "Básico", description: "Para prática regular e estudantes de medicina.",
         features: ["Tudo do Grátis", "15 exames IA por mês", "Até 25 questões por exame", "Histórico de exames"] },
       PRO: { label: "Pro", description: "Para candidatos que precisam de volume e questões a partir de arquivos.",
-        features: ["Tudo do Básico", "50 exames IA por mês (até 1.500 questões)", "Até 30 questões por exame", "Upload de até 2 arquivos / mês (em breve)"] },
+        features: ["Tudo do Básico", "50 exames IA por mês (até 1.500 questões)", "Até 30 questões por exame", "Upload de até 2 arquivos / mês"] },
       PREMIUM: { label: "Premium", description: "Para especialistas, consultores e educadores.",
-        features: ["Tudo do Pro", "100 exames IA por mês (até 4.000 questões)", "Até 40 questões por exame", "Upload de até 10 arquivos / mês (em breve)", "Análise avançada (em breve)"] },
+        features: ["Tudo do Pro", "100 exames IA por mês (até 4.000 questões)", "Até 40 questões por exame", "Upload de até 10 arquivos / mês", "Análise avançada"] },
     },
   },
 };
@@ -715,9 +715,9 @@ const tr = {
       BASIC: { label: "Basic", description: "Düzenli pratik ve tıp öğrencileri için.",
         features: ["Ücretsiz plandaki her şey", "Ayda 15 YZ sınavı", "Sınav başına en fazla 25 soru", "Sınav geçmişi"] },
       PRO: { label: "Pro", description: "Hacme ve dosya tabanlı sorulara ihtiyaç duyan adaylar için.",
-        features: ["Basic'teki her şey", "Ayda 50 YZ sınavı (en fazla 1.500 soru)", "Sınav başına en fazla 30 soru", "Ayda en fazla 2 dosya yükleme (yakında)"] },
+        features: ["Basic'teki her şey", "Ayda 50 YZ sınavı (en fazla 1.500 soru)", "Sınav başına en fazla 30 soru", "Ayda en fazla 2 dosya yükleme"] },
       PREMIUM: { label: "Premium", description: "Uzmanlar, danışmanlar ve eğitmenler için.",
-        features: ["Pro'daki her şey", "Ayda 100 YZ sınavı (en fazla 4.000 soru)", "Sınav başına en fazla 40 soru", "Ayda en fazla 10 dosya yükleme (yakında)", "Gelişmiş analizler (yakında)"] },
+        features: ["Pro'daki her şey", "Ayda 100 YZ sınavı (en fazla 4.000 soru)", "Sınav başına en fazla 40 soru", "Ayda en fazla 10 dosya yükleme", "Gelişmiş analizler"] },
     },
   },
 };
@@ -775,9 +775,9 @@ const ur = {
       BASIC: { label: "بیسک", description: "مستقل مشق اور میڈیکل طلبہ کے لیے۔",
         features: ["مفت پلان میں موجود سب کچھ", "ماہانہ 15 AI امتحانات", "فی امتحان 25 سوالات تک", "امتحانی تاریخ"] },
       PRO: { label: "پرو", description: "حجم اور فائل پر مبنی سوالات کی ضرورت رکھنے والے امیدواروں کے لیے۔",
-        features: ["بیسک میں موجود سب کچھ", "ماہانہ 50 AI امتحانات (1,500 سوالات تک)", "فی امتحان 30 سوالات تک", "ماہانہ 2 فائلز تک اپ لوڈ (جلد آرہا ہے)"] },
+        features: ["بیسک میں موجود سب کچھ", "ماہانہ 50 AI امتحانات (1,500 سوالات تک)", "فی امتحان 30 سوالات تک", "ماہانہ 2 فائلز تک اپ لوڈ"] },
       PREMIUM: { label: "پریمیم", description: "تخصصین، مشیرین اور معلمین کے لیے۔",
-        features: ["پرو میں موجود سب کچھ", "ماہانہ 100 AI امتحانات (4,000 سوالات تک)", "فی امتحان 40 سوالات تک", "ماہانہ 10 فائلز تک اپ لوڈ (جلد آرہا ہے)", "اعلیٰ تجزیات (جلد آرہا ہے)"] },
+        features: ["پرو میں موجود سب کچھ", "ماہانہ 100 AI امتحانات (4,000 سوالات تک)", "فی امتحان 40 سوالات تک", "ماہانہ 10 فائلز تک اپ لوڈ", "اعلیٰ تجزیات"] },
     },
   },
 };
@@ -835,9 +835,9 @@ const fa = {
       BASIC: { label: "پایه", description: "برای تمرین منظم و دانشجویان پزشکی.",
         features: ["تمام امکانات رایگان", "۱۵ آزمون هوش مصنوعی در ماه", "حداکثر ۲۵ سؤال در هر آزمون", "تاریخچه آزمون‌ها"] },
       PRO: { label: "حرفه‌ای", description: "برای داوطلبان آزمونی که به حجم و سؤالات از فایل نیاز دارند.",
-        features: ["تمام امکانات پایه", "۵۰ آزمون هوش مصنوعی در ماه (تا ۱٬۵۰۰ سؤال)", "حداکثر ۳۰ سؤال در هر آزمون", "بارگذاری تا ۲ فایل در ماه (به‌زودی)"] },
+        features: ["تمام امکانات پایه", "۵۰ آزمون هوش مصنوعی در ماه (تا ۱٬۵۰۰ سؤال)", "حداکثر ۳۰ سؤال در هر آزمون", "بارگذاری تا ۲ فایل در ماه"] },
       PREMIUM: { label: "پریمیوم", description: "برای متخصصان، مشاوران و آموزشگران.",
-        features: ["تمام امکانات حرفه‌ای", "۱۰۰ آزمون هوش مصنوعی در ماه (تا ۴٬۰۰۰ سؤال)", "حداکثر ۴۰ سؤال در هر آزمون", "بارگذاری تا ۱۰ فایل در ماه (به‌زودی)", "تحلیل پیشرفته (به‌زودی)"] },
+        features: ["تمام امکانات حرفه‌ای", "۱۰۰ آزمون هوش مصنوعی در ماه (تا ۴٬۰۰۰ سؤال)", "حداکثر ۴۰ سؤال در هر آزمون", "بارگذاری تا ۱۰ فایل در ماه", "تحلیل پیشرفته"] },
     },
   },
 };
@@ -1241,8 +1241,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Pick the exam style (USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric, etc.) so questions match the format you'll see in the real exam.", "Free trial is 1 exam per month with up to 10 questions. Upgrade to Basic for 15 exams per month.", "Use Practice mode to learn — explanations show after each answer."],
         BASIC: ["You have {monthlyExams} exams per month. Spread them across specialties or focus on one for depth.", "Switch to Exam mode (timer on) when simulating real test conditions.", "Going beyond Basic? Pro adds file upload — generate questions from your own lecture notes or guidelines."],
-        PRO: ["{monthlyExams} exams a month, up to {maxQ} questions each — plenty for daily practice.", "File upload allowance: {files} files per month (feature shipping soon).", "Track your weak topics on the dashboard and re-generate exams targeting those areas."],
-        PREMIUM: ["{monthlyExams} exams a month with up to {maxQ} questions each — ideal for board-prep marathons.", "{files} file uploads per month (feature shipping soon).", "Advanced analytics will surface accuracy by topic and recommended revision plans (coming)."],
+        PRO: ["{monthlyExams} exams a month, up to {maxQ} questions each — plenty for daily practice.", "File upload allowance: {files} files per month.", "Track your weak topics on the dashboard and re-generate exams targeting those areas."],
+        PREMIUM: ["{monthlyExams} exams a month with up to {maxQ} questions each — ideal for board-prep marathons.", "{files} file uploads per month.", "Advanced analytics will surface accuracy by topic and recommended revision plans."],
       },
     },
     banner: {
@@ -1281,8 +1281,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["اختر صيغة الامتحان (USMLE، MRCS، MRCP، الزمالة المصرية، Prometric…) لتتوافق الأسئلة مع شكل الامتحان الفعلي.", "النسخة المجانية امتحان واحد شهريًا بحد أقصى 10 أسئلة. ارقِ إلى Basic للحصول على 15 امتحانًا شهريًا.", "استخدم وضع التدريب للتعلم — تظهر الشروح بعد كل إجابة."],
         BASIC: ["لديك {monthlyExams} امتحانات شهريًا. وزّعها على عدة تخصصات أو ركّز على تخصص واحد للتعمق.", "بدّل إلى وضع الامتحان (المؤقت مفعّل) لمحاكاة الاختبار الحقيقي.", "تحتاج المزيد؟ Pro يضيف رفع الملفات — أنشئ أسئلة من ملاحظاتك أو الإرشادات."],
-        PRO: ["{monthlyExams} امتحان شهريًا، حتى {maxQ} سؤالاً لكل امتحان — كافٍ للتدريب اليومي.", "حصة رفع الملفات: {files} ملفات شهريًا (الميزة قريبًا).", "تابع مواضيعك الضعيفة في لوحة التحكم وأنشئ امتحانات تستهدفها."],
-        PREMIUM: ["{monthlyExams} امتحان شهريًا حتى {maxQ} سؤالاً — مثالي لاستعداد البورد.", "{files} ملف يمكن رفعه شهريًا (قريبًا).", "تحليلات متقدمة ستظهر دقتك حسب الموضوع وخطط مراجعة موصى بها (قريبًا)."],
+        PRO: ["{monthlyExams} امتحان شهريًا، حتى {maxQ} سؤالاً لكل امتحان — كافٍ للتدريب اليومي.", "حصة رفع الملفات: {files} ملفات شهريًا.", "تابع مواضيعك الضعيفة في لوحة التحكم وأنشئ امتحانات تستهدفها."],
+        PREMIUM: ["{monthlyExams} امتحان شهريًا حتى {maxQ} سؤالاً — مثالي لاستعداد البورد.", "{files} ملف يمكن رفعه شهريًا.", "تحليلات متقدمة ستظهر دقتك حسب الموضوع وخطط مراجعة موصى بها."],
       },
     },
     banner: {
@@ -1321,8 +1321,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Choisissez le format d'examen (USMLE, MRCS, MRCP, Fellowship égyptien, Prometric…) pour que les questions ressemblent à l'examen réel.", "L'essai gratuit donne 1 examen/mois jusqu'à 10 questions. Passez à Basique pour 15 examens/mois.", "Utilisez le mode Entraînement pour apprendre — les explications apparaissent après chaque réponse."],
         BASIC: ["Vous avez {monthlyExams} examens par mois. Répartissez-les entre spécialités ou concentrez-vous sur une.", "Passez en mode Examen (chrono activé) pour simuler les conditions réelles.", "Besoin de plus ? Pro ajoute le téléversement de fichiers — générez des questions à partir de vos notes."],
-        PRO: ["{monthlyExams} examens par mois, jusqu'à {maxQ} questions chacun — parfait pour l'entraînement quotidien.", "Quota de fichiers : {files} fichiers par mois (bientôt disponible).", "Suivez vos sujets faibles dans le tableau de bord et regénérez des examens ciblés."],
-        PREMIUM: ["{monthlyExams} examens par mois jusqu'à {maxQ} questions — idéal pour la préparation aux boards.", "{files} téléversements de fichiers par mois (bientôt).", "Les analyses avancées montreront la précision par sujet et un plan de révision recommandé (à venir)."],
+        PRO: ["{monthlyExams} examens par mois, jusqu'à {maxQ} questions chacun — parfait pour l'entraînement quotidien.", "Quota de fichiers : {files} fichiers par mois.", "Suivez vos sujets faibles dans le tableau de bord et regénérez des examens ciblés."],
+        PREMIUM: ["{monthlyExams} examens par mois jusqu'à {maxQ} questions — idéal pour la préparation aux boards.", "{files} téléversements de fichiers par mois.", "Les analyses avancées montreront la précision par sujet et un plan de révision recommandé."],
       },
     },
     banner: {
@@ -1361,8 +1361,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Elige el formato de examen (USMLE, MRCS, MRCP, Fellowship Egipcio, Prometric…) para que las preguntas se parezcan al real.", "La prueba gratuita es 1 examen al mes con hasta 10 preguntas. Mejora a Básico para 15 exámenes al mes.", "Usa el modo Práctica para aprender — las explicaciones aparecen tras cada respuesta."],
         BASIC: ["Tienes {monthlyExams} exámenes al mes. Distribúyelos entre especialidades o concéntrate en una.", "Cambia al modo Examen (con cronómetro) para simular condiciones reales.", "¿Más allá de Básico? Pro añade subida de archivos — genera preguntas desde tus apuntes."],
-        PRO: ["{monthlyExams} exámenes al mes, hasta {maxQ} preguntas cada uno — ideal para la práctica diaria.", "Cuota de archivos: {files} archivos al mes (próximamente).", "Sigue tus temas débiles en el panel y regenera exámenes enfocados."],
-        PREMIUM: ["{monthlyExams} exámenes al mes hasta {maxQ} preguntas — ideal para preparación de boards.", "{files} subidas de archivos al mes (próximamente).", "Analítica avanzada mostrará precisión por tema y planes de repaso recomendados (próximamente)."],
+        PRO: ["{monthlyExams} exámenes al mes, hasta {maxQ} preguntas cada uno — ideal para la práctica diaria.", "Cuota de archivos: {files} archivos al mes.", "Sigue tus temas débiles en el panel y regenera exámenes enfocados."],
+        PREMIUM: ["{monthlyExams} exámenes al mes hasta {maxQ} preguntas — ideal para preparación de boards.", "{files} subidas de archivos al mes.", "Analítica avanzada mostrará precisión por tema y planes de repaso recomendados."],
       },
     },
     banner: {
@@ -1401,8 +1401,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Wählen Sie das Prüfungsformat (USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric…), damit Fragen zur echten Prüfung passen.", "Kostenlose Testversion: 1 Prüfung pro Monat mit bis zu 10 Fragen. Upgraden Sie auf Basic für 15 Prüfungen pro Monat.", "Übungsmodus zum Lernen — Erklärungen erscheinen nach jeder Antwort."],
         BASIC: ["Sie haben {monthlyExams} Prüfungen pro Monat. Verteilen Sie sie auf Fachgebiete oder vertiefen Sie eines.", "Wechseln Sie in den Prüfungsmodus (Timer an) zur echten Simulation.", "Mehr nötig? Pro fügt Datei-Upload hinzu — Fragen aus Ihren Notizen generieren."],
-        PRO: ["{monthlyExams} Prüfungen pro Monat, bis zu {maxQ} Fragen je — genug für tägliches Üben.", "Datei-Upload: {files} Dateien pro Monat (bald verfügbar).", "Verfolgen Sie schwache Themen im Dashboard und erstellen Sie zielgerichtete Prüfungen."],
-        PREMIUM: ["{monthlyExams} Prüfungen pro Monat bis zu {maxQ} Fragen — ideal für Board-Vorbereitung.", "{files} Datei-Uploads pro Monat (bald).", "Erweiterte Analytik zeigt Genauigkeit pro Thema und empfohlene Wiederholungspläne (bald)."],
+        PRO: ["{monthlyExams} Prüfungen pro Monat, bis zu {maxQ} Fragen je — genug für tägliches Üben.", "Datei-Upload: {files} Dateien pro Monat.", "Verfolgen Sie schwache Themen im Dashboard und erstellen Sie zielgerichtete Prüfungen."],
+        PREMIUM: ["{monthlyExams} Prüfungen pro Monat bis zu {maxQ} Fragen — ideal für Board-Vorbereitung.", "{files} Datei-Uploads pro Monat.", "Erweiterte Analytik zeigt Genauigkeit pro Thema und empfohlene Wiederholungspläne."],
       },
     },
     banner: {
@@ -1441,8 +1441,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Scegli il formato d'esame (USMLE, MRCS, MRCP, Fellowship Egiziano, Prometric…) per avere domande coerenti con l'esame reale.", "La prova gratuita è 1 esame al mese fino a 10 domande. Passa a Basic per 15 esami al mese.", "Usa la modalità Pratica per imparare — le spiegazioni compaiono dopo ogni risposta."],
         BASIC: ["Hai {monthlyExams} esami al mese. Distribuiscili tra specialità o concentrati su una.", "Passa alla modalità Esame (timer attivo) per simulare condizioni reali.", "Hai bisogno di più? Pro aggiunge il caricamento file — genera domande dai tuoi appunti."],
-        PRO: ["{monthlyExams} esami al mese, fino a {maxQ} domande ciascuno — perfetto per la pratica quotidiana.", "Quota file: {files} file al mese (in arrivo).", "Monitora gli argomenti deboli nella dashboard e rigenera esami mirati."],
-        PREMIUM: ["{monthlyExams} esami al mese fino a {maxQ} domande — ideale per la preparazione ai board.", "{files} caricamenti file al mese (in arrivo).", "L'analitica avanzata mostrerà l'accuratezza per argomento e piani di ripasso (in arrivo)."],
+        PRO: ["{monthlyExams} esami al mese, fino a {maxQ} domande ciascuno — perfetto per la pratica quotidiana.", "Quota file: {files} file al mese.", "Monitora gli argomenti deboli nella dashboard e rigenera esami mirati."],
+        PREMIUM: ["{monthlyExams} esami al mese fino a {maxQ} domande — ideale per la preparazione ai board.", "{files} caricamenti file al mese.", "L'analitica avanzata mostrerà l'accuratezza per argomento e piani di ripasso."],
       },
     },
     banner: {
@@ -1481,8 +1481,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Escolha o formato (USMLE, MRCS, MRCP, Fellowship Egípcio, Prometric…) para que as questões coincidam com o exame real.", "Teste grátis: 1 exame por mês com até 10 questões. Mude para Básico para 15 exames/mês.", "Use o modo Prática para aprender — explicações aparecem após cada resposta."],
         BASIC: ["Você tem {monthlyExams} exames por mês. Distribua entre especialidades ou foque numa.", "Mude para o modo Exame (com cronômetro) para simular o teste real.", "Precisa de mais? Pro adiciona upload de arquivos — gere questões a partir das suas anotações."],
-        PRO: ["{monthlyExams} exames por mês, até {maxQ} questões cada — bom para prática diária.", "Cota de arquivos: {files} arquivos por mês (em breve).", "Acompanhe áreas fracas no painel e regenere exames focados nelas."],
-        PREMIUM: ["{monthlyExams} exames por mês até {maxQ} questões — ideal para preparar boards.", "{files} uploads de arquivos por mês (em breve).", "Análise avançada mostrará precisão por tema e planos de revisão recomendados (em breve)."],
+        PRO: ["{monthlyExams} exames por mês, até {maxQ} questões cada — bom para prática diária.", "Cota de arquivos: {files} arquivos por mês.", "Acompanhe áreas fracas no painel e regenere exames focados nelas."],
+        PREMIUM: ["{monthlyExams} exames por mês até {maxQ} questões — ideal para preparar boards.", "{files} uploads de arquivos por mês.", "Análise avançada mostrará precisão por tema e planos de revisão recomendados."],
       },
     },
     banner: {
@@ -1521,8 +1521,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["Sınav formatını seçin (USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric…) — sorular gerçek sınavla eşleşsin.", "Ücretsiz deneme ayda 1 sınav, en fazla 10 soru. Basic'e geçerek ayda 15 sınav alın.", "Öğrenmek için Pratik modunu kullanın — her yanıttan sonra açıklamalar görünür."],
         BASIC: ["Ayda {monthlyExams} sınavınız var. Uzmanlıklara yayın veya bir alana odaklanın.", "Gerçek sınav koşullarını simüle etmek için Sınav moduna (zamanlayıcı açık) geçin.", "Daha fazlası mı? Pro dosya yüklemeyi ekler — kendi notlarınızdan sorular üretin."],
-        PRO: ["Ayda {monthlyExams} sınav, her biri en fazla {maxQ} soru — günlük pratik için bol bol.", "Dosya kotanız: ayda {files} dosya (yakında geliyor).", "Panodan zayıf konuları takip edin ve hedefli sınavlar üretin."],
-        PREMIUM: ["Ayda {monthlyExams} sınav, en fazla {maxQ} soru — board hazırlığı için ideal.", "Ayda {files} dosya yükleme (yakında).", "Gelişmiş analizler konuya göre doğruluğu ve önerilen tekrar planını gösterecek (yakında)."],
+        PRO: ["Ayda {monthlyExams} sınav, her biri en fazla {maxQ} soru — günlük pratik için bol bol.", "Dosya kotanız: ayda {files} dosya.", "Panodan zayıf konuları takip edin ve hedefli sınavlar üretin."],
+        PREMIUM: ["Ayda {monthlyExams} sınav, en fazla {maxQ} soru — board hazırlığı için ideal.", "Ayda {files} dosya yükleme.", "Gelişmiş analizler konuya göre doğruluğu ve önerilen tekrar planını gösterecek."],
       },
     },
     banner: {
@@ -1561,8 +1561,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["امتحانی نوع منتخب کریں (USMLE، MRCS، MRCP، مصری فیلوشپ، Prometric…) تاکہ سوالات حقیقی امتحان سے میل کھائیں۔", "مفت آزمائش ماہانہ 1 امتحان، 10 سوالات تک ہے۔ Basic پر اپ گریڈ کرکے ماہانہ 15 امتحانات حاصل کریں۔", "سیکھنے کے لیے مشق موڈ استعمال کریں — ہر جواب کے بعد تشریحات ظاہر ہوتی ہیں۔"],
         BASIC: ["آپ کے پاس ماہانہ {monthlyExams} امتحانات ہیں۔ تخصصات میں تقسیم کریں یا ایک پر گہرا فوکس کریں۔", "حقیقی امتحان کی نقل کے لیے امتحان موڈ (ٹائمر آن) پر سوئچ کریں۔", "مزید چاہیے؟ Pro فائل اپ لوڈ شامل کرتا ہے — اپنے نوٹس سے سوالات بنائیں۔"],
-        PRO: ["ماہانہ {monthlyExams} امتحانات، ہر ایک میں {maxQ} سوالات تک — روزانہ مشق کے لیے کافی۔", "فائل اپ لوڈ حد: ماہانہ {files} فائلیں (جلد آرہا ہے)۔", "ڈیش بورڈ پر اپنی کمزور چیزیں ٹریک کریں اور ان پر مرکوز امتحانات دوبارہ بنائیں۔"],
-        PREMIUM: ["ماہانہ {monthlyExams} امتحانات حد سے زیادہ {maxQ} سوالات — بورڈ کی تیاری کے لیے مثالی۔", "ماہانہ {files} فائل اپ لوڈز (جلد)۔", "اعلیٰ تجزیات موضوع کے حساب سے درستگی اور تجویز کردہ نظر ثانی کے منصوبے دکھائیں گے (جلد)۔"],
+        PRO: ["ماہانہ {monthlyExams} امتحانات، ہر ایک میں {maxQ} سوالات تک — روزانہ مشق کے لیے کافی۔", "فائل اپ لوڈ حد: ماہانہ {files} فائلیں۔", "ڈیش بورڈ پر اپنی کمزور چیزیں ٹریک کریں اور ان پر مرکوز امتحانات دوبارہ بنائیں۔"],
+        PREMIUM: ["ماہانہ {monthlyExams} امتحانات حد سے زیادہ {maxQ} سوالات — بورڈ کی تیاری کے لیے مثالی۔", "ماہانہ {files} فائل اپ لوڈز۔", "اعلیٰ تجزیات موضوع کے حساب سے درستگی اور تجویز کردہ نظر ثانی کے منصوبے دکھائیں گے۔"],
       },
     },
     banner: {
@@ -1601,8 +1601,8 @@ const EXTRAS: Record<Locale, Extras> = {
       guideTips: {
         FREE: ["قالب آزمون را انتخاب کنید (USMLE، MRCS، MRCP، فلوشیپ مصری، Prometric…) تا سؤالات با آزمون واقعی شما هم‌خوان باشد.", "آزمایش رایگان ماهی ۱ آزمون با حداکثر ۱۰ سؤال است. به پایه ارتقا دهید تا ماهی ۱۵ آزمون داشته باشید.", "از حالت تمرین برای یادگیری استفاده کنید — توضیحات پس از هر پاسخ ظاهر می‌شوند."],
         BASIC: ["شما ماهی {monthlyExams} آزمون دارید. بین تخصص‌ها پخش کنید یا روی یکی متمرکز شوید.", "برای شبیه‌سازی شرایط واقعی، حالت آزمون (تایمر روشن) را انتخاب کنید.", "بیشتر می‌خواهید؟ پلن حرفه‌ای امکان آپلود فایل را اضافه می‌کند — از یادداشت‌های خود سؤال بسازید."],
-        PRO: ["ماهی {monthlyExams} آزمون، تا {maxQ} سؤال در هر کدام — مناسب تمرین روزانه.", "سهمیهٔ آپلود فایل: ماهی {files} فایل (به‌زودی).", "موضوعات ضعیف خود را در داشبورد دنبال کنید و آزمون‌های هدفمند بسازید."],
-        PREMIUM: ["ماهی {monthlyExams} آزمون، حداکثر {maxQ} سؤال — ایده‌آل برای آماده‌سازی بُرد.", "ماهی {files} آپلود فایل (به‌زودی).", "تحلیل پیشرفته دقت بر اساس موضوع و برنامه‌های مرور پیشنهادی را نشان می‌دهد (به‌زودی)."],
+        PRO: ["ماهی {monthlyExams} آزمون، تا {maxQ} سؤال در هر کدام — مناسب تمرین روزانه.", "سهمیهٔ آپلود فایل: ماهی {files} فایل.", "موضوعات ضعیف خود را در داشبورد دنبال کنید و آزمون‌های هدفمند بسازید."],
+        PREMIUM: ["ماهی {monthlyExams} آزمون، حداکثر {maxQ} سؤال — ایده‌آل برای آماده‌سازی بُرد.", "ماهی {files} آپلود فایل.", "تحلیل پیشرفته دقت بر اساس موضوع و برنامه‌های مرور پیشنهادی را نشان می‌دهد."],
       },
     },
     banner: {

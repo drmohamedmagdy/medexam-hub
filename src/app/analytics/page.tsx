@@ -6,7 +6,7 @@ import { getLocale, getTranslations } from "@/lib/i18n-server";
 
 export const metadata = { title: "Analytics — MedExam Hub" };
 
-const ANALYTICS_PLANS = ["PRO", "PREMIUM"] as const;
+const ANALYTICS_PLANS = ["PREMIUM"] as const;
 
 export default async function AnalyticsPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
@@ -15,16 +15,16 @@ export default async function AnalyticsPage() {
   if (!ANALYTICS_PLANS.includes(user.plan as (typeof ANALYTICS_PLANS)[number])) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Analytics — Pro &amp; Premium</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Analytics — Premium only</h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">
-          Detailed accuracy breakdowns and weak-area recommendations are part of the Pro and Premium plans.
+          Detailed accuracy breakdowns and weak-area recommendations are part of the Premium plan.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
-            href="/checkout/pro"
+            href="/checkout/premium"
             className="rounded-full bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700"
           >
-            Upgrade to Pro — {PLAN_LIMITS.PRO.priceMonthly} {t.plans.currencyShort}/month
+            Upgrade to Premium — {PLAN_LIMITS.PREMIUM.priceMonthly.toLocaleString()} {t.plans.currencyShort}/month
           </Link>
           <Link
             href="/plans"
