@@ -85,6 +85,21 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     },
   });
 
+  // Remember the user's choices so the next /exam/new pre-fills them.
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      defaultGenerationMode: input.examType ? "exam" : "specialty",
+      defaultSpecialty: input.specialty || null,
+      defaultTopic: input.topic || null,
+      defaultExamType: input.examType || null,
+      defaultDifficulty: input.difficulty,
+      defaultMode: input.mode,
+      defaultLanguage: input.language || null,
+      defaultNumQuestions: input.numQuestions,
+    },
+  });
+
   let questions;
   try {
     questions = await generateExam({

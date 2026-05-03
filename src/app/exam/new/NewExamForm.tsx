@@ -3,9 +3,10 @@
 import { useActionState, useState } from "react";
 import { createExamAction, type NewExamState } from "@/app/actions/exam";
 import { SPECIALTIES } from "@/lib/specialties";
-import { EXAM_TYPE_GROUPS } from "@/lib/exam-types";
+import { EXAM_TYPE_GROUPS, getAllExamTypeIds } from "@/lib/exam-types";
 import { EXAM_LANGUAGES, DEFAULT_LANGUAGE, findLanguage } from "@/lib/languages";
 import type { Translations } from "@/lib/i18n";
+import type { Difficulty, ExamMode } from "@/generated/prisma/client";
 
 type Labels = Translations["newExam"];
 type GenerationMode = "specialty" | "exam";
@@ -14,26 +15,64 @@ const DIFFICULTY_KEYS = [
   "BEGINNER", "STUDENT", "INTERN", "RESIDENT", "SPECIALIST", "CONSULTANT", "BOARD",
 ] as const;
 
+type Defaults = {
+  generationMode: GenerationMode;
+  specialty: string | null;
+  topic: string | null;
+  examType: string | null;
+  difficulty: Difficulty | null;
+  mode: ExamMode | null;
+  language: string | null;
+  numQuestions: number | null;
+};
+
 export default function NewExamForm({
   remaining,
   maxPerExam,
   defaultLanguage,
   labels,
+  defaults,
 }: {
   remaining: number;
   maxPerExam: number;
   defaultLanguage?: string;
   labels: Labels;
+  defaults?: Defaults;
 }) {
   const [state, action, pending] = useActionState<NewExamState, FormData>(createExamAction, null);
-  const [mode, setMode] = useState<GenerationMode>("specialty");
+  const [mode, setMode] = useState<GenerationMode>(defaults?.generationMode ?? "specialty");
   const canGenerate = remaining >= 1;
-  const langDefault = findLanguage(defaultLanguage ?? DEFAULT_LANGUAGE)
-    ? (defaultLanguage ?? DEFAULT_LANGUAGE)
+
+  const langDefault = findLanguage(defaults?.language ?? defaultLanguage ?? DEFAULT_LANGUAGE)
+    ? (defaults?.language ?? defaultLanguage ?? DEFAULT_LANGUAGE)
     : DEFAULT_LANGUAGE;
+
+  const specialtyDefault =
+    defaults?.specialty && SPECIALTIES.includes(defaults.specialty as (typeof SPECIALTIES)[number])
+      ? defaults.specialty
+      : "Diabetic Foot";
+
+  const examTypeDefault =
+    defaults?.examType && getAllExamTypeIds().includes(defaults.examType)
+      ? defaults.examType
+      : "USMLE Step 2 CK";
+
+  const difficultyDefault = defaults?.difficulty ?? "RESIDENT";
+  const modeDefault = defaults?.mode ?? "PRACTICE";
+
+  const numQDefault = (() => {
+    const wanted = defaults?.numQuestions ?? 5;
+    return Math.min(Math.max(1, wanted), maxPerExam);
+  })();
 
   return (
     <form action={action} className="mt-8 space-y-5">
+      {defaults && (defaults.specialty || defaults.examType) && (
+        <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+          Pre-filled from your last exam. Adjust anything you want before generating.
+        </p>
+      )}
+
       <div className="rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
         <div className="grid grid-cols-2 text-sm">
           <button
@@ -63,7 +102,7 @@ export default function NewExamForm({
             <select
               name="specialty"
               required
-              defaultValue="Diabetic Foot"
+              defaultValue={specialtyDefault}
               className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             >
               {SPECIALTIES.map((s) => (
@@ -77,6 +116,7 @@ export default function NewExamForm({
               required
               minLength={2}
               maxLength={120}
+              defaultValue={defaults?.topic ?? ""}
               placeholder={labels.topicPlaceholder}
               className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             />
@@ -89,7 +129,7 @@ export default function NewExamForm({
             <select
               name="examType"
               required
-              defaultValue="USMLE Step 2 CK"
+              defaultValue={examTypeDefault}
               className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             >
               {EXAM_TYPE_GROUPS.map((g) => (
@@ -105,7 +145,7 @@ export default function NewExamForm({
             <Field label={labels.specialtyOptional}>
               <select
                 name="specialty"
-                defaultValue=""
+                defaultValue={defaults?.specialty ?? ""}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
               >
                 <option value="">{labels.any}</option>
@@ -118,6 +158,7 @@ export default function NewExamForm({
               <input
                 name="topic"
                 maxLength={120}
+                defaultValue={defaults?.topic ?? ""}
                 placeholder={labels.topicOptionalPlaceholder}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
               />
@@ -131,7 +172,7 @@ export default function NewExamForm({
           <select
             name="difficulty"
             required
-            defaultValue="RESIDENT"
+            defaultValue={difficultyDefault}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           >
             {DIFFICULTY_KEYS.map((k) => (
@@ -143,7 +184,7 @@ export default function NewExamForm({
           <select
             name="mode"
             required
-            defaultValue="PRACTICE"
+            defaultValue={modeDefault}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           >
             <option value="PRACTICE">{labels.modePractice}</option>
@@ -160,7 +201,7 @@ export default function NewExamForm({
             required
             min={1}
             max={maxPerExam}
-            defaultValue={Math.min(5, maxPerExam)}
+            defaultValue={numQDefault}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </Field>

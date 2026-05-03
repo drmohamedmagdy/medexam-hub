@@ -95,7 +95,12 @@ export default async function DashboardPage() {
         )}
       />
 
-      <h2 className="mt-12 text-lg font-semibold">{t.dashboard.recentExams}</h2>
+      <div className="mt-12 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">{t.dashboard.recentExams}</h2>
+        <Link href="/exams" className="text-sm text-blue-600 hover:underline">
+          View all →
+        </Link>
+      </div>
       <div className="mt-4 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         {exams.length === 0 ? (
           <div className="p-8 text-center text-sm text-zinc-500">

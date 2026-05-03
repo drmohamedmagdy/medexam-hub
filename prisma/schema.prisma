@@ -38,16 +38,25 @@ enum ExamStatus {
 }
 
 model User {
-  id               String        @id @default(cuid())
-  email            String        @unique
-  name             String?
-  passwordHash     String
-  plan             Plan          @default(FREE)
-  planStartedAt    DateTime?
-  planExpiresAt    DateTime?
-  planCancelledAt  DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  email                 String        @unique
+  name                  String?
+  passwordHash          String
+  plan                  Plan          @default(FREE)
+  planStartedAt         DateTime?
+  planExpiresAt         DateTime?
+  planCancelledAt       DateTime?
+  // Per-user defaults remembered from the last exam they generated
+  defaultGenerationMode String?
+  defaultSpecialty      String?
+  defaultTopic          String?
+  defaultExamType       String?
+  defaultDifficulty     Difficulty?
+  defaultMode           ExamMode?
+  defaultLanguage       String?
+  defaultNumQuestions   Int?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   exams            Exam[]
   usage            UsageLog[]

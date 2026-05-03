@@ -25,6 +25,16 @@ export default async function NewExamPage() {
         maxPerExam={planCfg.maxQuestionsPerExam}
         defaultLanguage={locale}
         labels={t.newExam}
+        defaults={{
+          generationMode: user.defaultGenerationMode === "exam" ? "exam" : "specialty",
+          specialty: user.defaultSpecialty,
+          topic: user.defaultTopic,
+          examType: user.defaultExamType,
+          difficulty: user.defaultDifficulty,
+          mode: user.defaultMode,
+          language: user.defaultLanguage,
+          numQuestions: user.defaultNumQuestions,
+        }}
       />
     </div>
   );
