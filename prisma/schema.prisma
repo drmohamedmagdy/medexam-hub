@@ -46,6 +46,12 @@ model User {
   planStartedAt         DateTime?
   planExpiresAt         DateTime?
   planCancelledAt       DateTime?
+  // Email preferences
+  emailMarketing        Boolean       @default(true)
+  emailReminders        Boolean       @default(true)
+  // Last sent timestamps so the daily cron doesn't double-send within a window
+  lastReminderSentAt    DateTime?
+  lastReengagementAt    DateTime?
   // Per-user defaults remembered from the last exam they generated
   defaultGenerationMode String?
   defaultSpecialty      String?
@@ -63,6 +69,22 @@ model User {
   sessions         AuthSession[]
   payments         PaymentOrder[]
   fileUploads      FileUpload[]
+  emailLogs        EmailLog[]
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  userId    String
+  toEmail   String
+  subject   String
+  category  String   // welcome | renewal_7d | renewal_1d | expired | reengagement | broadcast
+  sentAt    DateTime @default(now())
+  error     String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sentAt])
+  @@index([category, sentAt])
 }
 
 model AuthSession {

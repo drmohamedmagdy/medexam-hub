@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { createSession, destroySession, hashPassword, verifyPassword } from "@/lib/auth";
+import { sendEmail, welcomeEmail } from "@/lib/email";
 
 const SignupSchema = z.object({
   name: z.string().min(2).max(80).trim(),
@@ -41,6 +42,16 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
       passwordHash,
     },
   });
+
+  // Fire-and-forget welcome email; don't block signup if email fails.
+  const email = welcomeEmail(user.name, user.id);
+  void sendEmail({
+    toUserId: user.id,
+    toEmail: user.email,
+    subject: email.subject,
+    category: "welcome",
+    html: email.html,
+  }).catch(() => {});
 
   await createSession(user.id);
   redirect("/dashboard");
