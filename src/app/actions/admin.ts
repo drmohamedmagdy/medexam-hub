@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
@@ -177,5 +178,9 @@ export async function adminDeleteUserAction(
 
   revalidatePath("/admin/users");
   revalidatePath("/admin");
-  return { ok: true };
+
+  // Server-side redirect is the most reliable way to navigate away from a now-404
+  // detail page. Throws NEXT_REDIRECT (typed as never), so this function never
+  // actually returns AdminActionState in the success path.
+  redirect("/admin/users");
 }

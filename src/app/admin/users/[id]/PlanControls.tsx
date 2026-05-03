@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   adminChangePlanAction,
@@ -151,10 +151,14 @@ function DeleteUserBlock({ userId, userEmail }: { userId: string; userEmail: str
     null
   );
 
-  // After successful delete, navigate back to the users list
-  if (state?.ok) {
-    router.push("/admin/users");
-  }
+  // Run navigation as a side effect — calling router.push() during render is a
+  // React anti-pattern that can fail to fire and leaves you stuck on the
+  // (now-404) deleted user's URL.
+  useEffect(() => {
+    if (state?.ok) {
+      router.push("/admin/users");
+    }
+  }, [state?.ok, router]);
 
   const canDelete = confirmEmail.trim().toLowerCase() === userEmail.toLowerCase();
 
