@@ -116,7 +116,7 @@ export default async function AdminUserDetailPage({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
           Plan controls
         </h2>
-        <PlanControls userId={user.id} currentPlan={user.plan} />
+        <PlanControls userId={user.id} currentPlan={user.plan} userEmail={user.email} />
       </section>
 
       {/* Exams */}

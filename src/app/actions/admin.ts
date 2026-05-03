@@ -96,13 +96,86 @@ export async function adminExtendExpiryAction(
 
 const CancelSchema = z.object({ userId: z.string().min(1) });
 
-export async function adminCancelSubscriptionAction(formData: FormData): Promise<void> {
+export async function adminCancelSubscriptionAction(
+  _prev: AdminActionState,
+  formData: FormData
+): Promise<AdminActionState> {
   await requireAdmin();
   const parsed = CancelSchema.safeParse({ userId: formData.get("userId") });
-  if (!parsed.success) return;
-  await prisma.user.update({
-    where: { id: parsed.data.userId },
-    data: { planCancelledAt: new Date() },
+  if (!parsed.success) return { error: "Invalid request" };
+
+  const target = await prisma.user.findUnique({ where: { id: parsed.data.userId } });
+  if (!target) return { error: "User not found" };
+
+  if (target.plan === Plan.FREE) {
+    return { error: "User is already on the Free plan." };
+  }
+
+  const now = new Date();
+  const hasActiveBilling = !!target.planExpiresAt && target.planExpiresAt > now;
+
+  if (hasActiveBilling) {
+    // They still have paid time left — mark cancellation, no auto-renew.
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { planCancelledAt: now },
+    });
+  } else {
+    // No active billing period (dev-upgrade or already expired) — drop to Free immediately.
+    await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        plan: Plan.FREE,
+        planStartedAt: null,
+        planExpiresAt: null,
+        planCancelledAt: null,
+      },
+    });
+  }
+
+  revalidatePath(`/admin/users/${target.id}`);
+  revalidatePath("/admin/users");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+const DeleteUserSchema = z.object({
+  userId: z.string().min(1),
+  confirmEmail: z.string().min(1),
+});
+
+export async function adminDeleteUserAction(
+  _prev: AdminActionState,
+  formData: FormData
+): Promise<AdminActionState> {
+  const admin = await requireAdmin();
+
+  const parsed = DeleteUserSchema.safeParse({
+    userId: formData.get("userId"),
+    confirmEmail: formData.get("confirmEmail"),
   });
-  revalidatePath(`/admin/users/${parsed.data.userId}`);
+  if (!parsed.success) return { error: "Missing fields." };
+
+  const target = await prisma.user.findUnique({ where: { id: parsed.data.userId } });
+  if (!target) return { error: "User not found." };
+
+  if (target.id === admin.id) {
+    return { error: "You can't delete your own admin account." };
+  }
+
+  const expectedEmail = target.email.toLowerCase();
+  const providedEmail = parsed.data.confirmEmail.trim().toLowerCase();
+  if (providedEmail !== expectedEmail) {
+    return {
+      error: `Confirmation didn't match. Type the user's email exactly: ${target.email}`,
+    };
+  }
+
+  // Cascade deletes (configured in schema): exams, questions, sessions, payments,
+  // usage logs, file uploads. The user row + all owned data is removed.
+  await prisma.user.delete({ where: { id: target.id } });
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin");
+  return { ok: true };
 }
