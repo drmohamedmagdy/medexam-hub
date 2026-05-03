@@ -2,7 +2,9 @@ import { prisma } from "@/lib/db";
 import { PLAN_LIMITS, currentYearMonth } from "@/lib/plans";
 import type { Plan } from "@/generated/prisma/client";
 
-const KIND = "exam_created";
+// Only fully-answered, submitted exams count toward the user's monthly quota.
+// Generation alone does not consume quota; abandoned exams don't either.
+const KIND = "exam_completed";
 
 export type QuotaStatus = {
   used: number;
@@ -23,7 +25,7 @@ export async function getMonthlyExamUsage(userId: string, plan: Plan): Promise<Q
   return { used, limit, remaining: Math.max(0, limit - used) };
 }
 
-export async function recordExamCreated(userId: string): Promise<void> {
+export async function recordExamCompleted(userId: string): Promise<void> {
   await prisma.usageLog.create({
     data: {
       userId,

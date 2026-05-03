@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { generateExam } from "@/lib/exam-generator";
-import { getMonthlyExamUsage, recordExamCreated } from "@/lib/quota";
+import { getMonthlyExamUsage, recordExamCompleted } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { Difficulty, ExamMode, ExamStatus } from "@/generated/prisma/client";
 import { getAllExamTypeIds, findExamType } from "@/lib/exam-types";
@@ -124,8 +124,8 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     }),
   ]);
 
-  await recordExamCreated(user.id);
-
+  // Quota is consumed only when the exam is fully answered and submitted.
+  // See submitExamAction below.
   redirect(`/exam/${exam.id}`);
 }
 
@@ -165,7 +165,16 @@ export async function submitExamAction(formData: FormData): Promise<void> {
     redirect("/dashboard");
   }
 
+  // Idempotency: if already completed, just go to results without re-grading or re-counting quota.
+  if (exam!.status === ExamStatus.COMPLETED) {
+    redirect(`/exam/${examId}/results`);
+  }
+
   const answers = AnswerMapSchema.parse(JSON.parse(answersJson));
+
+  const totalQuestions = exam!.questions.length;
+  const answeredCount = exam!.questions.filter((q) => answers[q.id]).length;
+  const fullyAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
 
   let correctCount = 0;
   await prisma.$transaction(
@@ -180,15 +189,31 @@ export async function submitExamAction(formData: FormData): Promise<void> {
     })
   );
 
-  const scorePct = exam!.questions.length === 0 ? 0 : (correctCount / exam!.questions.length) * 100;
-  await prisma.exam.update({
-    where: { id: examId },
-    data: {
-      status: ExamStatus.COMPLETED,
-      submittedAt: new Date(),
-      scorePct,
-    },
-  });
+  const scorePct = totalQuestions === 0 ? 0 : (correctCount / totalQuestions) * 100;
+
+  // Only mark COMPLETED and burn quota if every question was answered.
+  // Partial submissions leave the exam in READY state so the user can return,
+  // finish it, and have it count properly.
+  if (fullyAnswered) {
+    await prisma.exam.update({
+      where: { id: examId },
+      data: {
+        status: ExamStatus.COMPLETED,
+        submittedAt: new Date(),
+        scorePct,
+      },
+    });
+    await recordExamCompleted(user.id);
+  } else {
+    // Save progress (selected answers stored above) but don't count toward quota.
+    await prisma.exam.update({
+      where: { id: examId },
+      data: {
+        status: ExamStatus.IN_PROGRESS,
+        scorePct,
+      },
+    });
+  }
 
   redirect(`/exam/${examId}/results`);
 }
