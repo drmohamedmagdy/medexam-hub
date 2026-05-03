@@ -93,7 +93,11 @@ export default async function CheckoutPage({
             <span className="font-medium">{user.email}</span>
           </div>
 
-          <CheckoutForm plan={plan} priceMonthly={cfg.priceMonthly} />
+          <CheckoutForm
+            plan={plan}
+            priceMonthly={cfg.priceMonthly}
+            priceMonthlyUsd={cfg.priceMonthlyUsd}
+          />
 
           <p className="mt-6 text-xs text-zinc-500">
             By clicking continue you agree to the{" "}

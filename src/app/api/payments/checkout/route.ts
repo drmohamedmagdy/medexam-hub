@@ -3,10 +3,13 @@ import { z } from "zod";
 import { cookies } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { PAYMOB_LINKS, newCheckoutToken } from "@/lib/paymob";
+import { paymentLinkFor, newCheckoutToken } from "@/lib/paymob";
 import { PLAN_LIMITS } from "@/lib/plans";
 
-const Body = z.object({ plan: z.enum(["BASIC", "PRO", "PREMIUM"]) });
+const Body = z.object({
+  plan: z.enum(["BASIC", "PRO", "PREMIUM"]),
+  provider: z.enum(["paymob", "paypal"]).default("paymob"),
+});
 
 const CHECKOUT_COOKIE = "mxh_checkout";
 const COOKIE_TTL_SEC = 30 * 60;
@@ -14,17 +17,23 @@ const COOKIE_TTL_SEC = 30 * 60;
 export async function POST(req: Request) {
   const user = await requireUser();
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return new NextResponse("Invalid plan", { status: 400 });
+  if (!parsed.success) return new NextResponse("Invalid request", { status: 400 });
 
-  const plan = parsed.data.plan;
+  const { plan, provider } = parsed.data;
   const cfg = PLAN_LIMITS[plan];
+
+  const isPaypal = provider === "paypal";
+  const amountCents = isPaypal
+    ? Math.round(cfg.priceMonthlyUsd * 100)
+    : cfg.priceMonthly * 100;
+  const currency = isPaypal ? "USD" : "EGP";
 
   const order = await prisma.paymentOrder.create({
     data: {
       userId: user.id,
       plan,
-      amountCents: cfg.priceMonthly * 100,
-      currency: "EGP",
+      amountCents,
+      currency,
     },
   });
 
@@ -38,10 +47,15 @@ export async function POST(req: Request) {
     maxAge: COOKIE_TTL_SEC,
   });
 
-  // Append unique merchant_order_id so the transaction is traceable in Paymob's
-  // dashboard and any future webhook can match it back to our PaymentOrder row.
-  const linkUrl = new URL(PAYMOB_LINKS[plan]);
-  linkUrl.searchParams.set("merchant_order_id", `mxh_${order.id}`);
+  // For Paymob we tag the link with merchant_order_id (their hosted page accepts
+  // arbitrary query params and propagates them to webhooks). PayPal NCP links
+  // don't reliably round-trip query params, so we rely on the signed cookie for
+  // matching the post-payment redirect to this PaymentOrder row.
+  if (isPaypal) {
+    return NextResponse.json({ url: paymentLinkFor("paypal", plan) });
+  }
 
+  const linkUrl = new URL(paymentLinkFor("paymob", plan));
+  linkUrl.searchParams.set("merchant_order_id", `mxh_${order.id}`);
   return NextResponse.json({ url: linkUrl.toString() });
 }
