@@ -1254,7 +1254,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Generate a new exam", remainingLine: "{remaining} of {limit} exams remaining this month on the {plan} plan.",
+      pageTitle: "Generate a new exam", remainingLine: "{remaining} of {limit} questions remaining this month on the {plan} plan.",
       bySpecialty: "By specialty", byExam: "By exam type",
       specialty: "Specialty", topic: "Topic", topicPlaceholder: "e.g. Offloading neuropathic forefoot ulcers",
       exam: "Exam", specialtyOptional: "Specialty (optional)", topicOptional: "Topic (optional)",
@@ -1294,7 +1294,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "إنشاء امتحان جديد", remainingLine: "{remaining} من {limit} امتحان متبقٍ هذا الشهر على خطة {plan}.",
+      pageTitle: "إنشاء امتحان جديد", remainingLine: "{remaining} من {limit} سؤال متبقٍّ هذا الشهر على خطة {plan}.",
       bySpecialty: "حسب التخصص", byExam: "حسب نوع الامتحان",
       specialty: "التخصص", topic: "الموضوع", topicPlaceholder: "مثال: تخفيف الضغط في القرحة العصبية للقدم الأمامية",
       exam: "الامتحان", specialtyOptional: "التخصص (اختياري)", topicOptional: "الموضوع (اختياري)",
@@ -1334,7 +1334,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Créer un nouvel examen", remainingLine: "{remaining} sur {limit} examens restants ce mois-ci sur le forfait {plan}.",
+      pageTitle: "Créer un nouvel examen", remainingLine: "{remaining} sur {limit} questions restantes ce mois-ci sur le forfait {plan}.",
       bySpecialty: "Par spécialité", byExam: "Par type d'examen",
       specialty: "Spécialité", topic: "Sujet", topicPlaceholder: "ex. Décharge des ulcères neuropathiques du pied",
       exam: "Examen", specialtyOptional: "Spécialité (facultatif)", topicOptional: "Sujet (facultatif)",
@@ -1374,7 +1374,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Crear un nuevo examen", remainingLine: "{remaining} de {limit} exámenes restantes este mes en el plan {plan}.",
+      pageTitle: "Crear un nuevo examen", remainingLine: "{remaining} de {limit} preguntas restantes este mes en el plan {plan}.",
       bySpecialty: "Por especialidad", byExam: "Por tipo de examen",
       specialty: "Especialidad", topic: "Tema", topicPlaceholder: "ej. Descarga de úlceras neuropáticas del pie",
       exam: "Examen", specialtyOptional: "Especialidad (opcional)", topicOptional: "Tema (opcional)",
@@ -1414,7 +1414,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Neue Prüfung erstellen", remainingLine: "{remaining} von {limit} Prüfungen diesen Monat im Tarif {plan} verfügbar.",
+      pageTitle: "Neue Prüfung erstellen", remainingLine: "{remaining} von {limit} Fragen diesen Monat im Tarif {plan} verfügbar.",
       bySpecialty: "Nach Fachgebiet", byExam: "Nach Prüfungstyp",
       specialty: "Fachgebiet", topic: "Thema", topicPlaceholder: "z. B. Entlastung neuropathischer Vorfußulzera",
       exam: "Prüfung", specialtyOptional: "Fachgebiet (optional)", topicOptional: "Thema (optional)",
@@ -1454,7 +1454,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Crea un nuovo esame", remainingLine: "{remaining} su {limit} esami rimanenti questo mese sul piano {plan}.",
+      pageTitle: "Crea un nuovo esame", remainingLine: "{remaining} su {limit} domande rimanenti questo mese sul piano {plan}.",
       bySpecialty: "Per specialità", byExam: "Per tipo di esame",
       specialty: "Specialità", topic: "Argomento", topicPlaceholder: "es. Scarico di ulcere neuropatiche dell'avampiede",
       exam: "Esame", specialtyOptional: "Specialità (opzionale)", topicOptional: "Argomento (opzionale)",
@@ -1494,7 +1494,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Criar novo exame", remainingLine: "{remaining} de {limit} exames restantes este mês no plano {plan}.",
+      pageTitle: "Criar novo exame", remainingLine: "{remaining} de {limit} questões restantes este mês no plano {plan}.",
       bySpecialty: "Por especialidade", byExam: "Por tipo de exame",
       specialty: "Especialidade", topic: "Tema", topicPlaceholder: "ex. Descarga de úlceras neuropáticas do antepé",
       exam: "Exame", specialtyOptional: "Especialidade (opcional)", topicOptional: "Tema (opcional)",
@@ -1534,7 +1534,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "Yeni sınav oluştur", remainingLine: "Bu ay {plan} planında {remaining}/{limit} sınav kaldı.",
+      pageTitle: "Yeni sınav oluştur", remainingLine: "Bu ay {plan} planında {remaining}/{limit} soru kaldı.",
       bySpecialty: "Uzmanlığa göre", byExam: "Sınav türüne göre",
       specialty: "Uzmanlık", topic: "Konu", topicPlaceholder: "örn. Nöropatik ön ayak ülserlerinde yük dağıtımı",
       exam: "Sınav", specialtyOptional: "Uzmanlık (isteğe bağlı)", topicOptional: "Konu (isteğe bağlı)",
@@ -1574,7 +1574,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "نیا امتحان بنائیں", remainingLine: "{plan} پلان پر اس مہینے {limit} میں سے {remaining} امتحانات باقی ہیں۔",
+      pageTitle: "نیا امتحان بنائیں", remainingLine: "{plan} پلان پر اس مہینے {limit} میں سے {remaining} سوالات باقی ہیں۔",
       bySpecialty: "تخصص کے لحاظ سے", byExam: "امتحان کی نوع کے لحاظ سے",
       specialty: "تخصص", topic: "موضوع", topicPlaceholder: "مثلاً پیر کے نیوروپیتھک السر کا بوجھ کم کرنا",
       exam: "امتحان", specialtyOptional: "تخصص (اختیاری)", topicOptional: "موضوع (اختیاری)",
@@ -1614,7 +1614,7 @@ const EXTRAS: Record<Locale, Extras> = {
       },
     },
     newExam: {
-      pageTitle: "ساخت آزمون جدید", remainingLine: "این ماه در پلن {plan}، {remaining} از {limit} آزمون باقی مانده.",
+      pageTitle: "ساخت آزمون جدید", remainingLine: "این ماه در پلن {plan}، {remaining} از {limit} سؤال باقی مانده.",
       bySpecialty: "بر اساس تخصص", byExam: "بر اساس نوع آزمون",
       specialty: "تخصص", topic: "موضوع", topicPlaceholder: "مثال: کاهش فشار در زخم نوروپاتیک پیش‌پا",
       exam: "آزمون", specialtyOptional: "تخصص (اختیاری)", topicOptional: "موضوع (اختیاری)",
