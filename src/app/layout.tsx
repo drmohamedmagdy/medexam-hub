@@ -9,6 +9,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { isRtl } from "@/lib/i18n";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
+import { isAdmin } from "@/lib/admin";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,11 @@ export default async function RootLayout({
               {user ? (
                 <>
                   <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
+                  {isAdmin(user) && (
+                    <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">
+                      Admin
+                    </Link>
+                  )}
                   <Link
                     href="/exam/new"
                     className="hidden rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 sm:inline-block"
