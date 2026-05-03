@@ -2,9 +2,9 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Plan } from "@/generated/prisma/client";
 
 export const PAYMOB_LINKS: Record<Exclude<Plan, "FREE">, string> = {
-  BASIC: "https://paymob.link/nTJ2O",
-  PRO: "https://paymob.link/gjnSy",
-  PREMIUM: "https://paymob.link/LisPt",
+  BASIC: "https://paymob.xyz/CVf29Rwq/",
+  PRO: "https://paymob.xyz/UrfqyJEg/",
+  PREMIUM: "https://paymob.xyz/ebvePVh9/",
 };
 
 const TOKEN_TTL_MS = 30 * 60 * 1000;
