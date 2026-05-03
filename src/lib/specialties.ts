@@ -1,6 +1,8 @@
 export const SPECIALTIES = [
   "Internal Medicine",
   "General Surgery",
+  "Cardiothoracic Surgery",
+  "Plastic Surgery",
   "Vascular Surgery",
   "Diabetic Foot",
   "Wound Care",
