@@ -98,7 +98,6 @@ export default function MobileNav({
                 <form action={logoutAction} className="mt-1 border-t border-zinc-200 pt-2 dark:border-zinc-800">
                   <button
                     type="submit"
-                    onClick={() => setOpen(false)}
                     className="w-full rounded-lg px-4 py-3 text-start text-base font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
                   >
                     {signoutLabel}
