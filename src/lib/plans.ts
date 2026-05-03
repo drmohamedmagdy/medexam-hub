@@ -6,8 +6,7 @@ export type PlanLimits = {
   monthlyQuestions: number;
   maxQuestionsPerExam: number;
   fileUploadsPerMonth: number;
-  priceMonthly: number; // EGP — Paymob
-  priceMonthlyUsd: number; // USD — PayPal
+  priceMonthly: number;
   label: string;
   description: string;
   badge?: string;
@@ -19,7 +18,6 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     maxQuestionsPerExam: 10,
     fileUploadsPerMonth: 0,
     priceMonthly: 0,
-    priceMonthlyUsd: 0,
     label: "Free",
     description: "10 trial questions a month — get a feel for the AI before upgrading.",
   },
@@ -28,7 +26,6 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     maxQuestionsPerExam: 25,
     fileUploadsPerMonth: 0,
     priceMonthly: 699,
-    priceMonthlyUsd: 12.99,
     label: "Basic",
     description: "For regular practice and medical students.",
     badge: "Most popular",
@@ -38,7 +35,6 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     maxQuestionsPerExam: 30,
     fileUploadsPerMonth: 2,
     priceMonthly: 1500,
-    priceMonthlyUsd: 22.99,
     label: "Pro",
     description: "For exam candidates who need volume and file-based questions.",
     badge: "Best value",
@@ -48,7 +44,6 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     maxQuestionsPerExam: 40,
     fileUploadsPerMonth: 10,
     priceMonthly: 2500,
-    priceMonthlyUsd: 39.99,
     label: "Premium",
     description: "For specialists, consultants, and educators.",
   },

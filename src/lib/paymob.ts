@@ -7,18 +7,6 @@ export const PAYMOB_LINKS: Record<Exclude<Plan, "FREE">, string> = {
   PREMIUM: "https://paymob.link/LisPt",
 };
 
-export const PAYPAL_LINKS: Record<Exclude<Plan, "FREE">, string> = {
-  BASIC: "https://www.paypal.com/ncp/payment/8K3DHB63TFRK4",
-  PRO: "https://www.paypal.com/ncp/payment/FHVRLGAWHDXTQ",
-  PREMIUM: "https://www.paypal.com/ncp/payment/6XQCF354MG9PY",
-};
-
-export type PaymentProvider = "paymob" | "paypal";
-
-export function paymentLinkFor(provider: PaymentProvider, plan: Exclude<Plan, "FREE">): string {
-  return provider === "paymob" ? PAYMOB_LINKS[plan] : PAYPAL_LINKS[plan];
-}
-
 const TOKEN_TTL_MS = 30 * 60 * 1000;
 
 function getSecret(): string {
