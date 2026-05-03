@@ -26,6 +26,8 @@ export type GenerateExamInput = {
   topic?: string | null;
   examType?: string | null;
   language?: string | null;
+  sourceText?: string | null;
+  sourceFilename?: string | null;
   difficulty: Difficulty;
   numQuestions: number;
 };
@@ -104,12 +106,23 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
   }
   if (input.specialty) lines.push(`Specialty focus: ${input.specialty}`);
   if (input.topic) lines.push(`Topic focus: ${input.topic}`);
-  if (!examType && !input.specialty && !input.topic) {
+  if (!examType && !input.specialty && !input.topic && !input.sourceText) {
     lines.push("Topic: General medicine, mixed.");
   }
   lines.push(`Difficulty: ${input.difficulty} — ${DIFFICULTY_GUIDANCE[input.difficulty]}`);
   lines.push(`Number of questions: ${input.numQuestions}`);
   lines.push("Format: 4 options labeled A, B, C, D. Exactly one correct answer.");
+  if (input.sourceText) {
+    lines.push(
+      "IMPORTANT: Generate questions strictly from the source material below. Each question must test understanding of facts, mechanisms, or recommendations explicitly present in the source. Do not introduce content that is not supported by the source."
+    );
+    if (input.sourceFilename) {
+      lines.push(`Source filename: ${input.sourceFilename}`);
+    }
+    lines.push("---SOURCE MATERIAL BEGIN---");
+    lines.push(input.sourceText);
+    lines.push("---SOURCE MATERIAL END---");
+  }
   lines.push("Return JSON matching the provided schema. No prose outside the JSON.");
 
   const completion = await client.chat.completions.create({

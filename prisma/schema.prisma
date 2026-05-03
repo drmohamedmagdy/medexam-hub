@@ -62,6 +62,7 @@ model User {
   usage            UsageLog[]
   sessions         AuthSession[]
   payments         PaymentOrder[]
+  fileUploads      FileUpload[]
 }
 
 model AuthSession {
@@ -83,6 +84,7 @@ model Exam {
   specialty    String?
   topic        String?
   examType     String?
+  sourceFileId String?
   difficulty   Difficulty
   mode         ExamMode   @default(PRACTICE)
   status       ExamStatus @default(GENERATING)
@@ -93,9 +95,28 @@ model Exam {
   submittedAt  DateTime?
   scorePct     Float?
 
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions    Question[]
+  sourceFile   FileUpload? @relation(fields: [sourceFileId], references: [id], onDelete: SetNull)
 
+  @@index([userId, createdAt])
+}
+
+model FileUpload {
+  id            String   @id @default(cuid())
+  userId        String
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  charCount     Int
+  extractedText String
+  yearMonth     String
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exams         Exam[]
+
+  @@index([userId, yearMonth])
   @@index([userId, createdAt])
 }
 

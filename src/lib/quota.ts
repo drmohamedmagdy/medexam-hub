@@ -44,3 +44,15 @@ export async function recordQuestionsUsed(userId: string, count: number): Promis
 // Re-exported with the legacy name so older imports still resolve while we
 // finish migrating call sites.
 export const getMonthlyExamUsage = getMonthlyQuestionsUsage;
+
+// File-upload quota tracking. We use the FileUpload.yearMonth column directly
+// instead of a UsageLog row so we can also display the user's recent uploads.
+export async function getMonthlyFileUploads(userId: string, plan: Plan): Promise<QuotaStatus> {
+  const limit = PLAN_LIMITS[plan].fileUploadsPerMonth;
+  const ym = currentYearMonth();
+  const used = await prisma.fileUpload.count({
+    where: { userId, yearMonth: ym },
+  });
+  return { used, limit, remaining: Math.max(0, limit - used) };
+}
+

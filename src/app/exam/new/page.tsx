@@ -1,15 +1,29 @@
 import { requireUser } from "@/lib/auth";
-import { getMonthlyQuestionsUsage } from "@/lib/quota";
+import { getMonthlyQuestionsUsage, getMonthlyFileUploads } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
+import { prisma } from "@/lib/db";
 import NewExamForm from "./NewExamForm";
 
 export default async function NewExamPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
-  const usage = await getMonthlyQuestionsUsage(user.id, user.plan);
   const planCfg = PLAN_LIMITS[user.plan];
   const planLabel = t.plans.perPlan[user.plan].label;
+  const fileEnabled = planCfg.fileUploadsPerMonth > 0;
+
+  const [usage, fileUsage, recentFiles] = await Promise.all([
+    getMonthlyQuestionsUsage(user.id, user.plan),
+    fileEnabled ? getMonthlyFileUploads(user.id, user.plan) : Promise.resolve(null),
+    fileEnabled
+      ? prisma.fileUpload.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: { id: true, filename: true, charCount: true, createdAt: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
@@ -25,6 +39,14 @@ export default async function NewExamPage() {
         maxPerExam={planCfg.maxQuestionsPerExam}
         defaultLanguage={locale}
         labels={t.newExam}
+        fileEnabled={fileEnabled}
+        fileUsage={fileUsage}
+        recentFiles={recentFiles.map((f) => ({
+          id: f.id,
+          filename: f.filename,
+          charCount: f.charCount,
+          createdAt: f.createdAt.toISOString(),
+        }))}
         defaults={{
           generationMode: user.defaultGenerationMode === "exam" ? "exam" : "specialty",
           specialty: user.defaultSpecialty,
