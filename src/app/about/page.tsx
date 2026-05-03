@@ -27,7 +27,7 @@ export default function AboutPage() {
       <ul>
         <li><strong>Format-aware</strong>: USMLE feels like USMLE; MRCS Part B feels like an OSCE; the Egyptian Fellowship feels like the Egyptian Fellowship.</li>
         <li><strong>Language-flexible</strong>: study in your mother tongue. 10 languages including Arabic, Urdu, Persian, and Turkish — important for MENA and international users.</li>
-        <li><strong>Specialty-flexible</strong>: 20+ specialties built in, plus you can specify any topic the AI understands.</li>
+        <li><strong>Specialty-flexible</strong>: 50+ specialties built in, plus you can specify any topic the AI understands.</li>
         <li><strong>Pay in EGP via Paymob</strong>: built for the Egyptian and MENA market first.</li>
       </ul>
 
