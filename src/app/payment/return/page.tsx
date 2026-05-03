@@ -57,8 +57,9 @@ export default async function PaymentReturnPage() {
       </div>
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">You&apos;re on the {cfg.label} plan</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Your account has been upgraded. You can now generate up to {cfg.monthlyExams} exams per month
-        with up to {cfg.maxQuestionsPerExam} questions each.
+        Your account has been upgraded. You can now generate up to{" "}
+        {cfg.monthlyQuestions.toLocaleString()} questions per month, with up to{" "}
+        {cfg.maxQuestionsPerExam} questions per exam.
       </p>
       <p className="mt-1 text-xs text-zinc-500">
         Active for 30 days. Renew before {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}.

@@ -120,9 +120,7 @@ export default function TakeExam({
             <input type="hidden" name="answersJson" value={JSON.stringify(answers)} />
             <button
               type="submit"
-              disabled={!allAnswered}
-              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-              title={!allAnswered ? "Answer all questions to submit" : undefined}
+              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               Submit exam
             </button>

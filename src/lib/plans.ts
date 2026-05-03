@@ -3,7 +3,7 @@ import type { Plan } from "@/generated/prisma/client";
 export const CURRENCY = "EGP" as const;
 
 export type PlanLimits = {
-  monthlyExams: number;
+  monthlyQuestions: number;
   maxQuestionsPerExam: number;
   fileUploadsPerMonth: number;
   priceMonthly: number;
@@ -14,15 +14,15 @@ export type PlanLimits = {
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   FREE: {
-    monthlyExams: 1,
+    monthlyQuestions: 10,
     maxQuestionsPerExam: 10,
     fileUploadsPerMonth: 0,
     priceMonthly: 0,
     label: "Free",
-    description: "A 1-exam trial each month — get a feel for the AI before upgrading.",
+    description: "10 trial questions a month — get a feel for the AI before upgrading.",
   },
   BASIC: {
-    monthlyExams: 15,
+    monthlyQuestions: 375,
     maxQuestionsPerExam: 25,
     fileUploadsPerMonth: 0,
     priceMonthly: 699,
@@ -31,7 +31,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     badge: "Most popular",
   },
   PRO: {
-    monthlyExams: 50,
+    monthlyQuestions: 1500,
     maxQuestionsPerExam: 30,
     fileUploadsPerMonth: 2,
     priceMonthly: 1500,
@@ -40,7 +40,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     badge: "Best value",
   },
   PREMIUM: {
-    monthlyExams: 100,
+    monthlyQuestions: 4000,
     maxQuestionsPerExam: 40,
     fileUploadsPerMonth: 10,
     priceMonthly: 2500,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getMonthlyExamUsage } from "@/lib/quota";
+import { getMonthlyQuestionsUsage } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import UpgradeBanner from "@/components/UpgradeBanner";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
@@ -10,7 +10,7 @@ import type { Plan } from "@/generated/prisma/client";
 export default async function DashboardPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
-  const usage = await getMonthlyExamUsage(user.id, user.plan);
+  const usage = await getMonthlyQuestionsUsage(user.id, user.plan);
   const planCfg = PLAN_LIMITS[user.plan];
   const planTr = t.plans.perPlan[user.plan];
 
@@ -89,7 +89,8 @@ export default async function DashboardPage() {
         heading={t.dashboard.guideHeadings[user.plan]}
         tips={t.dashboard.guideTips[user.plan].map((tip) =>
           tip
-            .replace("{monthlyExams}", String(planCfg.monthlyExams))
+            .replace("{monthlyQuestions}", String(planCfg.monthlyQuestions))
+            .replace("{monthlyExams}", String(planCfg.monthlyQuestions))
             .replace("{maxQ}", String(planCfg.maxQuestionsPerExam))
             .replace("{files}", String(planCfg.fileUploadsPerMonth))
         )}

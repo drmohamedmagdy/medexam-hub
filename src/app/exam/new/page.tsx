@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getMonthlyExamUsage } from "@/lib/quota";
+import { getMonthlyQuestionsUsage } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import NewExamForm from "./NewExamForm";
@@ -7,7 +7,7 @@ import NewExamForm from "./NewExamForm";
 export default async function NewExamPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
-  const usage = await getMonthlyExamUsage(user.id, user.plan);
+  const usage = await getMonthlyQuestionsUsage(user.id, user.plan);
   const planCfg = PLAN_LIMITS[user.plan];
   const planLabel = t.plans.perPlan[user.plan].label;
 

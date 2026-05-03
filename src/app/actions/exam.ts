@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { generateExam } from "@/lib/exam-generator";
-import { getMonthlyExamUsage, recordExamCompleted } from "@/lib/quota";
+import { getMonthlyQuestionsUsage, recordQuestionsUsed } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { Difficulty, ExamMode, ExamStatus } from "@/generated/prisma/client";
 import { getAllExamTypeIds, findExamType } from "@/lib/exam-types";
@@ -56,10 +56,10 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     };
   }
 
-  const usage = await getMonthlyExamUsage(user.id, user.plan);
-  if (usage.remaining < 1) {
+  const usage = await getMonthlyQuestionsUsage(user.id, user.plan);
+  if (input.numQuestions > usage.remaining) {
     return {
-      error: `You have used all ${usage.limit} exams this month on the ${planCfg.label} plan. Upgrade to generate more.`,
+      error: `You have ${usage.remaining} of ${usage.limit} questions remaining this month on the ${planCfg.label} plan. Reduce the question count or upgrade for more.`,
     };
   }
 
@@ -139,8 +139,10 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     }),
   ]);
 
-  // Quota is consumed only when the exam is fully answered and submitted.
-  // See submitExamAction below.
+  // Quota is consumed at generation time based on the number of questions
+  // the AI actually produced (which may be slightly less than requested).
+  await recordQuestionsUsed(user.id, questions.length);
+
   redirect(`/exam/${exam.id}`);
 }
 
@@ -188,8 +190,6 @@ export async function submitExamAction(formData: FormData): Promise<void> {
   const answers = AnswerMapSchema.parse(JSON.parse(answersJson));
 
   const totalQuestions = exam!.questions.length;
-  const answeredCount = exam!.questions.filter((q) => answers[q.id]).length;
-  const fullyAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
 
   let correctCount = 0;
   await prisma.$transaction(
@@ -206,29 +206,16 @@ export async function submitExamAction(formData: FormData): Promise<void> {
 
   const scorePct = totalQuestions === 0 ? 0 : (correctCount / totalQuestions) * 100;
 
-  // Only mark COMPLETED and burn quota if every question was answered.
-  // Partial submissions leave the exam in READY state so the user can return,
-  // finish it, and have it count properly.
-  if (fullyAnswered) {
-    await prisma.exam.update({
-      where: { id: examId },
-      data: {
-        status: ExamStatus.COMPLETED,
-        submittedAt: new Date(),
-        scorePct,
-      },
-    });
-    await recordExamCompleted(user.id);
-  } else {
-    // Save progress (selected answers stored above) but don't count toward quota.
-    await prisma.exam.update({
-      where: { id: examId },
-      data: {
-        status: ExamStatus.IN_PROGRESS,
-        scorePct,
-      },
-    });
-  }
+  // Quota was already consumed at generation time. Submission just grades
+  // the answers and marks the exam complete — no further usage tracking.
+  await prisma.exam.update({
+    where: { id: examId },
+    data: {
+      status: ExamStatus.COMPLETED,
+      submittedAt: new Date(),
+      scorePct,
+    },
+  });
 
   redirect(`/exam/${examId}/results`);
 }

@@ -1232,7 +1232,7 @@ const EXTRAS: Record<Locale, Extras> = {
     dashboard: {
       welcome: "Welcome back, {name}", planSuffix: "plan", freeTrial: "Free trial",
       activeUntil: "Active until {date}", generateNew: "Generate new exam",
-      examsThisMonth: "Exams this month", remaining: "{n} remaining",
+      examsThisMonth: "Questions this month", remaining: "{n} remaining",
       examsCreated: "Exams created", completedShort: "{n} completed",
       averageScore: "Average score", acrossCompleted: "across completed exams",
       recentExams: "Recent exams", noExams: "No exams yet.", generateFirst: "Generate your first exam",
@@ -1272,7 +1272,7 @@ const EXTRAS: Record<Locale, Extras> = {
     dashboard: {
       welcome: "مرحبًا بعودتك، {name}", planSuffix: "الخطة", freeTrial: "تجربة مجانية",
       activeUntil: "نشطة حتى {date}", generateNew: "إنشاء امتحان جديد",
-      examsThisMonth: "الامتحانات هذا الشهر", remaining: "{n} متبقّية",
+      examsThisMonth: "الأسئلة هذا الشهر", remaining: "{n} متبقٍّ",
       examsCreated: "امتحانات تم إنشاؤها", completedShort: "{n} مكتملة",
       averageScore: "متوسط الدرجة", acrossCompleted: "عبر الامتحانات المكتملة",
       recentExams: "أحدث الامتحانات", noExams: "لا توجد امتحانات بعد.", generateFirst: "أنشئ أول امتحان لك",
