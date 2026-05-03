@@ -14,13 +14,13 @@ export default async function PlansPage() {
   const numberLocale = isRtlNumberLocale ? "en-US" : locale;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
       <div className="text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">{t.plans.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.plans.title}</h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">{t.plans.subtitle}</p>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4">
         {ORDER.map((plan) => {
           const cfg = PLAN_LIMITS[plan];
           const tp = t.plans.perPlan[plan];
@@ -85,21 +85,21 @@ export default async function PlansPage() {
                 {isCurrent ? (
                   <button
                     disabled
-                    className="w-full rounded-md bg-zinc-200 py-2 text-sm font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    className="w-full rounded-md bg-zinc-200 py-2.5 text-sm font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   >
                     {t.plans.current}
                   </button>
                 ) : !user ? (
                   <Link
                     href="/signup"
-                    className="block w-full rounded-md bg-blue-600 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+                    className="block w-full rounded-md bg-blue-600 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700"
                   >
                     {t.plans.signUp}
                   </Link>
                 ) : plan === "FREE" ? (
                   <Link
                     href="/dashboard"
-                    className="block w-full rounded-md border border-zinc-300 py-2 text-center text-sm font-medium dark:border-zinc-700"
+                    className="block w-full rounded-md border border-zinc-300 py-2.5 text-center text-sm font-medium dark:border-zinc-700"
                   >
                     {t.plans.goDashboard}
                   </Link>

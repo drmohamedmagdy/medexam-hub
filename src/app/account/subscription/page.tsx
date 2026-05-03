@@ -57,14 +57,14 @@ export default async function SubscriptionPage() {
   })();
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/dashboard" className="text-sm text-zinc-500 hover:text-blue-600">
         &larr; {tA.backToDashboard}
       </Link>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight">{tA.title}</h1>
+      <h1 className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">{tA.title}</h1>
 
       {/* Plan summary card */}
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -192,7 +192,8 @@ export default async function SubscriptionPage() {
           {payments.length === 0 ? (
             <div className="p-8 text-center text-sm text-zinc-500">{tA.paymentEmpty}</div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[36rem] text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
                 <tr>
                   <th className="px-4 py-3 text-start">{tA.colDate}</th>
@@ -232,6 +233,7 @@ export default async function SubscriptionPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </section>

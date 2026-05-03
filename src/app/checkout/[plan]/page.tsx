@@ -46,18 +46,18 @@ export default async function CheckoutPage({
   const cfg = PLAN_LIMITS[plan];
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/plans" className="text-sm text-zinc-500 hover:text-blue-600">
         &larr; Back to plans
       </Link>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">Complete your upgrade</h1>
+      <h1 className="mt-4 text-xl font-semibold tracking-tight sm:text-2xl">Complete your upgrade</h1>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         You&apos;ll be charged {formatPrice(cfg.priceMonthly)} per month and can cancel anytime.
       </p>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        <aside className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mt-6 grid gap-5 sm:mt-8 sm:gap-6 lg:grid-cols-[1fr_1.2fr]">
+        <aside className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
             Order summary
           </h2>
@@ -83,7 +83,7 @@ export default async function CheckoutPage({
           <p className="mt-1 text-xs text-zinc-500">Egyptian Pounds, taxes may apply</p>
         </aside>
 
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
             Payment
           </h2>

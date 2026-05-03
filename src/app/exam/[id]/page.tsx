@@ -24,12 +24,12 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
   if (exam.status === "COMPLETED") redirect(`/exam/${id}/results`);
   if (exam.status === "FAILED") {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center">
+      <div className="mx-auto max-w-2xl px-4 py-12 text-center sm:px-6 sm:py-16">
         <h1 className="text-2xl font-semibold">This exam failed to generate</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           The AI service didn&apos;t return a valid exam. Try again from the dashboard.
         </p>
-        <Link href="/exam/new" className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-white">
+        <Link href="/exam/new" className="mt-6 inline-block rounded-md bg-blue-600 px-5 py-2.5 text-white">
           New exam
         </Link>
       </div>

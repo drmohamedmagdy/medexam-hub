@@ -14,7 +14,7 @@ export default async function AnalyticsPage() {
 
   if (!ANALYTICS_PLANS.includes(user.plan as (typeof ANALYTICS_PLANS)[number])) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-16 text-center">
+      <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-16">
         <h1 className="text-2xl font-semibold tracking-tight">Analytics — Premium only</h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">
           Detailed accuracy breakdowns and weak-area recommendations are part of the Premium plan.
@@ -41,7 +41,7 @@ export default async function AnalyticsPage() {
 
   if (data.totalCompleted === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-16 text-center">
+      <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-16">
         <h1 className="text-2xl font-semibold tracking-tight">Not enough data yet</h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">
           Complete a couple of exams and we&apos;ll show you accuracy breakdowns and weak-area recommendations.
@@ -61,17 +61,17 @@ export default async function AnalyticsPage() {
   const strongSpecialties = pickStrongAreas(data.bySpecialty);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/dashboard" className="text-sm text-zinc-500 hover:text-blue-600">
         &larr; Back to dashboard
       </Link>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight">Analytics</h1>
+      <h1 className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">Analytics</h1>
       <p className="mt-1 text-sm text-zinc-500">
         Where you&apos;re strong, where you&apos;re weak, and what to revise next.
       </p>
 
       {/* Headline stats */}
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-6 grid gap-3 grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <Stat label="Exams completed" value={data.totalCompleted.toLocaleString()} hint={`${data.totalExams} total`} />
         <Stat
           label="Questions answered"
@@ -171,13 +171,13 @@ export default async function AnalyticsPage() {
           {data.recentScores.length === 0 ? (
             <p className="text-sm text-zinc-500">No completed exams yet.</p>
           ) : (
-            <div className="flex items-end gap-2 sm:gap-3 h-40">
+            <div className="flex items-end gap-1.5 sm:gap-3 h-40 overflow-x-auto">
               {[...data.recentScores].reverse().map((r) => (
                 <Link
                   href={`/exam/${r.id}/results`}
                   key={r.id}
                   title={`${r.title} — ${r.score}%`}
-                  className="group flex flex-1 flex-col items-center justify-end"
+                  className="group flex min-w-[18px] flex-1 flex-col items-center justify-end sm:min-w-0"
                 >
                   <span className="mb-1 text-xs font-mono text-zinc-500 opacity-0 group-hover:opacity-100">
                     {r.score}%
@@ -204,9 +204,9 @@ export default async function AnalyticsPage() {
 
 function Stat({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</div>
-      <div className="mt-2 text-2xl font-semibold">{value}</div>
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:p-5">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs">{label}</div>
+      <div className="mt-2 text-xl font-semibold sm:text-2xl">{value}</div>
       <div className="mt-1 text-xs text-zinc-500">{hint}</div>
     </div>
   );

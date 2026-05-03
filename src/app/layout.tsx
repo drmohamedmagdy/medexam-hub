@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import MobileNav from "@/components/MobileNav";
 import { isRtl } from "@/lib/i18n";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { isAdmin } from "@/lib/admin";
@@ -28,6 +29,23 @@ export default async function RootLayout({
   const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
   const t = getTranslations(locale);
   const dir = isRtl(locale) ? "rtl" : "ltr";
+  const showAdmin = user ? isAdmin(user) : false;
+
+  type NavItem = { href: string; label: string; emphasis?: "primary" | "admin" | "muted" };
+  const mobileItems: NavItem[] = user
+    ? [
+        { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
+        { href: "/dashboard", label: t.nav.dashboard },
+        { href: "/exams", label: t.dashboard.recentExams },
+        { href: "/plans", label: t.nav.plans },
+        ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
+        { href: "/account/subscription", label: t.account.manageLink },
+      ]
+    : [
+        { href: "/signup", label: t.nav.signup, emphasis: "primary" },
+        { href: "/login", label: t.nav.signin },
+        { href: "/plans", label: t.nav.plans },
+      ];
 
   return (
     <html lang={locale} dir={dir} className={`${geistSans.variable} h-full antialiased`}>
@@ -44,32 +62,34 @@ export default async function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
       >
-        <header className="border-b border-zinc-200 bg-white dark:bg-zinc-900 dark:border-zinc-800">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur dark:bg-zinc-900/90 dark:border-zinc-800">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Image
                 src="/logo.webp"
                 alt="MedExam Hub"
                 width={36}
                 height={36}
-                className="h-9 w-9"
+                className="h-8 w-8 sm:h-9 sm:w-9"
                 priority
               />
-              <span>MedExam Hub</span>
+              <span className="text-sm sm:text-base">MedExam Hub</span>
             </Link>
-            <div className="flex items-center gap-4 text-sm sm:gap-6">
+
+            {/* Desktop nav */}
+            <div className="hidden items-center gap-5 text-sm md:flex lg:gap-6">
               <Link href="/plans" className="hover:text-blue-600">{t.nav.plans}</Link>
               {user ? (
                 <>
                   <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
-                  {isAdmin(user) && (
+                  {showAdmin && (
                     <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">
                       Admin
                     </Link>
                   )}
                   <Link
                     href="/exam/new"
-                    className="hidden rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 sm:inline-block"
+                    className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
                   >
                     {t.nav.generate}
                   </Link>
@@ -95,11 +115,17 @@ export default async function RootLayout({
               )}
               <LanguageSwitcher current={locale} />
             </div>
+
+            {/* Mobile cluster: language + hamburger */}
+            <div className="flex items-center gap-1 md:hidden">
+              <LanguageSwitcher current={locale} />
+              <MobileNav items={mobileItems} signedIn={!!user} signoutLabel={t.nav.signout} />
+            </div>
           </nav>
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-zinc-200 dark:border-zinc-800">
-          <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-6 py-8 text-xs text-zinc-500 sm:flex-row sm:justify-between">
+        <footer className="border-t border-zinc-200 pb-24 dark:border-zinc-800 sm:pb-8">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-xs text-zinc-500 sm:px-6 sm:flex-row sm:justify-between">
             <p className="text-center sm:text-start">{t.footer}</p>
             <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
               <Link href="/about" className="hover:text-zinc-900 dark:hover:text-zinc-100">About</Link>

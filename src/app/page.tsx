@@ -26,7 +26,7 @@ export default async function Home() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-blue-950 dark:via-zinc-950 dark:to-cyan-950" />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.12),transparent_60%)]" />
 
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24 lg:gap-12">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24 lg:gap-12">
           {/* Left: Hero copy */}
           <div className="flex flex-col items-center text-center lg:items-start lg:text-start">
             <Image
@@ -34,29 +34,29 @@ export default async function Home() {
               alt="MedExam Hub"
               width={120}
               height={120}
-              className="h-24 w-24"
+              className="h-20 w-20 sm:h-24 sm:w-24"
               priority
             />
-            <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/70 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
+            <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/70 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {tH.badge}
             </span>
-            <h1 className="mt-5 max-w-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 max-w-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-5xl lg:text-6xl">
               {tH.title}
             </h1>
-            <p className="mt-5 max-w-xl text-base text-zinc-600 dark:text-zinc-400 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base text-zinc-600 dark:text-zinc-400 sm:mt-5 sm:text-lg">
               {tH.subtitle}
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/signup"
-                className="rounded-full bg-blue-600 px-6 py-3 text-base font-medium text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/40"
+                className="rounded-full bg-blue-600 px-6 py-3 text-center text-base font-medium text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/40"
               >
                 {tH.ctaStart}
               </Link>
               <Link
                 href="/plans"
-                className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3 text-base font-medium backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/60 dark:hover:bg-zinc-900"
+                className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/60 dark:hover:bg-zinc-900"
               >
                 {tH.ctaPlans.replace("{price}", String(PLAN_LIMITS.BASIC.priceMonthly))}
               </Link>
@@ -77,7 +77,7 @@ export default async function Home() {
 
           {/* Right: Demo MCQ card */}
           <div className="self-center lg:self-stretch">
-            <div className="relative rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl shadow-blue-600/5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl shadow-blue-600/5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
               <div className="text-xs font-medium uppercase tracking-wide text-blue-600">
                 {tHE.demoLabel}
               </div>
@@ -115,9 +115,9 @@ export default async function Home() {
       </section>
 
       {/* WHY (outcomes) */}
-      <section className="mx-auto max-w-6xl px-6 py-16">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="text-center">
-          <h2 className="text-3xl font-semibold tracking-tight">{tH.whyH}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{tH.whyH}</h2>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">{tH.whySub}</p>
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -136,9 +136,9 @@ export default async function Home() {
 
       {/* HOW IT WORKS */}
       <section className="border-y border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
-        <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="text-center">
-            <h2 className="text-3xl font-semibold tracking-tight">{tH.howH}</h2>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{tH.howH}</h2>
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">{tH.howSub}</p>
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -159,9 +159,9 @@ export default async function Home() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="mx-auto max-w-6xl px-6 py-16">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="text-center">
-          <h2 className="text-3xl font-semibold tracking-tight">{tHE.testimonialsH}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{tHE.testimonialsH}</h2>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">{tHE.testimonialsSub}</p>
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -185,9 +185,9 @@ export default async function Home() {
 
       {/* EXAM FORMATS */}
       <section className="border-y border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
-        <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="text-center">
-            <h2 className="text-3xl font-semibold tracking-tight">{tH.formatsH}</h2>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{tH.formatsH}</h2>
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">{tH.formatsSub}</p>
           </div>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -215,7 +215,7 @@ export default async function Home() {
       </section>
 
       {/* SPECIALTIES */}
-      <section className="mx-auto max-w-6xl px-6 py-16">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <h2 className="text-3xl font-semibold tracking-tight">{tH.specialtiesH}</h2>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
           {tH.specialtiesSub.replace("{count}", String(SPECIALTIES.length))}
@@ -230,8 +230,8 @@ export default async function Home() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="mx-auto max-w-4xl px-6 py-20 text-center">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{tH.finalH}</h2>
+      <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-4xl">{tH.finalH}</h2>
         <p className="mx-auto mt-3 max-w-xl text-zinc-600 dark:text-zinc-400">{tH.finalSub}</p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link

@@ -52,36 +52,36 @@ export default async function ExamHistoryPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/dashboard" className="text-sm text-zinc-500 hover:text-blue-600">
         &larr; {t.account.backToDashboard}
       </Link>
-      <div className="mt-3 flex items-end justify-between">
+      <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t.dashboard.recentExams}</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.dashboard.recentExams}</h1>
           <p className="mt-1 text-sm text-zinc-500">
             {total} {total === 1 ? "exam" : "exams"} total
           </p>
         </div>
         <Link
           href="/exam/new"
-          className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex w-full items-center justify-center rounded-full bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto sm:py-2"
         >
           {t.dashboard.generateNew}
         </Link>
       </div>
 
-      <form className="mt-6 flex flex-wrap items-center gap-2 text-sm">
+      <form className="mt-6 grid grid-cols-1 gap-2 text-sm sm:flex sm:flex-wrap sm:items-center">
         <input
           name="q"
           defaultValue={q}
-          placeholder="Search title, specialty, topic, exam type…"
-          className="w-72 rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          placeholder="Search title, specialty, topic…"
+          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900 sm:w-72"
         />
         <select
           name="status"
           defaultValue={status ?? ""}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto"
         >
           <option value="">All statuses</option>
           <option value="COMPLETED">Completed</option>
@@ -89,18 +89,20 @@ export default async function ExamHistoryPage({
           <option value="READY">Not started</option>
           <option value="FAILED">Failed</option>
         </select>
-        <button
-          type="submit"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Filter
-        </button>
-        <Link
-          href="/exams"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-        >
-          Reset
-        </Link>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="flex-1 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 sm:flex-none"
+          >
+            Filter
+          </button>
+          <Link
+            href="/exams"
+            className="flex-1 rounded-md border border-zinc-300 px-4 py-2.5 text-center text-sm dark:border-zinc-700 sm:flex-none"
+          >
+            Reset
+          </Link>
+        </div>
       </form>
 
       <div className="mt-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
@@ -130,39 +132,44 @@ export default async function ExamHistoryPage({
                 FAILED: t.dashboard.status.failed,
               };
               return (
-                <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-                  <div>
-                    <Link href={target} className="font-medium hover:text-blue-600">
-                      {e.title}
-                    </Link>
-                    <div className="mt-0.5 text-xs text-zinc-500">
-                      {[e.examType, e.specialty, e.difficulty, `${e.numQuestions} Q`, e.mode === "EXAM" ? "Timed" : "Practice"]
-                        .filter(Boolean)
-                        .join(" · ")}{" "}
-                      · {e.createdAt.toLocaleDateString(locale)}
+                <li key={e.id}>
+                  <Link
+                    href={target}
+                    className="flex items-start justify-between gap-3 p-4 text-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium leading-snug">{e.title}</div>
+                      <div className="mt-1 text-xs text-zinc-500">
+                        {[e.examType, e.specialty, e.difficulty, `${e.numQuestions} Q`, e.mode === "EXAM" ? "Timed" : "Practice"]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                      <div className="mt-0.5 text-xs text-zinc-400">
+                        {e.createdAt.toLocaleDateString(locale)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        e.status === "COMPLETED"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : e.status === "FAILED"
-                            ? "bg-red-100 text-red-800"
-                            : e.status === "IN_PROGRESS"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {statusMap[e.status] ?? e.status.toLowerCase()}
-                    </span>
-                    {e.scorePct !== null && (
-                      <span className="font-mono text-sm">{Math.round(e.scorePct)}%</span>
-                    )}
-                    <Link href={target} className="rounded-md border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
-                      {reviewable ? "Review" : "Open"}
-                    </Link>
-                  </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          e.status === "COMPLETED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : e.status === "FAILED"
+                              ? "bg-red-100 text-red-800"
+                              : e.status === "IN_PROGRESS"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {statusMap[e.status] ?? e.status.toLowerCase()}
+                      </span>
+                      {e.scorePct !== null && (
+                        <span className="font-mono text-xs text-zinc-500">{Math.round(e.scorePct)}%</span>
+                      )}
+                      <span className="text-xs font-medium text-blue-600">
+                        {reviewable ? "Review →" : "Open →"}
+                      </span>
+                    </div>
+                  </Link>
                 </li>
               );
             })}

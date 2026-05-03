@@ -31,37 +31,37 @@ export default async function DashboardPage() {
       : Math.round(completed.reduce((s, e) => s + (e.scorePct ?? 0), 0) / completed.length);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
             {t.dashboard.welcome.replace("{name}", user.name ?? user.email)}
           </h1>
-          <p className="mt-1 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
             <PlanBadge plan={user.plan} label={`${planTr.label} ${t.dashboard.planSuffix}`} />
-            <span className="text-zinc-400">·</span>
+            <span className="text-zinc-400" aria-hidden>·</span>
             <span>
               {user.planExpiresAt
                 ? t.dashboard.activeUntil.replace("{date}", user.planExpiresAt.toLocaleDateString(locale))
                 : t.dashboard.freeTrial}
             </span>
-            <span className="text-zinc-400">·</span>
+            <span className="text-zinc-400" aria-hidden>·</span>
             <Link href="/account/subscription" className="text-blue-600 hover:underline">
               {t.account.manageLink}
             </Link>
             {user.plan === "PREMIUM" && (
               <>
-                <span className="text-zinc-400">·</span>
+                <span className="text-zinc-400" aria-hidden>·</span>
                 <Link href="/analytics" className="text-blue-600 hover:underline">
                   Analytics
                 </Link>
               </>
             )}
-          </p>
+          </div>
         </div>
         <Link
           href="/exam/new"
-          className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex w-full items-center justify-center rounded-full bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto sm:py-2.5"
         >
           {t.dashboard.generateNew}
         </Link>
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
         dismissLabel={t.banner.dismiss}
       />
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-3 sm:mt-8 sm:gap-4 sm:grid-cols-3">
         <Stat
           label={t.dashboard.examsThisMonth}
           value={`${usage.used} / ${usage.limit}`}
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
         )}
       />
 
-      <div className="mt-12 flex items-center justify-between">
+      <div className="mt-10 flex items-center justify-between sm:mt-12">
         <h2 className="text-lg font-semibold">{t.dashboard.recentExams}</h2>
         <Link href="/exams" className="text-sm text-blue-600 hover:underline">
           View all →
@@ -121,22 +121,29 @@ export default async function DashboardPage() {
         ) : (
           <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {exams.map((e) => (
-              <li key={e.id} className="flex items-center justify-between p-4 text-sm">
-                <div>
-                  <Link href={`/exam/${e.id}`} className="font-medium hover:text-blue-600">{e.title}</Link>
-                  <div className="mt-0.5 text-xs text-zinc-500">
-                    {[e.examType, e.specialty, e.difficulty, `${e.numQuestions} Q`]
-                      .filter(Boolean)
-                      .join(" · ")}{" "}
-                    · {e.createdAt.toLocaleDateString(locale)}
+              <li key={e.id}>
+                <Link
+                  href={`/exam/${e.id}`}
+                  className="flex items-start justify-between gap-3 p-4 text-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium leading-snug">{e.title}</div>
+                    <div className="mt-1 text-xs text-zinc-500">
+                      {[e.examType, e.specialty, e.difficulty, `${e.numQuestions} Q`]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                    <div className="mt-0.5 text-xs text-zinc-400">
+                      {e.createdAt.toLocaleDateString(locale)}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <StatusBadge status={e.status} t={t.dashboard.status} />
-                  {e.scorePct !== null && (
-                    <div className="mt-1 text-xs text-zinc-500">{Math.round(e.scorePct)}%</div>
-                  )}
-                </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <StatusBadge status={e.status} t={t.dashboard.status} />
+                    {e.scorePct !== null && (
+                      <div className="text-xs font-mono text-zinc-500">{Math.round(e.scorePct)}%</div>
+                    )}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

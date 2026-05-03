@@ -137,7 +137,7 @@ export default function NewExamForm({
             <button
               type="button"
               onClick={() => setMode("specialty")}
-              className={`rounded-md py-2 font-medium transition ${
+              className={`rounded-md py-2.5 text-sm font-medium transition ${
                 mode === "specialty" ? "bg-white shadow-sm dark:bg-zinc-900" : "text-zinc-600 dark:text-zinc-400"
               }`}
             >
@@ -146,7 +146,7 @@ export default function NewExamForm({
             <button
               type="button"
               onClick={() => setMode("exam")}
-              className={`rounded-md py-2 font-medium transition ${
+              className={`rounded-md py-2.5 text-sm font-medium transition ${
                 mode === "exam" ? "bg-white shadow-sm dark:bg-zinc-900" : "text-zinc-600 dark:text-zinc-400"
               }`}
             >
@@ -156,7 +156,7 @@ export default function NewExamForm({
               <button
                 type="button"
                 onClick={() => setMode("file")}
-                className={`rounded-md py-2 font-medium transition ${
+                className={`rounded-md py-2.5 text-sm font-medium transition ${
                   mode === "file" ? "bg-white shadow-sm dark:bg-zinc-900" : "text-zinc-600 dark:text-zinc-400"
                 }`}
               >
@@ -173,7 +173,7 @@ export default function NewExamForm({
                 name="specialty"
                 required
                 defaultValue={specialtyDefault}
-                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               >
                 {SPECIALTIES.map((s) => (
                   <option key={s} value={s}>{s}</option>
@@ -188,7 +188,7 @@ export default function NewExamForm({
                 maxLength={120}
                 defaultValue={defaults?.topic ?? ""}
                 placeholder={labels.topicPlaceholder}
-                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               />
             </Field>
             <input type="hidden" name="examType" value="" />
@@ -203,7 +203,7 @@ export default function NewExamForm({
                 name="examType"
                 required
                 defaultValue={examTypeDefault}
-                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               >
                 {EXAM_TYPE_GROUPS.map((g) => (
                   <optgroup key={g.region} label={g.region}>
@@ -214,12 +214,12 @@ export default function NewExamForm({
                 ))}
               </select>
             </Field>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label={labels.specialtyOptional}>
                 <select
                   name="specialty"
                   defaultValue={defaults?.specialty ?? ""}
-                  className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                  className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
                 >
                   <option value="">{labels.any}</option>
                   {SPECIALTIES.map((s) => (
@@ -233,7 +233,7 @@ export default function NewExamForm({
                   maxLength={120}
                   defaultValue={defaults?.topic ?? ""}
                   placeholder={labels.topicOptionalPlaceholder}
-                  className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                  className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
                 />
               </Field>
             </div>
@@ -249,7 +249,7 @@ export default function NewExamForm({
                 required
                 value={selectedFileId}
                 onChange={(e) => setSelectedFileId(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               >
                 <option value="">— pick a file —</option>
                 {recentFiles.map((f) => (
@@ -269,7 +269,7 @@ export default function NewExamForm({
                 maxLength={120}
                 defaultValue=""
                 placeholder="e.g. Focus on chapter 3, or specific topic within the file"
-                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               />
             </Field>
             <input type="hidden" name="specialty" value="" />
@@ -277,13 +277,13 @@ export default function NewExamForm({
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={labels.difficulty}>
             <select
               name="difficulty"
               required
               defaultValue={difficultyDefault}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
             >
               {DIFFICULTY_KEYS.map((k) => (
                 <option key={k} value={k}>{labels.difficulties[k]}</option>
@@ -295,7 +295,7 @@ export default function NewExamForm({
               name="mode"
               required
               defaultValue={modeDefault}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
             >
               <option value="PRACTICE">{labels.modePractice}</option>
               <option value="EXAM">{labels.modeExam}</option>
@@ -303,7 +303,7 @@ export default function NewExamForm({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={labels.questionsMax.replace("{n}", String(maxPerExam))}>
             <input
               name="numQuestions"
@@ -312,7 +312,7 @@ export default function NewExamForm({
               min={1}
               max={maxPerExam}
               defaultValue={numQDefault}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
             />
           </Field>
           <Field label={labels.timeLimit}>
@@ -322,7 +322,7 @@ export default function NewExamForm({
               min={0}
               max={240}
               placeholder={labels.timeLimitPlaceholder}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
             />
           </Field>
         </div>
@@ -350,7 +350,7 @@ export default function NewExamForm({
         <button
           type="submit"
           disabled={pending || !canGenerate || (mode === "file" && !selectedFileId)}
-          className="w-full rounded-md bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="w-full rounded-md bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5 sm:text-sm"
         >
           {pending ? labels.generateLoading : labels.generate}
         </button>
