@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PRO
+  PREMIUM
+}
+
+enum Difficulty {
+  BEGINNER
+  STUDENT
+  INTERN
+  RESIDENT
+  SPECIALIST
+  CONSULTANT
+  BOARD
+}
+
+enum ExamMode {
+  PRACTICE
+  EXAM
+}
+
+enum ExamStatus {
+  GENERATING
+  READY
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id               String        @id @default(cuid())
+  email            String        @unique
+  name             String?
+  passwordHash     String
+  plan             Plan          @default(FREE)
+  planStartedAt    DateTime?
+  planExpiresAt    DateTime?
+  planCancelledAt  DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  exams            Exam[]
+  usage            UsageLog[]
+  sessions         AuthSession[]
+  payments         PaymentOrder[]
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Exam {
+  id           String     @id @default(cuid())
+  userId       String
+  title        String
+  specialty    String?
+  topic        String?
+  examType     String?
+  difficulty   Difficulty
+  mode         ExamMode   @default(PRACTICE)
+  status       ExamStatus @default(GENERATING)
+  numQuestions Int
+  timeLimitSec Int?
+  createdAt    DateTime   @default(now())
+  startedAt    DateTime?
+  submittedAt  DateTime?
+  scorePct     Float?
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions    Question[]
+
+  @@index([userId, createdAt])
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  examId        String
+  orderIndex    Int
+  prompt        String
+  optionsJson   String
+  correctId     String
+  explanation   String
+  learningPoint String?
+  selectedId    String?
+  isCorrect     Boolean?
+
+  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, orderIndex])
+}
+
+model UsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  count     Int      @default(1)
+  yearMonth String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, yearMonth])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model PaymentOrder {
+  id              String        @id @default(cuid())
+  userId          String
+  plan            Plan
+  amountCents     Int
+  currency        String        @default("EGP")
+  paymobOrderId   String?       @unique
+  paymobTxId      String?       @unique
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  paidAt          DateTime?
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}

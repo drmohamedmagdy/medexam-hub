@@ -1,0 +1,116 @@
+import Link from "next/link";
+import { getCurrentUser } from "@/lib/auth";
+import { PLAN_LIMITS } from "@/lib/plans";
+import type { Plan } from "@/generated/prisma/client";
+import { getLocale, getTranslations } from "@/lib/i18n-server";
+import UpgradeButton from "./UpgradeButton";
+
+const ORDER: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM"];
+
+export default async function PlansPage() {
+  const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
+  const t = getTranslations(locale);
+  const isRtlNumberLocale = locale === "ar" || locale === "ur" || locale === "fa";
+  const numberLocale = isRtlNumberLocale ? "en-US" : locale;
+
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="text-center">
+        <h1 className="text-3xl font-semibold tracking-tight">{t.plans.title}</h1>
+        <p className="mt-2 text-zinc-600 dark:text-zinc-400">{t.plans.subtitle}</p>
+      </div>
+
+      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {ORDER.map((plan) => {
+          const cfg = PLAN_LIMITS[plan];
+          const tp = t.plans.perPlan[plan];
+          const isCurrent = user?.plan === plan;
+          const isHighlighted = cfg.badge === "Most popular";
+          const badgeText =
+            cfg.badge === "Most popular"
+              ? t.plans.badgePopular
+              : cfg.badge === "Best value"
+                ? t.plans.badgeValue
+                : null;
+
+          return (
+            <div
+              key={plan}
+              className={`relative flex flex-col rounded-2xl border p-6 ${
+                isCurrent
+                  ? "border-blue-600 bg-blue-50 dark:bg-blue-950"
+                  : isHighlighted
+                    ? "border-blue-500 ring-2 ring-blue-500/30 bg-white dark:bg-zinc-900"
+                    : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+              }`}
+            >
+              {badgeText && !isCurrent && (
+                <span
+                  className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-semibold ${
+                    cfg.badge === "Most popular"
+                      ? "bg-blue-600 text-white"
+                      : "bg-emerald-600 text-white"
+                  }`}
+                >
+                  {badgeText}
+                </span>
+              )}
+
+              <h3 className="text-lg font-semibold">{tp.label}</h3>
+              <p className="mt-1 text-sm text-zinc-500">{tp.description}</p>
+              <div className="mt-4">
+                {cfg.priceMonthly === 0 ? (
+                  <span className="text-3xl font-semibold">{t.plans.free}</span>
+                ) : (
+                  <>
+                    <span className="text-3xl font-semibold">
+                      {cfg.priceMonthly.toLocaleString(numberLocale)}
+                    </span>
+                    <span className="mx-1 text-base font-medium text-zinc-500">
+                      {t.plans.currencyShort}
+                    </span>
+                    <span className="text-sm text-zinc-500">{t.plans.perMonth}</span>
+                  </>
+                )}
+              </div>
+              <ul className="mt-5 flex-1 space-y-2 text-sm">
+                {tp.features.map((f) => (
+                  <li key={f} className="flex gap-2">
+                    <span className="text-emerald-600">✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6">
+                {isCurrent ? (
+                  <button
+                    disabled
+                    className="w-full rounded-md bg-zinc-200 py-2 text-sm font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
+                    {t.plans.current}
+                  </button>
+                ) : !user ? (
+                  <Link
+                    href="/signup"
+                    className="block w-full rounded-md bg-blue-600 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    {t.plans.signUp}
+                  </Link>
+                ) : plan === "FREE" ? (
+                  <Link
+                    href="/dashboard"
+                    className="block w-full rounded-md border border-zinc-300 py-2 text-center text-sm font-medium dark:border-zinc-700"
+                  >
+                    {t.plans.goDashboard}
+                  </Link>
+                ) : (
+                  <UpgradeButton plan={plan} label={t.plans.upgrade} />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
