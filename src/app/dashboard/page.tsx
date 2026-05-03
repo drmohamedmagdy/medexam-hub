@@ -49,6 +49,14 @@ export default async function DashboardPage() {
             <Link href="/account/subscription" className="text-blue-600 hover:underline">
               {t.account.manageLink}
             </Link>
+            {(user.plan === "PRO" || user.plan === "PREMIUM") && (
+              <>
+                <span className="text-zinc-400">·</span>
+                <Link href="/analytics" className="text-blue-600 hover:underline">
+                  Analytics
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <Link
