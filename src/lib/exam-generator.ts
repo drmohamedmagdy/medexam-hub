@@ -21,6 +21,8 @@ const ExamSchema = z.object({
 
 export type GeneratedQuestion = z.infer<typeof QuestionSchema>;
 
+export type Audience = "MEDICAL" | "PARAMEDICAL" | "NONMEDICAL";
+
 export type GenerateExamInput = {
   specialty?: string | null;
   topic?: string | null;
@@ -28,6 +30,7 @@ export type GenerateExamInput = {
   language?: string | null;
   sourceText?: string | null;
   sourceFilename?: string | null;
+  audience?: Audience;
   difficulty: Difficulty;
   numQuestions: number;
 };
@@ -85,15 +88,37 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
 
   const examType = input.examType ? findExamType(input.examType) : null;
   const language = findLanguage(input.language ?? DEFAULT_LANGUAGE) ?? findLanguage(DEFAULT_LANGUAGE)!;
+  const audience: Audience = input.audience ?? "MEDICAL";
 
-  const system = [
-    "You are a medical question writer for a doctor-facing exam-prep platform.",
-    "Write clinically accurate single-best-answer MCQs aligned with current major guidelines.",
-    "Each question must have one unambiguously correct option and plausible distractors.",
-    "Explanations must be concise but cover why the correct answer is right and why each distractor is wrong.",
-    "Never invent dangerous patient-specific advice; questions are educational.",
-    `Output language: ${language.promptName}. Write the question stem, all answer options, the explanation, and the learning point in ${language.promptName}. Keep universally-recognized medical drug names, eponyms, and acronyms (e.g. ECG, CT, NSTEMI, NICE, AHA) in their standard form.`,
-  ].join(" ");
+  const personaByAudience: Record<Audience, string[]> = {
+    MEDICAL: [
+      "You are a medical question writer for a doctor-facing exam-prep platform.",
+      "Write clinically accurate single-best-answer MCQs aligned with current major guidelines.",
+      "Each question must have one unambiguously correct option and plausible distractors.",
+      "Explanations must be concise but cover why the correct answer is right and why each distractor is wrong.",
+      "Never invent dangerous patient-specific advice; questions are educational.",
+      `Output language: ${language.promptName}. Write the question stem, all answer options, the explanation, and the learning point in ${language.promptName}. Keep universally-recognized medical drug names, eponyms, and acronyms (e.g. ECG, CT, NSTEMI, NICE, AHA) in their standard form.`,
+    ],
+    PARAMEDICAL: [
+      "You are an expert question writer for paramedical and allied health students (nursing, pharmacy technology, medical lab science, radiography, paramedicine, dietetics, physiotherapy, dental hygiene, and similar).",
+      "Write accurate single-best-answer MCQs at the level appropriate for the named field.",
+      "Use scope-of-practice terminology and emphasize what the named role actually does — not full physician-level decision-making.",
+      "Each question must have one unambiguously correct option and plausible distractors.",
+      "Explanations must be concise but cover why the correct answer is right and why each distractor is wrong.",
+      "Never invent dangerous patient-specific advice; questions are educational.",
+      `Output language: ${language.promptName}. Write the question stem, all options, the explanation, and the learning point in ${language.promptName}. Keep universally-recognized clinical acronyms (ECG, CT, IV, PO) in their standard form.`,
+    ],
+    NONMEDICAL: [
+      "You are an expert question writer for general academic and professional subjects outside the medical field — math, the natural sciences, languages, business, law, computing, the humanities, and similar.",
+      "Write accurate single-best-answer MCQs that reflect the subject's standard curriculum and conventions.",
+      "Each question must have one unambiguously correct option and plausible distractors.",
+      "Explanations must be concise but cover why the correct answer is right and why each distractor is wrong.",
+      "Never produce medical advice; medical/clinical content is out of scope for this audience.",
+      `Output language: ${language.promptName}. Write the question stem, all options, the explanation, and the learning point in ${language.promptName}.`,
+    ],
+  };
+
+  const system = personaByAudience[audience].join(" ");
 
   const lines: string[] = [];
   lines.push(`Language: ${language.promptName}`);
@@ -104,10 +129,28 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
       "Match the typical question stem length, distractor style, and clinical-reasoning depth of this exam."
     );
   }
-  if (input.specialty) lines.push(`Specialty focus: ${input.specialty}`);
+  // For non-medical / paramedical custom exams, "specialty" carries the user-
+  // entered subject/field of study (e.g. "Nursing", "Mathematics"); don't label
+  // it "Specialty" because the AI biases medical otherwise.
+  if (input.specialty) {
+    const label = audience === "MEDICAL" ? "Specialty focus" : "Subject / field";
+    lines.push(`${label}: ${input.specialty}`);
+  }
   if (input.topic) lines.push(`Topic focus: ${input.topic}`);
+  if (audience === "PARAMEDICAL" && input.specialty) {
+    lines.push(
+      `Audience: ${input.specialty} students/professionals. Frame questions for their role and scope of practice.`
+    );
+  }
+  if (audience === "NONMEDICAL") {
+    lines.push("Audience: non-medical learners — keep content within the named subject; do not introduce clinical scenarios.");
+  }
   if (!examType && !input.specialty && !input.topic && !input.sourceText) {
-    lines.push("Topic: General medicine, mixed.");
+    if (audience === "NONMEDICAL") {
+      lines.push("Topic: General knowledge, mixed.");
+    } else {
+      lines.push("Topic: General medicine, mixed.");
+    }
   }
   lines.push(`Difficulty: ${input.difficulty} — ${DIFFICULTY_GUIDANCE[input.difficulty]}`);
   lines.push(`Number of questions: ${input.numQuestions}`);

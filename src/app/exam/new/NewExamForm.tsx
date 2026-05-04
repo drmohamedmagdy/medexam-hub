@@ -10,14 +10,14 @@ import type { Translations } from "@/lib/i18n";
 import type { Difficulty, ExamMode } from "@/generated/prisma/client";
 
 type Labels = Translations["newExam"];
-type GenerationMode = "specialty" | "exam" | "file";
+type GenerationMode = "specialty" | "exam" | "file" | "custom";
 
 const DIFFICULTY_KEYS = [
   "BEGINNER", "STUDENT", "INTERN", "RESIDENT", "SPECIALIST", "CONSULTANT", "BOARD",
 ] as const;
 
 type Defaults = {
-  generationMode: "specialty" | "exam";
+  generationMode: "specialty" | "exam" | "custom";
   specialty: string | null;
   topic: string | null;
   examType: string | null;
@@ -133,7 +133,7 @@ export default function NewExamForm({
         )}
 
         <div className="rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
-          <div className={`grid ${fileEnabled ? "grid-cols-3" : "grid-cols-2"} text-sm`}>
+          <div className={`grid grid-cols-2 ${fileEnabled ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-1 text-sm`}>
             <button
               type="button"
               onClick={() => setMode("specialty")}
@@ -163,6 +163,15 @@ export default function NewExamForm({
                 From file
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setMode("custom")}
+              className={`rounded-md py-2.5 text-sm font-medium transition ${
+                mode === "custom" ? "bg-white shadow-sm dark:bg-zinc-900" : "text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              Custom
+            </button>
           </div>
         </div>
 
@@ -274,6 +283,76 @@ export default function NewExamForm({
             </Field>
             <input type="hidden" name="specialty" value="" />
             <input type="hidden" name="examType" value="" />
+          </>
+        )}
+
+        {mode === "custom" && (
+          <>
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+              <p className="font-medium">Build your own exam</p>
+              <p className="mt-1 text-xs">
+                Whether you&apos;re a paramedical or non-medical student, you can easily build your own
+                exam. Choose your subject, set your difficulty, and generate questions that match your
+                learning goals.
+              </p>
+            </div>
+            <Field label="Subject / field of study">
+              <input
+                name="specialty"
+                required
+                minLength={2}
+                maxLength={80}
+                defaultValue={defaults?.generationMode === "custom" ? defaults?.specialty ?? "" : ""}
+                placeholder="e.g. Nursing, Pharmacy Technology, Mathematics, Biology, Law"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
+              />
+            </Field>
+            <Field label="Topic / focus area">
+              <input
+                name="topic"
+                required
+                minLength={2}
+                maxLength={120}
+                defaultValue={defaults?.generationMode === "custom" ? defaults?.topic ?? "" : ""}
+                placeholder="e.g. ECG basics for nurses, Linear algebra, Cell biology, Tort law"
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
+              />
+            </Field>
+            <Field label="Audience">
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
+                  <input
+                    type="radio"
+                    name="audience"
+                    value="PARAMEDICAL"
+                    defaultChecked
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  <span>
+                    <span className="block font-medium">Paramedical / health sciences</span>
+                    <span className="block text-xs text-zinc-500">
+                      Nursing, pharmacy tech, lab, radiography, EMT, dietetics…
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
+                  <input
+                    type="radio"
+                    name="audience"
+                    value="NONMEDICAL"
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  <span>
+                    <span className="block font-medium">Non-medical / general</span>
+                    <span className="block text-xs text-zinc-500">
+                      Math, sciences, languages, business, law, anything else.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </Field>
+            <input type="hidden" name="examType" value="" />
+            <input type="hidden" name="sourceFileId" value="" />
           </>
         )}
 

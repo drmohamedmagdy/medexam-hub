@@ -18,6 +18,7 @@ const NewExamSchema = z
     examType: z.string().max(80).optional().or(z.literal("")),
     sourceFileId: z.string().max(40).optional().or(z.literal("")),
     language: z.string().max(8).optional().or(z.literal("")),
+    audience: z.enum(["MEDICAL", "PARAMEDICAL", "NONMEDICAL"]).optional(),
     difficulty: z.nativeEnum(Difficulty),
     mode: z.nativeEnum(ExamMode),
     numQuestions: z.coerce.number().int().min(1).max(100),
@@ -38,6 +39,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     examType: formData.get("examType") ?? "",
     sourceFileId: formData.get("sourceFileId") ?? "",
     language: formData.get("language") ?? "",
+    audience: formData.get("audience") || undefined,
     difficulty: formData.get("difficulty"),
     mode: formData.get("mode"),
     numQuestions: formData.get("numQuestions"),
@@ -110,10 +112,18 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
   });
 
   // Remember the user's choices so the next /exam/new pre-fills them.
+  // generationMode: "custom" when the user is on the custom tab (audience set
+  // and no medical examType), "exam" when an examType is chosen, "specialty"
+  // otherwise (the default medical-specialty path).
+  const isCustom = !!input.audience && !input.examType && !input.sourceFileId;
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      defaultGenerationMode: input.examType ? "exam" : "specialty",
+      defaultGenerationMode: isCustom
+        ? "custom"
+        : input.examType
+          ? "exam"
+          : "specialty",
       defaultSpecialty: input.specialty || null,
       defaultTopic: input.topic || null,
       defaultExamType: input.examType || null,
@@ -134,6 +144,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       language: input.language || null,
       sourceText: trimmed?.text ?? null,
       sourceFilename: sourceFile?.filename ?? null,
+      audience: input.audience ?? "MEDICAL",
       difficulty: input.difficulty,
       numQuestions: input.numQuestions,
     });
