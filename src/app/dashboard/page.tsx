@@ -4,10 +4,17 @@ import { prisma } from "@/lib/db";
 import { getMonthlyQuestionsUsage } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import UpgradeBanner from "@/components/UpgradeBanner";
+import VerifyEmailBanner from "@/components/VerifyEmailBanner";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import type { Plan } from "@/generated/prisma/client";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ verify?: string }>;
+}) {
+  const sp = await searchParams;
+  const justVerified = sp.verify === "ok";
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
   const usage = await getMonthlyQuestionsUsage(user.id, user.plan);
@@ -66,6 +73,10 @@ export default async function DashboardPage() {
           {t.dashboard.generateNew}
         </Link>
       </div>
+
+      {(!user.emailVerifiedAt || justVerified) && (
+        <VerifyEmailBanner email={user.email} justVerified={justVerified} />
+      )}
 
       <UpgradeBanner
         plan={user.plan}

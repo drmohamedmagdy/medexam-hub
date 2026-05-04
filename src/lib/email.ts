@@ -5,11 +5,14 @@ import { prisma } from "@/lib/db";
 
 export type EmailCategory =
   | "welcome"
+  | "verification"
   | "renewal_7d"
   | "renewal_1d"
   | "expired"
   | "reengagement"
   | "broadcast";
+
+const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Branded sender. Requires medexamhub.org to be verified in Resend's dashboard
 // (SPF + DKIM TXT records added at Namecheap → Advanced DNS). Until then, set
@@ -254,4 +257,56 @@ function escape(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// ---------- Email-verification tokens ----------
+
+export function makeVerifyToken(userId: string): string {
+  const body = Buffer.from(
+    JSON.stringify({ uid: userId, exp: Date.now() + VERIFY_TOKEN_TTL_MS })
+  ).toString("base64url");
+  const sig = createHmac("sha256", getSecret()).update("verify:" + body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+export function verifyVerifyToken(token: string): { userId: string } | null {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
+  const expected = createHmac("sha256", getSecret()).update("verify:" + body).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (typeof parsed.uid !== "string") return null;
+    if (typeof parsed.exp !== "number" || parsed.exp < Date.now()) return null;
+    return { userId: parsed.uid };
+  } catch {
+    return null;
+  }
+}
+
+export function verificationEmail(
+  name: string | null,
+  userId: string,
+  email: string
+): { subject: string; html: string } {
+  const greet = name ? `Hi ${escape(name.split(" ")[0])},` : "Hi there,";
+  const url = `${appBaseUrl()}/api/auth/verify-email?token=${makeVerifyToken(userId)}`;
+  return {
+    subject: "Verify your MedExam Hub email",
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>Welcome to <strong>MedExam Hub</strong>. Please confirm that <strong>${escape(email)}</strong> is your email address by clicking below:</p>
+      <p>
+        <a href="${url}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Verify my email →</a>
+      </p>
+      <p style="font-size:13px;color:#666;">This link expires in 7 days. If the button doesn't work, copy this URL into your browser:</p>
+      <p style="font-size:12px;color:#666;word-break:break-all;">${url}</p>
+      <p style="font-size:13px;color:#666;">If you didn't create an account on MedExam Hub, you can safely ignore this email.</p>
+      <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+      <p style="font-size:11px; color:#888;">MedExam Hub · For medical education only.</p>
+    `),
+  };
 }
