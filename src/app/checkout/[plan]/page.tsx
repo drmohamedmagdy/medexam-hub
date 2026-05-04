@@ -10,22 +10,23 @@ type PaidPlan = (typeof PAID_PLANS)[number];
 
 const PLAN_FEATURES: Record<PaidPlan, string[]> = {
   BASIC: [
-    "15 AI exams per month",
-    "Up to 25 questions per exam",
-    "Generate by specialty or by exam type",
+    "20 AI exams per month (up to 400 questions)",
+    "Up to 20 questions per exam",
+    "Upload up to 3 files / month",
     "Exam history",
   ],
   PRO: [
     "50 AI exams per month (up to 1,500 questions)",
     "Up to 30 questions per exam",
-    "Upload up to 2 files / month (coming soon)",
-    "Exam history",
+    "Upload up to 6 files / month",
+    "Download completed exams as PDF",
   ],
   PREMIUM: [
-    "100 AI exams per month (up to 4,000 questions)",
-    "Up to 40 questions per exam",
-    "Upload up to 10 files / month (coming soon)",
-    "Advanced analytics (coming soon)",
+    "100 AI exams per month (up to 5,000 questions)",
+    "Up to 50 questions per exam",
+    "Upload up to 15 files / month",
+    "Advanced analytics",
+    "Download completed exams as PDF",
   ],
 };
 

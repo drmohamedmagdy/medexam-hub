@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { canExportPdf } from "@/lib/plans";
+import PrintPdfButton from "./PrintPdfButton";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,9 +19,10 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
 
   const correct = exam.questions.filter((q) => q.isCorrect).length;
   const total = exam.questions.length;
+  const canPdf = canExportPdf(user.plan);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 print:max-w-full print:px-0 print:py-0">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{exam.title}</h1>
@@ -33,6 +36,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
           <div className="text-sm text-zinc-500">{correct} of {total} correct</div>
         </div>
       </div>
+
+      {canPdf && (
+        <div className="mt-4 print:hidden">
+          <PrintPdfButton />
+        </div>
+      )}
 
       <ol className="mt-8 space-y-5 sm:mt-10 sm:space-y-6">
         {exam.questions.map((q, i) => {
@@ -96,7 +105,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         })}
       </ol>
 
-      <div className="mt-10 flex flex-col gap-2 sm:flex-row sm:justify-between">
+      <div className="mt-10 flex flex-col gap-2 sm:flex-row sm:justify-between print:hidden">
         <Link href="/dashboard" className="rounded-md border border-zinc-300 px-4 py-2.5 text-center text-sm dark:border-zinc-700">
           Back to dashboard
         </Link>

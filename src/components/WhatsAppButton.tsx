@@ -10,7 +10,7 @@ export default function WhatsAppButton() {
       rel="noopener noreferrer"
       aria-label="Chat with us on WhatsApp — Need help choosing your exam?"
       title="Need help choosing your exam? Chat with us on WhatsApp"
-      className="group fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full bg-emerald-500 p-3 text-sm font-medium text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600 sm:bottom-6 sm:right-6 sm:px-4 sm:py-3"
+      className="group fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full bg-emerald-500 p-3 text-sm font-medium text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600 sm:bottom-6 sm:right-6 sm:px-4 sm:py-3 print:hidden"
     >
       <svg
         viewBox="0 0 24 24"

@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* PDF / print styles for exam results download.
+ * Triggered when the user clicks "Download as PDF" → window.print() →
+ * "Save as PDF" in the browser's print dialog. */
+@media print {
+  /* Hide layout chrome that doesn't belong in an exam report. */
+  header,
+  footer,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+  /* Strip backgrounds and over-padded containers for cleaner pagination. */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  /* Avoid splitting question cards across pages where possible. */
+  ol > li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

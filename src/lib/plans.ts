@@ -27,17 +27,17 @@ const BASE_PRICES = { BASIC: 699, PRO: 1500, PREMIUM: 2500 } as const;
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   FREE: {
-    monthlyQuestions: 10,
+    monthlyQuestions: 20,
     maxQuestionsPerExam: 10,
-    fileUploadsPerMonth: 0,
+    fileUploadsPerMonth: 1,
     priceMonthly: 0,
     label: "Free",
-    description: "10 trial questions a month — get a feel for the AI before upgrading.",
+    description: "Try the AI — 2 short exams a month and one file upload.",
   },
   BASIC: {
-    monthlyQuestions: 375,
-    maxQuestionsPerExam: 25,
-    fileUploadsPerMonth: 0,
+    monthlyQuestions: 400,
+    maxQuestionsPerExam: 20,
+    fileUploadsPerMonth: 3,
     priceMonthly: discount(BASE_PRICES.BASIC),
     originalPriceMonthly: PROMO_DISCOUNT_PCT > 0 ? BASE_PRICES.BASIC : undefined,
     label: "Basic",
@@ -47,23 +47,30 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   PRO: {
     monthlyQuestions: 1500,
     maxQuestionsPerExam: 30,
-    fileUploadsPerMonth: 2,
+    fileUploadsPerMonth: 6,
     priceMonthly: discount(BASE_PRICES.PRO),
     originalPriceMonthly: PROMO_DISCOUNT_PCT > 0 ? BASE_PRICES.PRO : undefined,
     label: "Pro",
-    description: "For exam candidates who need volume and file-based questions.",
+    description: "For exam candidates who need volume, file uploads, and PDF exports.",
     badge: "Best value",
   },
   PREMIUM: {
-    monthlyQuestions: 4000,
-    maxQuestionsPerExam: 40,
-    fileUploadsPerMonth: 10,
+    monthlyQuestions: 5000,
+    maxQuestionsPerExam: 50,
+    fileUploadsPerMonth: 15,
     priceMonthly: discount(BASE_PRICES.PREMIUM),
     originalPriceMonthly: PROMO_DISCOUNT_PCT > 0 ? BASE_PRICES.PREMIUM : undefined,
     label: "Premium",
-    description: "For specialists, consultants, and educators.",
+    description: "For specialists, consultants, and educators — full analytics and PDF exports.",
   },
 };
+
+// Plans that can download a completed exam as a PDF.
+export const PDF_EXPORT_PLANS: Plan[] = ["PRO", "PREMIUM"];
+
+export function canExportPdf(plan: Plan): boolean {
+  return PDF_EXPORT_PLANS.includes(plan);
+}
 
 export function formatPrice(amount: number): string {
   if (amount === 0) return "Free";
