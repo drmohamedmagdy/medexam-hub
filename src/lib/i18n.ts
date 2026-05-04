@@ -1248,9 +1248,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Dismiss",
       perPlan: {
-        FREE: { title: "You're on the Free trial — 1 exam per month", body: "Upgrade to Basic for 15 exams a month and 25 questions per exam (699 EGP / month).", cta: "Upgrade to Basic" },
-        BASIC: { title: "Need more exams or longer ones?", body: "Pro gives you 50 exams a month, 30 questions per exam, and file uploads (1,500 EGP / month).", cta: "Upgrade to Pro" },
-        PRO: { title: "Going bigger?", body: "Premium unlocks 100 exams a month, 40 questions per exam, and 10 file uploads (2,500 EGP / month).", cta: "Upgrade to Premium" },
+        FREE: { title: "You're on the Free trial — 2 exams per month", body: "Upgrade to Basic for 20 exams a month (up to 400 questions), 20 questions per exam, and 3 file uploads.", cta: "Upgrade to Basic" },
+        BASIC: { title: "Need more exams or longer ones?", body: "Pro gives you 50 exams a month, 30 questions per exam, 6 file uploads, and PDF downloads of completed exams.", cta: "Upgrade to Pro" },
+        PRO: { title: "Going bigger?", body: "Premium unlocks 100 exams a month, 50 questions per exam, 15 file uploads, advanced analytics, and PDF exports.", cta: "Upgrade to Premium" },
       },
     },
     newExam: {
@@ -1288,9 +1288,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "إخفاء",
       perPlan: {
-        FREE: { title: "أنت على النسخة المجانية — امتحان واحد شهريًا", body: "ارقِ إلى Basic للحصول على 15 امتحانًا شهريًا و25 سؤالاً لكل امتحان (699 ج.م./شهر).", cta: "ترقية إلى Basic" },
-        BASIC: { title: "تحتاج امتحانات أكثر أو أطول؟", body: "Pro يمنحك 50 امتحانًا شهريًا و30 سؤالاً لكل امتحان ورفع الملفات (1,500 ج.م./شهر).", cta: "ترقية إلى Pro" },
-        PRO: { title: "تخطط لتوسعة أكبر؟", body: "Premium يفتح لك 100 امتحان شهريًا و40 سؤالاً لكل امتحان و10 ملفات يمكن رفعها (2,500 ج.م./شهر).", cta: "ترقية إلى Premium" },
+        FREE: { title: "أنت على النسخة المجانية — امتحانان شهريًا", body: "ارقِ إلى Basic للحصول على 20 امتحانًا شهريًا (حتى 400 سؤال)، و20 سؤالاً لكل امتحان، ورفع 3 ملفات.", cta: "ترقية إلى Basic" },
+        BASIC: { title: "تحتاج امتحانات أكثر أو أطول؟", body: "Pro يمنحك 50 امتحانًا شهريًا، و30 سؤالاً لكل امتحان، و6 ملفات، وتنزيل الامتحانات المكتملة كـ PDF.", cta: "ترقية إلى Pro" },
+        PRO: { title: "تخطط لتوسعة أكبر؟", body: "Premium يفتح لك 100 امتحان شهريًا، و50 سؤالاً لكل امتحان، و15 ملفًا، والتحليلات المتقدمة، وتصدير PDF.", cta: "ترقية إلى Premium" },
       },
     },
     newExam: {
@@ -1328,9 +1328,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Ignorer",
       perPlan: {
-        FREE: { title: "Vous êtes en essai gratuit — 1 examen par mois", body: "Passez à Basique pour 15 examens par mois et 25 questions par examen (699 EGP/mois).", cta: "Passer à Basique" },
-        BASIC: { title: "Besoin de plus d'examens ou plus longs ?", body: "Pro vous donne 50 examens par mois, 30 questions par examen et le téléversement de fichiers (1 500 EGP/mois).", cta: "Passer à Pro" },
-        PRO: { title: "Plus encore ?", body: "Premium débloque 100 examens par mois, 40 questions par examen et 10 fichiers (2 500 EGP/mois).", cta: "Passer à Premium" },
+        FREE: { title: "Vous êtes en essai gratuit — 2 examens par mois", body: "Passez à Basique pour 20 examens par mois (jusqu'à 400 questions), 20 questions par examen et 3 fichiers.", cta: "Passer à Basique" },
+        BASIC: { title: "Besoin de plus d'examens ou plus longs ?", body: "Pro vous donne 50 examens par mois, 30 questions par examen, 6 fichiers et le téléchargement PDF des examens terminés.", cta: "Passer à Pro" },
+        PRO: { title: "Plus encore ?", body: "Premium débloque 100 examens par mois, 50 questions par examen, 15 fichiers, des analyses avancées et l'export PDF.", cta: "Passer à Premium" },
       },
     },
     newExam: {
@@ -1368,9 +1368,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Descartar",
       perPlan: {
-        FREE: { title: "Estás en la prueba gratuita — 1 examen al mes", body: "Mejora a Básico para 15 exámenes al mes y 25 preguntas por examen (699 EGP/mes).", cta: "Mejorar a Básico" },
-        BASIC: { title: "¿Necesitas más exámenes o más largos?", body: "Pro te da 50 exámenes al mes, 30 preguntas por examen y subida de archivos (1.500 EGP/mes).", cta: "Mejorar a Pro" },
-        PRO: { title: "¿Aún más?", body: "Premium desbloquea 100 exámenes al mes, 40 preguntas por examen y 10 archivos (2.500 EGP/mes).", cta: "Mejorar a Premium" },
+        FREE: { title: "Estás en la prueba gratuita — 2 exámenes al mes", body: "Mejora a Básico para 20 exámenes al mes (hasta 400 preguntas), 20 preguntas por examen y 3 archivos.", cta: "Mejorar a Básico" },
+        BASIC: { title: "¿Necesitas más exámenes o más largos?", body: "Pro te da 50 exámenes al mes, 30 preguntas por examen, 6 archivos y descarga de exámenes en PDF.", cta: "Mejorar a Pro" },
+        PRO: { title: "¿Aún más?", body: "Premium desbloquea 100 exámenes al mes, 50 preguntas por examen, 15 archivos, analítica avanzada y exportación PDF.", cta: "Mejorar a Premium" },
       },
     },
     newExam: {
@@ -1408,9 +1408,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Schließen",
       perPlan: {
-        FREE: { title: "Sie nutzen die kostenlose Version — 1 Prüfung pro Monat", body: "Upgraden Sie auf Basic für 15 Prüfungen pro Monat und 25 Fragen pro Prüfung (699 EGP/Monat).", cta: "Auf Basic upgraden" },
-        BASIC: { title: "Mehr Prüfungen oder längere?", body: "Pro bietet 50 Prüfungen/Monat, 30 Fragen pro Prüfung und Datei-Upload (1.500 EGP/Monat).", cta: "Auf Pro upgraden" },
-        PRO: { title: "Noch mehr?", body: "Premium schaltet 100 Prüfungen/Monat, 40 Fragen pro Prüfung und 10 Datei-Uploads frei (2.500 EGP/Monat).", cta: "Auf Premium upgraden" },
+        FREE: { title: "Sie nutzen die kostenlose Version — 2 Prüfungen pro Monat", body: "Upgraden Sie auf Basic für 20 Prüfungen/Monat (bis 400 Fragen), 20 Fragen pro Prüfung und 3 Datei-Uploads.", cta: "Auf Basic upgraden" },
+        BASIC: { title: "Mehr Prüfungen oder längere?", body: "Pro bietet 50 Prüfungen/Monat, 30 Fragen pro Prüfung, 6 Datei-Uploads und PDF-Download abgeschlossener Prüfungen.", cta: "Auf Pro upgraden" },
+        PRO: { title: "Noch mehr?", body: "Premium schaltet 100 Prüfungen/Monat, 50 Fragen pro Prüfung, 15 Datei-Uploads, erweiterte Analytik und PDF-Export frei.", cta: "Auf Premium upgraden" },
       },
     },
     newExam: {
@@ -1448,9 +1448,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Chiudi",
       perPlan: {
-        FREE: { title: "Sei nella prova gratuita — 1 esame al mese", body: "Passa a Basic per 15 esami al mese e 25 domande per esame (699 EGP/mese).", cta: "Passa a Basic" },
-        BASIC: { title: "Ti servono più esami o più lunghi?", body: "Pro ti dà 50 esami al mese, 30 domande per esame e caricamento file (1.500 EGP/mese).", cta: "Passa a Pro" },
-        PRO: { title: "Vuoi di più?", body: "Premium sblocca 100 esami al mese, 40 domande per esame e 10 caricamenti file (2.500 EGP/mese).", cta: "Passa a Premium" },
+        FREE: { title: "Sei nella prova gratuita — 2 esami al mese", body: "Passa a Basic per 20 esami al mese (fino a 400 domande), 20 domande per esame e 3 caricamenti file.", cta: "Passa a Basic" },
+        BASIC: { title: "Ti servono più esami o più lunghi?", body: "Pro ti dà 50 esami al mese, 30 domande per esame, 6 caricamenti file e download PDF degli esami completati.", cta: "Passa a Pro" },
+        PRO: { title: "Vuoi di più?", body: "Premium sblocca 100 esami al mese, 50 domande per esame, 15 caricamenti file, analitica avanzata ed export PDF.", cta: "Passa a Premium" },
       },
     },
     newExam: {
@@ -1488,9 +1488,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Dispensar",
       perPlan: {
-        FREE: { title: "Você está no teste grátis — 1 exame por mês", body: "Mude para Básico para 15 exames por mês e 25 questões por exame (699 EGP/mês).", cta: "Mudar para Básico" },
-        BASIC: { title: "Precisa de mais exames ou maiores?", body: "Pro oferece 50 exames por mês, 30 questões por exame e upload de arquivos (1.500 EGP/mês).", cta: "Mudar para Pro" },
-        PRO: { title: "Indo maior?", body: "Premium desbloqueia 100 exames por mês, 40 questões por exame e 10 uploads (2.500 EGP/mês).", cta: "Mudar para Premium" },
+        FREE: { title: "Você está no teste grátis — 2 exames por mês", body: "Mude para Básico para 20 exames por mês (até 400 questões), 20 questões por exame e 3 uploads.", cta: "Mudar para Básico" },
+        BASIC: { title: "Precisa de mais exames ou maiores?", body: "Pro oferece 50 exames por mês, 30 questões por exame, 6 uploads e download de exames em PDF.", cta: "Mudar para Pro" },
+        PRO: { title: "Indo maior?", body: "Premium desbloqueia 100 exames por mês, 50 questões por exame, 15 uploads, análise avançada e exportação em PDF.", cta: "Mudar para Premium" },
       },
     },
     newExam: {
@@ -1528,9 +1528,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "Kapat",
       perPlan: {
-        FREE: { title: "Ücretsiz denemedesiniz — ayda 1 sınav", body: "Basic'e geçerek ayda 15 sınav ve sınav başına 25 soru (699 EGP/ay).", cta: "Basic'e yükselt" },
-        BASIC: { title: "Daha fazla veya daha uzun sınav mı?", body: "Pro ayda 50 sınav, sınav başına 30 soru ve dosya yükleme verir (1.500 EGP/ay).", cta: "Pro'ya yükselt" },
-        PRO: { title: "Daha da büyük mü?", body: "Premium ayda 100 sınav, sınav başına 40 soru ve 10 dosya yüklemenin kilidini açar (2.500 EGP/ay).", cta: "Premium'a yükselt" },
+        FREE: { title: "Ücretsiz denemedesiniz — ayda 2 sınav", body: "Basic'e geçerek ayda 20 sınav (en fazla 400 soru), sınav başına 20 soru ve 3 dosya yükleme.", cta: "Basic'e yükselt" },
+        BASIC: { title: "Daha fazla veya daha uzun sınav mı?", body: "Pro ayda 50 sınav, sınav başına 30 soru, 6 dosya yükleme ve tamamlanan sınavları PDF olarak indirme verir.", cta: "Pro'ya yükselt" },
+        PRO: { title: "Daha da büyük mü?", body: "Premium ayda 100 sınav, sınav başına 50 soru, 15 dosya yükleme, gelişmiş analizler ve PDF dışa aktarmanın kilidini açar.", cta: "Premium'a yükselt" },
       },
     },
     newExam: {
@@ -1568,9 +1568,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "بند کریں",
       perPlan: {
-        FREE: { title: "آپ مفت آزمائش پر ہیں — ماہانہ 1 امتحان", body: "Basic پر اپ گریڈ کریں — ماہانہ 15 امتحانات اور فی امتحان 25 سوالات (699 EGP/ماہ)۔", cta: "Basic پر اپ گریڈ" },
-        BASIC: { title: "زیادہ یا طویل امتحانات چاہئیں؟", body: "Pro آپ کو ماہانہ 50 امتحانات، فی امتحان 30 سوالات اور فائل اپ لوڈ دیتا ہے (1,500 EGP/ماہ)۔", cta: "Pro پر اپ گریڈ" },
-        PRO: { title: "اور بڑا چاہیے؟", body: "Premium ماہانہ 100 امتحانات، فی امتحان 40 سوالات اور 10 فائل اپ لوڈز کھولتا ہے (2,500 EGP/ماہ)۔", cta: "Premium پر اپ گریڈ" },
+        FREE: { title: "آپ مفت آزمائش پر ہیں — ماہانہ 2 امتحانات", body: "Basic پر اپ گریڈ کریں — ماہانہ 20 امتحانات (400 سوالات تک)، فی امتحان 20 سوالات اور 3 فائل اپ لوڈز۔", cta: "Basic پر اپ گریڈ" },
+        BASIC: { title: "زیادہ یا طویل امتحانات چاہئیں؟", body: "Pro آپ کو ماہانہ 50 امتحانات، فی امتحان 30 سوالات، 6 فائل اپ لوڈز اور مکمل امتحانات کا PDF ڈاؤن لوڈ دیتا ہے۔", cta: "Pro پر اپ گریڈ" },
+        PRO: { title: "اور بڑا چاہیے؟", body: "Premium ماہانہ 100 امتحانات، فی امتحان 50 سوالات، 15 فائل اپ لوڈز، اعلیٰ تجزیات اور PDF ایکسپورٹ کھولتا ہے۔", cta: "Premium پر اپ گریڈ" },
       },
     },
     newExam: {
@@ -1608,9 +1608,9 @@ const EXTRAS: Record<Locale, Extras> = {
     banner: {
       dismiss: "بستن",
       perPlan: {
-        FREE: { title: "شما در آزمایش رایگان هستید — ماهی ۱ آزمون", body: "به پلن پایه ارتقا دهید — ماهی ۱۵ آزمون و هر آزمون ۲۵ سؤال (۶۹۹ EGP/ماه).", cta: "ارتقا به پایه" },
-        BASIC: { title: "آزمون‌های بیشتر یا طولانی‌تر می‌خواهید؟", body: "پلن حرفه‌ای ماهی ۵۰ آزمون، ۳۰ سؤال در هر آزمون و آپلود فایل به شما می‌دهد (۱٬۵۰۰ EGP/ماه).", cta: "ارتقا به حرفه‌ای" },
-        PRO: { title: "می‌خواهید بزرگ‌تر شوید؟", body: "پلن پریمیوم ماهی ۱۰۰ آزمون، ۴۰ سؤال در هر آزمون و ۱۰ آپلود فایل را باز می‌کند (۲٬۵۰۰ EGP/ماه).", cta: "ارتقا به پریمیوم" },
+        FREE: { title: "شما در آزمایش رایگان هستید — ماهی ۲ آزمون", body: "به پلن پایه ارتقا دهید — ماهی ۲۰ آزمون (تا ۴۰۰ سؤال)، هر آزمون ۲۰ سؤال و ۳ آپلود فایل.", cta: "ارتقا به پایه" },
+        BASIC: { title: "آزمون‌های بیشتر یا طولانی‌تر می‌خواهید؟", body: "پلن حرفه‌ای ماهی ۵۰ آزمون، ۳۰ سؤال در هر آزمون، ۶ آپلود فایل و دانلود آزمون‌های کامل‌شده به PDF را به شما می‌دهد.", cta: "ارتقا به حرفه‌ای" },
+        PRO: { title: "می‌خواهید بزرگ‌تر شوید؟", body: "پلن پریمیوم ماهی ۱۰۰ آزمون، ۵۰ سؤال در هر آزمون، ۱۵ آپلود فایل، تحلیل پیشرفته و خروجی PDF را باز می‌کند.", cta: "ارتقا به پریمیوم" },
       },
     },
     newExam: {
