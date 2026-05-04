@@ -1,11 +1,12 @@
 import "server-only";
 import { Resend } from "resend";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 
 export type EmailCategory =
   | "welcome"
   | "verification"
+  | "password_reset"
   | "renewal_7d"
   | "renewal_1d"
   | "expired"
@@ -13,6 +14,7 @@ export type EmailCategory =
   | "broadcast";
 
 const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour — short window for password reset
 
 // Branded sender. Requires medexamhub.org to be verified in Resend's dashboard
 // (SPF + DKIM TXT records added at Namecheap → Advanced DNS). Until then, set
@@ -313,6 +315,99 @@ export function verifyVerifyToken(token: string): { userId: string } | null {
   } catch {
     return null;
   }
+}
+
+// ---------- Password-reset tokens ----------
+//
+// Tokens bind the userId, a fingerprint of the current passwordHash, and an
+// expiry. When the password is changed (successfully or otherwise), the new
+// passwordHash produces a different fingerprint so any outstanding reset
+// token automatically becomes invalid. This also makes tokens single-use:
+// the moment a reset succeeds, that token can't be replayed.
+
+function passwordHashFingerprint(passwordHash: string): string {
+  return createHash("sha256").update(passwordHash).digest("base64url").slice(0, 12);
+}
+
+export function makeResetToken(userId: string, passwordHash: string): string {
+  const body = Buffer.from(
+    JSON.stringify({
+      uid: userId,
+      ph: passwordHashFingerprint(passwordHash),
+      exp: Date.now() + RESET_TOKEN_TTL_MS,
+    })
+  ).toString("base64url");
+  const sig = createHmac("sha256", getSecret()).update("reset:" + body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+export function verifyResetToken(
+  token: string,
+  currentPasswordHash: string
+): { userId: string } | null {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
+  const expected = createHmac("sha256", getSecret()).update("reset:" + body).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (typeof parsed.uid !== "string") return null;
+    if (typeof parsed.ph !== "string") return null;
+    if (typeof parsed.exp !== "number" || parsed.exp < Date.now()) return null;
+    if (parsed.ph !== passwordHashFingerprint(currentPasswordHash)) return null;
+    return { userId: parsed.uid };
+  } catch {
+    return null;
+  }
+}
+
+// Light variant that only checks signature + expiry (used by the reset page
+// to render the form before the user has typed their new password — we
+// intentionally don't load the user's current passwordHash here to avoid an
+// extra DB hit, the full check happens when the new password is submitted).
+export function peekResetToken(token: string): { userId: string } | null {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
+  const expected = createHmac("sha256", getSecret()).update("reset:" + body).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (typeof parsed.uid !== "string") return null;
+    if (typeof parsed.exp !== "number" || parsed.exp < Date.now()) return null;
+    return { userId: parsed.uid };
+  } catch {
+    return null;
+  }
+}
+
+export function passwordResetEmail(
+  name: string | null,
+  token: string
+): { subject: string; html: string } {
+  const firstName = name ? escape(name.split(" ")[0]) : null;
+  const greet = firstName ? `Hi ${firstName},` : "Hi there,";
+  const url = `${appBaseUrl()}/reset-password?token=${token}`;
+  return {
+    subject: "Reset your MedExam Hub password",
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>We received a request to reset the password on your <strong>MedExam Hub</strong> account. Click the button below to choose a new one:</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${url}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Reset my password →</a>
+      </p>
+      <p style="font-size:13px;color:#666;">This link expires in 1 hour. If the button doesn't work, copy this URL into your browser:</p>
+      <p style="font-size:12px;color:#666;word-break:break-all;">${url}</p>
+      <p style="font-size:13px;color:#666;margin-top:24px;">If you didn't request a password reset, you can safely ignore this email — your password won't change.</p>
+      <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+      <p style="font-size:11px; color:#888;">MedExam Hub · For medical education only.</p>
+    `),
+  };
 }
 
 export function verificationEmail(
