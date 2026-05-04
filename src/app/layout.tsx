@@ -62,7 +62,7 @@ export default async function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
       >
-        <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur dark:bg-zinc-900/90 dark:border-zinc-800">
+        <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur dark:bg-slate-900/80 dark:border-slate-800/60">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Image
@@ -124,7 +124,7 @@ export default async function RootLayout({
           </nav>
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-zinc-200 pb-24 dark:border-zinc-800 sm:pb-8">
+        <footer className="border-t border-zinc-200 pb-24 dark:border-slate-800/60 sm:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-xs text-zinc-500 sm:px-6 sm:flex-row sm:justify-between">
             <p className="text-center sm:text-start">{t.footer}</p>
             <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
