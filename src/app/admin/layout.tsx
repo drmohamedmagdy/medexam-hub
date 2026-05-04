@@ -18,6 +18,7 @@ export default async function AdminLayout({
           <Link href="/admin/users" className="hover:underline">Users</Link>
           <Link href="/admin/payments" className="hover:underline">Payments</Link>
           <Link href="/admin/exams" className="hover:underline">Exams</Link>
+          <Link href="/admin/promos" className="hover:underline">Promos</Link>
         </nav>
       </div>
       {children}

@@ -70,6 +70,7 @@ model User {
   payments         PaymentOrder[]
   fileUploads      FileUpload[]
   emailLogs        EmailLog[]
+  promoRedemptions PromoRedemption[]
 }
 
 model EmailLog {
@@ -187,10 +188,60 @@ model PaymentOrder {
   paymobOrderId   String?       @unique
   paymobTxId      String?       @unique
   status          PaymentStatus @default(PENDING)
+  promoCodeId     String?
+  promoCodeUsed   String?
+  originalCents   Int?
   createdAt       DateTime      @default(now())
   paidAt          DateTime?
 
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoCode       PromoCode?       @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  redemption      PromoRedemption?
 
   @@index([userId, createdAt])
+  @@index([promoCodeId])
+}
+
+enum PromoDiscountType {
+  PERCENT
+  FIXED
+}
+
+model PromoCode {
+  id              String            @id @default(cuid())
+  code            String            @unique
+  discountType    PromoDiscountType
+  discountValue   Int
+  applicablePlans String
+  maxUses         Int?
+  maxUsesPerUser  Int               @default(1)
+  expiresAt       DateTime?
+  isActive        Boolean           @default(true)
+  paymobLinks     String?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  redemptions     PromoRedemption[]
+  paymentOrders   PaymentOrder[]
+
+  @@index([isActive])
+}
+
+model PromoRedemption {
+  id             String   @id @default(cuid())
+  promoCodeId    String
+  userId         String
+  plan           Plan
+  originalCents  Int
+  finalCents     Int
+  paymentOrderId String?  @unique
+  redeemedAt     DateTime @default(now())
+
+  promoCode      PromoCode      @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentOrder   PaymentOrder?  @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+
+  @@index([promoCodeId])
+  @@index([userId, promoCodeId])
 }

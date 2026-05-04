@@ -5,9 +5,11 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PAYMOB_LINKS, newCheckoutToken } from "@/lib/paymob";
 import { PLAN_LIMITS } from "@/lib/plans";
+import { validatePromoCode } from "@/lib/promo";
 
 const Body = z.object({
   plan: z.enum(["BASIC", "PRO", "PREMIUM"]),
+  promoCode: z.string().max(40).nullable().optional(),
 });
 
 const CHECKOUT_COOKIE = "mxh_checkout";
@@ -18,17 +20,60 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return new NextResponse("Invalid request", { status: 400 });
 
-  const { plan } = parsed.data;
+  const { plan, promoCode } = parsed.data;
   const cfg = PLAN_LIMITS[plan];
+  const originalCents = cfg.priceMonthly * 100;
+
+  // Re-validate the promo on the server. NEVER trust the client's claimed price.
+  let amountCents = originalCents;
+  let promoId: string | null = null;
+  let promoLinkOverride: string | null = null;
+  let promoCodeStored: string | null = null;
+
+  if (promoCode && promoCode.trim()) {
+    const validation = await validatePromoCode({
+      code: promoCode,
+      plan,
+      userId: user.id,
+    });
+    if (!validation.ok) {
+      return NextResponse.json(
+        { error: validation.message },
+        { status: 400 }
+      );
+    }
+    amountCents = validation.finalCents;
+    promoId = validation.promoId;
+    promoLinkOverride = validation.paymobLinkOverride;
+    promoCodeStored = validation.code;
+  }
 
   const order = await prisma.paymentOrder.create({
     data: {
       userId: user.id,
       plan,
-      amountCents: cfg.priceMonthly * 100,
+      amountCents,
       currency: "EGP",
+      promoCodeId: promoId,
+      promoCodeUsed: promoCodeStored,
+      originalCents: promoId ? originalCents : null,
     },
   });
+
+  // Record the redemption immediately on order creation (linked to the order so we
+  // can correlate later when payment confirms via Paymob webhook / return).
+  if (promoId) {
+    await prisma.promoRedemption.create({
+      data: {
+        promoCodeId: promoId,
+        userId: user.id,
+        plan,
+        originalCents,
+        finalCents: amountCents,
+        paymentOrderId: order.id,
+      },
+    });
+  }
 
   const token = newCheckoutToken(order.id);
   const jar = await cookies();
@@ -40,9 +85,10 @@ export async function POST(req: Request) {
     maxAge: COOKIE_TTL_SEC,
   });
 
-  // Append unique merchant_order_id so the transaction is traceable in Paymob's
-  // dashboard and any future webhook can match it back to our PaymentOrder row.
-  const linkUrl = new URL(PAYMOB_LINKS[plan]);
+  // Use the promo's override Paymob link if provided (per-promo discounted prices),
+  // otherwise fall back to the default link for the plan.
+  const baseLink = promoLinkOverride ?? PAYMOB_LINKS[plan];
+  const linkUrl = new URL(baseLink);
   linkUrl.searchParams.set("merchant_order_id", `mxh_${order.id}`);
 
   return NextResponse.json({ url: linkUrl.toString() });
