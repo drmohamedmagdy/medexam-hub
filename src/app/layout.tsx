@@ -118,8 +118,24 @@ export default async function RootLayout({
               <LanguageSwitcher current={locale} />
             </div>
 
-            {/* Mobile cluster: language + hamburger */}
+            {/* Mobile cluster: signed-out CTAs + language + hamburger */}
             <div className="flex items-center gap-1 md:hidden">
+              {!user && (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-2 py-1 text-xs font-medium text-zinc-700 hover:text-blue-600 dark:text-zinc-300"
+                  >
+                    {t.nav.signin}
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700"
+                  >
+                    {t.nav.signup}
+                  </Link>
+                </>
+              )}
               <LanguageSwitcher current={locale} />
               <MobileNav items={mobileItems} signedIn={!!user} signoutLabel={t.nav.signout} />
             </div>
