@@ -1,11 +1,11 @@
 export const metadata = { title: "Contact — MedExam Hub" };
 
 const WHATSAPP = "https://wa.me/201226218004";
-const EMAIL = "mohamedpadr233@gmail.com";
+const EMAIL = "info@medexamhub.com";
 
 export default function ContactPage() {
   return (
-    <article className="mx-auto max-w-3xl px-6 py-12 prose prose-zinc dark:prose-invert">
+    <article className="mx-auto max-w-3xl px-4 py-10 prose prose-zinc dark:prose-invert sm:px-6 sm:py-12">
       <h1>Contact</h1>
       <p>We&apos;re a small team — fastest way to reach us is WhatsApp.</p>
 
