@@ -1,7 +1,20 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Plan } from "@/generated/prisma/client";
 
+// 50%-OFF promo links — charge Basic 350, Pro 750, Premium 1250 EGP.
+// These are active by default while PROMO_DISCOUNT_PCT === 50 in src/lib/plans.ts.
+// To end the promo: revert PROMO_DISCOUNT_PCT to 0 AND swap PAYMOB_LINKS back
+// to LEGACY_PAYMOB_LINKS_FULL_PRICE below.
 export const PAYMOB_LINKS: Record<Exclude<Plan, "FREE">, string> = {
+  BASIC: "https://paymob.xyz/F7bYDEct/",
+  PRO: "https://paymob.xyz/NrzwHqtz/",
+  PREMIUM: "https://paymob.xyz/60HF1rQy/",
+};
+
+// Original full-price links — kept here so the 50% promo can be reverted by
+// swapping these into PAYMOB_LINKS. Do NOT delete; they're still configured
+// in Paymob's dashboard at 699 / 1500 / 2500 EGP.
+export const LEGACY_PAYMOB_LINKS_FULL_PRICE: Record<Exclude<Plan, "FREE">, string> = {
   BASIC: "https://paymob.xyz/CVf29Rwq/",
   PRO: "https://paymob.xyz/UrfqyJEg/",
   PREMIUM: "https://paymob.xyz/ebvePVh9/",
