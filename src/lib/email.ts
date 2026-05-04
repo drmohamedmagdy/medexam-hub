@@ -157,19 +157,47 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
 // ---------- Templates ----------
 
 export function welcomeEmail(name: string | null, userId: string): { subject: string; html: string } {
-  const greet = name ? `Hi ${escape(name.split(" ")[0])},` : "Hi there,";
+  const firstName = name ? escape(name.split(" ")[0]) : null;
+  const greet = firstName ? `Welcome aboard, ${firstName}! 👋` : "Welcome aboard! 👋";
+  const subject = firstName ? `Welcome to MedExam Hub, ${firstName}` : "Welcome to MedExam Hub";
   const url = appBaseUrl();
   return {
-    subject: "Welcome to MedExam Hub",
+    subject,
     html: wrapHtml(`
-      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
-      <p>Welcome to <strong>MedExam Hub</strong>. Your account is ready.</p>
-      <p>You're on the Free trial — 10 questions per month. To get started, generate your first AI exam:</p>
-      <p>
-        <a href="${url}/exam/new" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Generate your first exam →</a>
+      <h1 style="font-size:24px;margin:0 0 16px;color:#111;">${greet}</h1>
+      <p style="font-size:15px;">We're so glad you joined <strong>MedExam Hub</strong>. You're now part of a growing community of doctors, residents, paramedical students, and lifelong learners preparing for their next big exam — across MENA and beyond.</p>
+
+      <div style="background:#eff6ff;border-left:3px solid #2563eb;padding:14px 18px;margin:24px 0;border-radius:4px;">
+        <p style="margin:0;font-size:14px;color:#1e3a8a;">
+          <strong>You're on the Free trial</strong> — 2 AI exams a month (up to 10 questions each), plus 1 file upload. No card required, no expiry.
+        </p>
+      </div>
+
+      <p style="font-size:18px;font-weight:600;margin:28px 0 12px;">Ready to study?</p>
+
+      <p style="text-align:center;margin:20px 0 28px;">
+        <a href="${url}/exam/new" style="display:inline-block;background:#2563eb;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 2px 8px rgba(37,99,235,0.25);">Generate your first exam →</a>
       </p>
-      <p>Pick from 41 exam formats (USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric, …) in 10 languages, at any difficulty.</p>
-      <p>Need help choosing? Reply to this email or message us on WhatsApp at +20 122 621 8004.</p>
+
+      <p style="font-size:15px;font-weight:600;margin-top:32px;color:#111;">A few things you can do here:</p>
+      <ul style="font-size:14px;line-height:1.9;color:#444;padding-left:20px;">
+        <li>📚 Pick from <strong>41 exam formats</strong> — USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric, FRCS, PLAB, and more</li>
+        <li>🌍 Study in <strong>10 languages</strong> including Arabic, English, French, Urdu, and Persian</li>
+        <li>🎯 Choose from <strong>50+ specialties</strong> — internal medicine, neurosurgery, pediatrics, anesthesia, pain management, and beyond</li>
+        <li>📄 Upload your <strong>own lecture notes</strong> (PDF/DOCX) and we'll generate questions directly from them (Pro &amp; Premium)</li>
+        <li>🩺 <strong>Paramedical or non-medical?</strong> Use the <em>Custom</em> tab to build exams in nursing, pharmacy tech, math, biology — anything</li>
+        <li>🏆 Track your accuracy by topic so you know exactly where to focus next</li>
+      </ul>
+
+      <p style="font-size:14px;font-style:italic;color:#555;background:#fafafa;padding:14px 18px;margin:28px 0;border-radius:6px;border-left:3px solid #10b981;">
+        💡 <strong>Tip:</strong> start with a topic you already know well — it's the fastest way to feel how the AI writes questions, and it'll calibrate your difficulty preference.
+      </p>
+
+      <p style="font-size:14px;">Stuck on which exam format to pick? Reply to this email or message us on WhatsApp at <a href="https://wa.me/201226218004" style="color:#2563eb;">+20 122 621 8004</a>. We're a small team and we read every single message.</p>
+
+      <p style="font-size:16px;font-weight:600;margin-top:32px;color:#111;">Now go generate your first exam — you've got this. 💪</p>
+
+      <p style="font-size:14px;color:#666;margin-top:8px;">— The MedExam Hub team</p>
       ${unsubFooter(userId, "marketing")}
     `),
   };
