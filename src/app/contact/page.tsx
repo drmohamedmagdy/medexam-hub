@@ -1,7 +1,7 @@
 export const metadata = { title: "Contact — MedExam Hub" };
 
 const WHATSAPP = "https://wa.me/201226218004";
-const EMAIL = "info@medexamhub.com";
+const EMAIL = "info@medexamhub.org";
 
 export default function ContactPage() {
   return (
