@@ -34,14 +34,16 @@ export default async function Home() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24 lg:gap-12">
           {/* Left: Hero copy */}
           <div className="flex flex-col items-center text-center lg:items-start lg:text-start">
-            <Image
-              src="/logo.webp"
-              alt="MedExam Hub"
-              width={120}
-              height={120}
-              className="h-20 w-20 sm:h-24 sm:w-24"
-              priority
-            />
+            <div className="rounded-full p-1 transition dark:bg-white/95 dark:p-1.5 dark:shadow-[0_0_40px_rgba(56,189,248,0.25)] dark:ring-1 dark:ring-white/40">
+              <Image
+                src="/logo.webp"
+                alt="MedExam Hub"
+                width={120}
+                height={120}
+                className="h-20 w-20 rounded-full sm:h-24 sm:w-24"
+                priority
+              />
+            </div>
             <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/70 px-3 py-1 text-xs font-medium text-blue-700 dark:border-cyan-700/50 dark:bg-cyan-950/40 dark:text-cyan-300">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
               {tH.badge}
