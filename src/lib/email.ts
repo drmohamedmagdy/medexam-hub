@@ -11,7 +11,10 @@ export type EmailCategory =
   | "reengagement"
   | "broadcast";
 
-const FROM_DEFAULT = "MedExam Hub <onboarding@resend.dev>";
+// Branded sender. Requires medexamhub.org to be verified in Resend's dashboard
+// (SPF + DKIM TXT records added at Namecheap → Advanced DNS). Until then, set
+// EMAIL_FROM=MedExam Hub <onboarding@resend.dev> in Vercel env to fall back.
+const FROM_DEFAULT = "MedExam Hub <info@medexamhub.org>";
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY;
