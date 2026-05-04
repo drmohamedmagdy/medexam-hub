@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Plan } from "@/generated/prisma/client";
+import { PROMO_DISCOUNT_PCT } from "@/lib/plans";
 
 const STORAGE_KEY_PREFIX = "mxh_dismiss_upgrade_";
 
@@ -41,6 +42,11 @@ export default function UpgradeBanner({
   return (
     <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 dark:border-blue-900 dark:bg-blue-950 sm:flex-row sm:items-center sm:justify-between">
       <div>
+        {PROMO_DISCOUNT_PCT > 0 && (
+          <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-amber-200 px-2.5 py-0.5 text-xs font-bold text-amber-900 dark:bg-amber-900 dark:text-amber-100">
+            🎉 {PROMO_DISCOUNT_PCT}% OFF — Limited time
+          </span>
+        )}
         <p className="font-semibold text-blue-900 dark:text-blue-100">{copy.title}</p>
         <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">{copy.body}</p>
       </div>

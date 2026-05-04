@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { PLAN_LIMITS, formatPrice } from "@/lib/plans";
+import { PLAN_LIMITS, PROMO_DISCOUNT_PCT, formatPrice } from "@/lib/plans";
 import type { Plan } from "@/generated/prisma/client";
 import CheckoutForm from "./CheckoutForm";
 
@@ -55,15 +55,31 @@ export default async function CheckoutPage({
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         You&apos;ll be charged {formatPrice(cfg.priceMonthly)} per month and can cancel anytime.
       </p>
+      {PROMO_DISCOUNT_PCT > 0 && cfg.originalPriceMonthly && (
+        <p className="mt-2 inline-flex items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <span aria-hidden>🎉</span>
+          <span>
+            {PROMO_DISCOUNT_PCT}% off — save{" "}
+            {(cfg.originalPriceMonthly - cfg.priceMonthly).toLocaleString()} EGP/month
+          </span>
+        </p>
+      )}
 
       <div className="mt-6 grid gap-5 sm:mt-8 sm:gap-6 lg:grid-cols-[1fr_1.2fr]">
         <aside className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
             Order summary
           </h2>
-          <div className="mt-4 flex items-baseline justify-between">
+          <div className="mt-4 flex items-baseline justify-between gap-3">
             <span className="text-lg font-semibold">{cfg.label} plan</span>
-            <span className="text-2xl font-semibold">{formatPrice(cfg.priceMonthly)}</span>
+            <div className="text-right">
+              {cfg.originalPriceMonthly && (
+                <div className="text-sm text-zinc-400 line-through">
+                  {formatPrice(cfg.originalPriceMonthly)}
+                </div>
+              )}
+              <span className="text-2xl font-semibold">{formatPrice(cfg.priceMonthly)}</span>
+            </div>
           </div>
           <p className="text-xs text-zinc-500">Billed monthly</p>
 
@@ -78,7 +94,14 @@ export default async function CheckoutPage({
 
           <div className="mt-6 flex items-baseline justify-between border-t border-zinc-200 pt-4 dark:border-zinc-800">
             <span className="text-sm font-medium">Total today</span>
-            <span className="text-2xl font-semibold">{formatPrice(cfg.priceMonthly)}</span>
+            <div className="text-right">
+              {cfg.originalPriceMonthly && (
+                <div className="text-sm text-zinc-400 line-through">
+                  {formatPrice(cfg.originalPriceMonthly)}
+                </div>
+              )}
+              <span className="text-2xl font-semibold">{formatPrice(cfg.priceMonthly)}</span>
+            </div>
           </div>
           <p className="mt-1 text-xs text-zinc-500">Egyptian Pounds, taxes may apply</p>
         </aside>

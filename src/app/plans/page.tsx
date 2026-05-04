@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
-import { PLAN_LIMITS } from "@/lib/plans";
+import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
 import type { Plan } from "@/generated/prisma/client";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import UpgradeButton from "./UpgradeButton";
@@ -18,6 +18,12 @@ export default async function PlansPage() {
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.plans.title}</h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">{t.plans.subtitle}</p>
+        {PROMO_DISCOUNT_PCT > 0 && (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            <span aria-hidden>🎉</span>
+            <span>Limited-time {PROMO_DISCOUNT_PCT}% OFF on all paid plans</span>
+          </div>
+        )}
       </div>
 
       <div className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4">
@@ -63,13 +69,25 @@ export default async function PlansPage() {
                   <span className="text-3xl font-semibold">{t.plans.free}</span>
                 ) : (
                   <>
-                    <span className="text-3xl font-semibold">
-                      {cfg.priceMonthly.toLocaleString(numberLocale)}
-                    </span>
-                    <span className="mx-1 text-base font-medium text-zinc-500">
-                      {t.plans.currencyShort}
-                    </span>
-                    <span className="text-sm text-zinc-500">{t.plans.perMonth}</span>
+                    {cfg.originalPriceMonthly && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-base text-zinc-400 line-through">
+                          {cfg.originalPriceMonthly.toLocaleString(numberLocale)} {t.plans.currencyShort}
+                        </span>
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+                          −{PROMO_DISCOUNT_PCT}%
+                        </span>
+                      </div>
+                    )}
+                    <div className={cfg.originalPriceMonthly ? "mt-0.5" : ""}>
+                      <span className="text-3xl font-semibold">
+                        {cfg.priceMonthly.toLocaleString(numberLocale)}
+                      </span>
+                      <span className="mx-1 text-base font-medium text-zinc-500">
+                        {t.plans.currencyShort}
+                      </span>
+                      <span className="text-sm text-zinc-500">{t.plans.perMonth}</span>
+                    </div>
                   </>
                 )}
               </div>

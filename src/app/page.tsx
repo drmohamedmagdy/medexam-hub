@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SPECIALTIES } from "@/lib/specialties";
 import { EXAM_TYPE_GROUPS } from "@/lib/exam-types";
-import { PLAN_LIMITS } from "@/lib/plans";
+import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import SpecialtyFilter from "@/components/SpecialtyFilter";
 
@@ -41,6 +41,12 @@ export default async function Home() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {tH.badge}
             </span>
+            {PROMO_DISCOUNT_PCT > 0 && (
+              <span className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                <span aria-hidden>🎉</span>
+                Limited-time {PROMO_DISCOUNT_PCT}% OFF on all plans
+              </span>
+            )}
             <h1 className="mt-4 max-w-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent sm:text-5xl lg:text-6xl">
               {tH.title}
             </h1>

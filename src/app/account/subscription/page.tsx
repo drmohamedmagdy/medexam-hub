@@ -170,7 +170,12 @@ export default async function SubscriptionPage() {
                   className="rounded-2xl border border-zinc-200 bg-white p-5 transition hover:border-blue-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-800"
                 >
                   <div className="text-sm font-semibold">{targetTr.label}</div>
-                  <div className="mt-1 text-2xl font-semibold">
+                  {cfg.originalPriceMonthly && (
+                    <div className="mt-1 text-xs text-zinc-400 line-through">
+                      {cfg.originalPriceMonthly.toLocaleString(locale)} {t.plans.currencyShort}
+                    </div>
+                  )}
+                  <div className={cfg.originalPriceMonthly ? "text-2xl font-semibold" : "mt-1 text-2xl font-semibold"}>
                     {cfg.priceMonthly.toLocaleString(locale)}{" "}
                     <span className="text-base font-medium text-zinc-500">
                       {t.plans.currencyShort}
