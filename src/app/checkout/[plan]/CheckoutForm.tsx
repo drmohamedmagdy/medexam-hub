@@ -451,7 +451,6 @@ function ManualForm({
           id="proofImage"
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-          capture="environment"
           onChange={onFileChange}
           className="sr-only"
         />
