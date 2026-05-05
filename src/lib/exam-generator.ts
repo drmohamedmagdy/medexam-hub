@@ -65,6 +65,16 @@ const DIFFICULTY_GUIDANCE: Record<Difficulty, string> = {
   BOARD: "Board exam level — high-yield, tricky distractors, current guideline alignment.",
 };
 
+// Generic, audience-agnostic difficulty descriptions used when audience is
+// PARAMEDICAL or NONMEDICAL — the medical-specific phrasing above ("ward
+// scenarios", "consultant level") doesn't apply in those contexts.
+const GENERIC_DIFFICULTY_GUIDANCE: Partial<Record<Difficulty, string>> = {
+  BEGINNER: "Beginner — basic recall and definitions, entry-level understanding.",
+  INTERN: "Intermediate — application of concepts to typical scenarios and problems.",
+  SPECIALIST: "Advanced — nuanced reasoning, less common scenarios, deeper analysis.",
+  BOARD: "Expert — highest level, integrating multiple concepts, edge cases.",
+};
+
 // JSON schema for MCQ + TRUE_FALSE outputs (both use options + correctId).
 const MCQ_JSON_SCHEMA = {
   type: "object",
@@ -210,7 +220,13 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
   if (!examType && !input.specialty && !input.topic && !input.sourceText) {
     lines.push(audience === "NONMEDICAL" ? "Topic: General knowledge, mixed." : "Topic: General medicine, mixed.");
   }
-  lines.push(`Difficulty: ${input.difficulty} — ${DIFFICULTY_GUIDANCE[input.difficulty]}`);
+  // Pick generic difficulty description for non-medical audiences so the AI
+  // doesn't generate "ward scenarios" for math or law questions.
+  const useGenericDifficulty = audience === "NONMEDICAL" || audience === "PARAMEDICAL";
+  const guidance =
+    (useGenericDifficulty && GENERIC_DIFFICULTY_GUIDANCE[input.difficulty]) ||
+    DIFFICULTY_GUIDANCE[input.difficulty];
+  lines.push(`Difficulty: ${input.difficulty} — ${guidance}`);
   lines.push(`Number of questions: ${input.numQuestions}`);
   lines.push(...formatInstructions[format]);
 

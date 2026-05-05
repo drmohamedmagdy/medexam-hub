@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { createExamAction, type NewExamState } from "@/app/actions/exam";
 import { uploadFileAction, type UploadState } from "@/app/actions/upload";
 import { SPECIALTIES, SPECIALTY_GROUPS } from "@/lib/specialties";
@@ -15,6 +15,19 @@ type GenerationMode = "specialty" | "exam" | "file" | "custom";
 const DIFFICULTY_KEYS = [
   "BEGINNER", "STUDENT", "INTERN", "RESIDENT", "SPECIALIST", "CONSULTANT", "BOARD",
 ] as const;
+
+// Generic 4-level scale shown for File and Custom tabs, where the medical-
+// specific labels (Intern, Resident, Consultant…) don't apply to non-medical
+// content. Each generic level maps to a Difficulty enum value so the DB and
+// AI prompt logic stay unchanged.
+const GENERIC_DIFFICULTY: ReadonlyArray<{ value: Difficulty; label: string }> = [
+  { value: "BEGINNER", label: "Beginner" },
+  { value: "INTERN", label: "Intermediate" },
+  { value: "SPECIALIST", label: "Advanced" },
+  { value: "BOARD", label: "Expert" },
+];
+
+const GENERIC_VALUES = new Set<Difficulty>(["BEGINNER", "INTERN", "SPECIALIST", "BOARD"]);
 
 type Defaults = {
   generationMode: "specialty" | "exam" | "custom";
@@ -62,6 +75,7 @@ export default function NewExamForm({
   );
   const [mode, setMode] = useState<GenerationMode>(defaults?.generationMode ?? "specialty");
   const [selectedFileId, setSelectedFileId] = useState<string>("");
+  const useGenericDifficulty = mode === "file" || mode === "custom";
   const canGenerate = remaining >= 1;
 
   const langDefault = findLanguage(defaults?.language ?? defaultLanguage ?? DEFAULT_LANGUAGE)
@@ -81,6 +95,17 @@ export default function NewExamForm({
   const difficultyDefault = defaults?.difficulty ?? "RESIDENT";
   const modeDefault = defaults?.mode ?? "PRACTICE";
   const numQDefault = Math.min(Math.max(1, defaults?.numQuestions ?? 5), maxPerExam);
+
+  // Controlled difficulty so the select stays valid when the user switches
+  // between medical (7-level) and generic (4-level) tabs.
+  const [difficulty, setDifficulty] = useState<Difficulty>(
+    () => coerceDifficulty(difficultyDefault, mode === "file" || mode === "custom")
+  );
+  // On tab change, coerce any stale value to the closest equivalent in the
+  // new scale (e.g. switching from medical "Resident" → generic "Advanced").
+  useEffect(() => {
+    setDifficulty((prev) => coerceDifficulty(prev, useGenericDifficulty));
+  }, [useGenericDifficulty]);
 
   // After a successful upload, auto-select the file
   if (uploadState?.ok && uploadState.fileId && selectedFileId !== uploadState.fileId) {
@@ -411,12 +436,19 @@ export default function NewExamForm({
             <select
               name="difficulty"
               required
-              defaultValue={difficultyDefault}
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as Difficulty)}
               className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
             >
-              {DIFFICULTY_KEYS.map((k) => (
-                <option key={k} value={k}>{labels.difficulties[k]}</option>
-              ))}
+              {useGenericDifficulty
+                ? GENERIC_DIFFICULTY.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))
+                : DIFFICULTY_KEYS.map((k) => (
+                    <option key={k} value={k}>{labels.difficulties[k]}</option>
+                  ))}
             </select>
           </Field>
           <Field label={labels.mode}>
@@ -487,6 +519,27 @@ export default function NewExamForm({
       </form>
     </>
   );
+}
+
+/**
+ * Coerce a Difficulty value to the closest equivalent in the active scale.
+ * Used when the user switches between medical (7-level) and generic (4-level)
+ * scales — we want STUDENT → BEGINNER, RESIDENT → INTERN (intermediate), etc.
+ */
+function coerceDifficulty(value: Difficulty, generic: boolean): Difficulty {
+  if (!generic) return value; // medical scale accepts all 7
+  if (GENERIC_VALUES.has(value)) return value;
+  // Map 7-level → 4-level
+  switch (value) {
+    case "STUDENT":
+      return "BEGINNER";
+    case "RESIDENT":
+      return "INTERN"; // = "Intermediate"
+    case "CONSULTANT":
+      return "BOARD"; // = "Expert"
+    default:
+      return "INTERN";
+  }
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
