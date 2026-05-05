@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { generateExam } from "@/lib/exam-generator";
 import { getMonthlyQuestionsUsage, recordQuestionsUsed } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
-import { Difficulty, ExamMode, ExamStatus } from "@/generated/prisma/client";
+import { Difficulty, ExamMode, ExamStatus, QuestionFormat } from "@/generated/prisma/client";
 import { getAllExamTypeIds, findExamType } from "@/lib/exam-types";
 import { truncateForPrompt } from "@/lib/file-upload";
 import { detectAndPersistAchievements } from "@/lib/achievements";
@@ -21,6 +21,7 @@ const NewExamSchema = z
     sourceFileId: z.string().max(40).optional().or(z.literal("")),
     language: z.string().max(8).optional().or(z.literal("")),
     audience: z.enum(["MEDICAL", "PARAMEDICAL", "NONMEDICAL"]).optional(),
+    questionFormat: z.nativeEnum(QuestionFormat).optional(),
     difficulty: z.nativeEnum(Difficulty),
     mode: z.nativeEnum(ExamMode),
     numQuestions: z.coerce.number().int().min(1).max(100),
@@ -42,6 +43,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     sourceFileId: formData.get("sourceFileId") ?? "",
     language: formData.get("language") ?? "",
     audience: formData.get("audience") || undefined,
+    questionFormat: formData.get("questionFormat") || undefined,
     difficulty: formData.get("difficulty"),
     mode: formData.get("mode"),
     numQuestions: formData.get("numQuestions"),
@@ -97,6 +99,8 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     fileLabel: sourceFile ? `From ${sourceFile.filename}` : null,
   });
 
+  const questionFormat = input.questionFormat ?? QuestionFormat.MCQ;
+
   const exam = await prisma.exam.create({
     data: {
       userId: user.id,
@@ -107,6 +111,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       sourceFileId: sourceFile?.id ?? null,
       difficulty: input.difficulty,
       mode: input.mode,
+      questionFormat,
       status: ExamStatus.GENERATING,
       numQuestions: input.numQuestions,
       timeLimitSec: input.timeLimitMin ? input.timeLimitMin * 60 : null,
@@ -147,6 +152,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       sourceText: trimmed?.text ?? null,
       sourceFilename: sourceFile?.filename ?? null,
       audience: input.audience ?? "MEDICAL",
+      questionFormat,
       difficulty: input.difficulty,
       numQuestions: input.numQuestions,
     });
@@ -166,8 +172,11 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
           examId: exam.id,
           orderIndex: i,
           prompt: q.prompt,
-          optionsJson: JSON.stringify(q.options),
-          correctId: q.correctId,
+          // For SHORT_NOTES the generator returns no options/correctId, so
+          // store empty fallbacks. For MCQ/TF, persist the AI output as-is.
+          optionsJson: JSON.stringify(q.options ?? []),
+          correctId: q.correctId ?? "",
+          modelAnswer: q.modelAnswer ?? null,
           explanation: q.explanation,
           learningPoint: q.learningPoint ?? null,
         },
@@ -233,21 +242,35 @@ export async function submitExamAction(formData: FormData): Promise<void> {
   const answers = AnswerMapSchema.parse(JSON.parse(answersJson));
 
   const totalQuestions = exam!.questions.length;
+  const isShortNotes = exam!.questionFormat === QuestionFormat.SHORT_NOTES;
 
   let correctCount = 0;
   await prisma.$transaction(
     exam!.questions.map((q) => {
-      const sel = answers[q.id] ?? null;
-      const isCorrect = sel !== null && sel === q.correctId;
+      const submitted = answers[q.id] ?? null;
+      if (isShortNotes) {
+        // SHORT_NOTES: store the user's free-text answer, no auto-grade.
+        return prisma.question.update({
+          where: { id: q.id },
+          data: { selectedText: submitted, isCorrect: null },
+        });
+      }
+      const isCorrect = submitted !== null && submitted === q.correctId;
       if (isCorrect) correctCount += 1;
       return prisma.question.update({
         where: { id: q.id },
-        data: { selectedId: sel, isCorrect },
+        data: { selectedId: submitted, isCorrect },
       });
     })
   );
 
-  const scorePct = totalQuestions === 0 ? 0 : (correctCount / totalQuestions) * 100;
+  // SHORT_NOTES exams aren't auto-graded — keep scorePct null so the
+  // analytics charts skip them and the results page knows not to show a %.
+  const scorePct = isShortNotes
+    ? null
+    : totalQuestions === 0
+      ? 0
+      : (correctCount / totalQuestions) * 100;
 
   // Quota was already consumed at generation time. Submission just grades
   // the answers and marks the exam complete — no further usage tracking.

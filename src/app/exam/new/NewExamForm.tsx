@@ -364,6 +364,48 @@ export default function NewExamForm({
           </>
         )}
 
+        <Field label="Question format">
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
+              <input
+                type="radio"
+                name="questionFormat"
+                value="MCQ"
+                defaultChecked
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                <span className="block font-medium">MCQs</span>
+                <span className="block text-xs text-zinc-500">Multiple choice — auto-graded</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
+              <input
+                type="radio"
+                name="questionFormat"
+                value="TRUE_FALSE"
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                <span className="block font-medium">True / False</span>
+                <span className="block text-xs text-zinc-500">Statements — auto-graded</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
+              <input
+                type="radio"
+                name="questionFormat"
+                value="SHORT_NOTES"
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                <span className="block font-medium">Short notes</span>
+                <span className="block text-xs text-zinc-500">Open-ended — model answer shown</span>
+              </span>
+            </label>
+          </div>
+        </Field>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={labels.difficulty}>
             <select

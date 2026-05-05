@@ -29,6 +29,12 @@ enum ExamMode {
   EXAM
 }
 
+enum QuestionFormat {
+  MCQ
+  TRUE_FALSE
+  SHORT_NOTES
+}
+
 enum ExamStatus {
   GENERATING
   READY
@@ -144,16 +150,17 @@ model AuthSession {
 }
 
 model Exam {
-  id           String     @id @default(cuid())
-  userId       String
-  title        String
-  specialty    String?
-  topic        String?
-  examType     String?
-  sourceFileId String?
-  difficulty   Difficulty
-  mode         ExamMode   @default(PRACTICE)
-  status       ExamStatus @default(GENERATING)
+  id             String         @id @default(cuid())
+  userId         String
+  title          String
+  specialty      String?
+  topic          String?
+  examType       String?
+  sourceFileId   String?
+  difficulty     Difficulty
+  mode           ExamMode       @default(PRACTICE)
+  questionFormat QuestionFormat @default(MCQ)
+  status         ExamStatus     @default(GENERATING)
   numQuestions Int
   timeLimitSec Int?
   createdAt    DateTime   @default(now())
@@ -191,11 +198,19 @@ model Question {
   examId        String
   orderIndex    Int
   prompt        String
+  // For MCQ + TRUE_FALSE: JSON-encoded option list and the correct option id.
+  // For SHORT_NOTES: optionsJson is "[]" and correctId is "" (unused).
   optionsJson   String
   correctId     String
+  // Explanation appears on every question type (the "why" of the answer).
   explanation   String
   learningPoint String?
+  // For SHORT_NOTES only: an ideal short-answer the user can compare against.
+  modelAnswer   String?
+  // User's selection — option id for MCQ/TF, free text for SHORT_NOTES.
   selectedId    String?
+  selectedText  String?
+  // Auto-graded for MCQ/TF; null for SHORT_NOTES (self-assessed).
   isCorrect     Boolean?
 
   exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)

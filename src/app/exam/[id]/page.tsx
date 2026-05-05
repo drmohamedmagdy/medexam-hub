@@ -48,6 +48,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
       title={exam.title}
       mode={exam.mode}
       timeLimitSec={exam.timeLimitSec}
+      questionFormat={exam.questionFormat}
       questions={questions}
     />
   );
