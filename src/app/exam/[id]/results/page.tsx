@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canExportPdf } from "@/lib/plans";
 import PrintPdfButton from "./PrintPdfButton";
+import ScoreCelebration from "./ScoreCelebration";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,6 +37,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
           <div className="text-sm text-zinc-500">{correct} of {total} correct</div>
         </div>
       </div>
+
+      <ScoreCelebration
+        score={Math.round(exam.scorePct ?? 0)}
+        correct={correct}
+        total={total}
+      />
 
       {canPdf && (
         <div className="mt-4 print:hidden">

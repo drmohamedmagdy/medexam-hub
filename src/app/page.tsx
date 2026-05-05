@@ -63,7 +63,7 @@ export default async function Home() {
             <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/signup"
-                className="rounded-full bg-blue-600 px-6 py-3 text-center text-base font-medium text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/40"
+                className="cta-pulse rounded-full bg-blue-600 px-6 py-3 text-center text-base font-medium text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/40"
               >
                 {tH.ctaStart}
               </Link>
@@ -249,7 +249,7 @@ export default async function Home() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/signup"
-            className="rounded-full bg-blue-600 px-7 py-3.5 text-base font-medium text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:shadow-cyan-500/20"
+            className="cta-pulse rounded-full bg-blue-600 px-7 py-3.5 text-base font-medium text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:shadow-cyan-500/20"
           >
             {tH.finalCreate}
           </Link>
