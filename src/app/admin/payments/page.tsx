@@ -77,9 +77,19 @@ export default async function AdminPaymentsPage({
                   </div>
                   <div className="text-end">
                     <div className="text-sm font-semibold">{PLAN_LIMITS[p.plan].label}</div>
+                    {p.originalCents && p.originalCents !== p.amountCents && (
+                      <div className="font-mono text-xs text-zinc-400 line-through">
+                        {(p.originalCents / 100).toLocaleString()} EGP
+                      </div>
+                    )}
                     <div className="font-mono text-base font-semibold">
                       {(p.amountCents / 100).toLocaleString()} EGP
                     </div>
+                    {p.promoCodeUsed && (
+                      <div className="mt-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                        with {p.promoCodeUsed}
+                      </div>
+                    )}
                     <span
                       className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                         p.paymentMethod === "VODAFONE_CASH"
@@ -89,6 +99,9 @@ export default async function AdminPaymentsPage({
                     >
                       {p.paymentMethod === "VODAFONE_CASH" ? "📱 Vodafone Cash" : "⚡ Instapay"}
                     </span>
+                    <p className="mt-1 text-[11px] text-zinc-500">
+                      Verify the screenshot shows {(p.amountCents / 100).toLocaleString()} EGP
+                    </p>
                   </div>
                 </div>
 

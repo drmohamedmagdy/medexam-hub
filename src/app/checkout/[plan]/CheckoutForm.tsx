@@ -38,6 +38,9 @@ export default function CheckoutForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
+  // Controlled so the typed value is sent to the server even if the user
+  // forgets to click "Apply" — the server validates and applies it anyway.
+  const [promoInput, setPromoInput] = useState("");
   const [promoState, promoAction, promoPending] = useActionState<PromoApplyState, FormData>(
     applyPromoAction,
     null
@@ -58,6 +61,10 @@ export default function CheckoutForm({
 
   const finalAmount = promo ? promo.finalCents / 100 : priceMonthly;
 
+  // Send whatever the user typed, even if they forgot to click "Apply".
+  // The server re-validates either way and is the source of truth on price.
+  const effectivePromoCode = promo?.code ?? (promoInput.trim() || null);
+
   async function handleCardPay() {
     setPending(true);
     setError(null);
@@ -65,7 +72,7 @@ export default function CheckoutForm({
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, promoCode: promo?.code ?? null }),
+        body: JSON.stringify({ plan, promoCode: effectivePromoCode }),
       });
       if (!res.ok) {
         setError(`Couldn't start checkout: ${await res.text()}`);
@@ -102,14 +109,21 @@ export default function CheckoutForm({
             </div>
             <button
               type="button"
-              onClick={() => setPromo(null)}
+              onClick={() => {
+                setPromo(null);
+                setPromoInput("");
+              }}
               className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
             >
               {t.promoRemove}
             </button>
           </div>
         ) : (
-          <form action={promoAction} className="space-y-2">
+          <form
+            action={promoAction}
+            id="promo-form"
+            className="space-y-2"
+          >
             <label htmlFor="promo-code" className="block text-sm font-medium">
               {t.promoLabel}
             </label>
@@ -121,6 +135,13 @@ export default function CheckoutForm({
                 type="text"
                 autoComplete="off"
                 placeholder="e.g. OMAR2026"
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value)}
+                onBlur={(e) => {
+                  if (e.currentTarget.value.trim().length > 0) {
+                    e.currentTarget.form?.requestSubmit();
+                  }
+                }}
                 className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm uppercase placeholder:normal-case dark:border-zinc-700 dark:bg-zinc-900"
               />
               <button
@@ -199,7 +220,7 @@ export default function CheckoutForm({
           plan={plan}
           method="VODAFONE_CASH"
           amount={finalAmount}
-          promoCode={promo?.code ?? null}
+          promoCode={effectivePromoCode}
           action={manualAction}
           state={manualState}
           pending={manualPending}
@@ -215,7 +236,7 @@ export default function CheckoutForm({
           plan={plan}
           method="INSTAPAY"
           amount={finalAmount}
-          promoCode={promo?.code ?? null}
+          promoCode={effectivePromoCode}
           action={manualAction}
           state={manualState}
           pending={manualPending}
