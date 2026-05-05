@@ -184,6 +184,13 @@ model FileUpload {
   charCount     Int
   extractedText String
   yearMonth     String
+  // Optional AI-generated summary of the file contents, rendered as a PDF
+  // and stored on Vercel Blob. summaryText keeps the raw markdown so we can
+  // regenerate the PDF without another OpenAI call.
+  summaryText      String?
+  summaryUrl       String?
+  summaryPathname  String?
+  summaryCreatedAt DateTime?
   createdAt     DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)

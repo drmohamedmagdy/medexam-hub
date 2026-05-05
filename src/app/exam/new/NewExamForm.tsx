@@ -47,6 +47,7 @@ type RecentFile = {
   filename: string;
   charCount: number;
   createdAt: string;
+  summaryUrl: string | null;
 };
 
 type FileQuotaStatus = { used: number; limit: number; remaining: number } | null;
@@ -132,6 +133,17 @@ export default function NewExamForm({
               {labels.uploadHint}{fileUsage ? ` ${labels.uploadRemaining.replace("{remaining}", String(fileUsage.remaining)).replace("{limit}", String(fileUsage.limit))}` : ""}
             </p>
           </div>
+          <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800/40 dark:has-[:checked]:bg-blue-950/40">
+            <input
+              type="checkbox"
+              name="generateSummary"
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="block font-medium">{labels.summaryOptionTitle}</span>
+              <span className="block text-xs text-zinc-500">{labels.summaryOptionHint}</span>
+            </span>
+          </label>
           {uploadState?.error && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
               {uploadState.error}
@@ -140,6 +152,11 @@ export default function NewExamForm({
           {uploadState?.ok && (
             <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
               {labels.uploadDone}
+              {uploadState.summaryFailed && (
+                <span className="mt-1 block text-xs text-amber-700 dark:text-amber-300">
+                  {labels.summaryFailed}
+                </span>
+              )}
             </p>
           )}
           <button
@@ -302,12 +319,14 @@ export default function NewExamForm({
                 {recentFiles.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.filename} ({Math.round(f.charCount / 100) / 10}k chars)
+                    {f.summaryUrl ? " · 📄" : ""}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-xs text-zinc-500">
                 {labels.fileExplain}
               </p>
+              <SummaryLinks file={recentFiles.find((f) => f.id === selectedFileId) ?? null} labels={labels} />
             </Field>
             <Field label={labels.topicOptional}>
               <input
@@ -550,5 +569,36 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="block text-sm font-medium">{label}</span>
       {children}
     </label>
+  );
+}
+
+function SummaryLinks({
+  file,
+  labels,
+}: {
+  file: RecentFile | null;
+  labels: Labels;
+}) {
+  if (!file || !file.summaryUrl) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs dark:border-emerald-900 dark:bg-emerald-950/30">
+      <span aria-hidden>📄</span>
+      <span className="font-medium text-emerald-900 dark:text-emerald-200">{labels.summaryReady}</span>
+      <a
+        href={file.summaryUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="rounded-md border border-emerald-300 bg-white px-2.5 py-1 font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
+      >
+        {labels.summaryView}
+      </a>
+      <a
+        href={file.summaryUrl}
+        download
+        className="rounded-md border border-emerald-300 bg-white px-2.5 py-1 font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
+      >
+        {labels.summaryDownload}
+      </a>
+    </div>
   );
 }

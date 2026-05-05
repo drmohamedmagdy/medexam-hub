@@ -318,6 +318,12 @@ export type Translations = {
     genericIntermediate: string;
     genericAdvanced: string;
     genericExpert: string;
+    summaryOptionTitle: string;
+    summaryOptionHint: string;
+    summaryFailed: string;
+    summaryReady: string;
+    summaryView: string;
+    summaryDownload: string;
   };
   account: {
     title: string;
@@ -1511,6 +1517,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Short notes", qfShortNotesSub: "Open-ended — model answer shown",
       genericBeginner: "Beginner", genericIntermediate: "Intermediate",
       genericAdvanced: "Advanced", genericExpert: "Expert",
+      summaryOptionTitle: "Also generate a summary PDF",
+      summaryOptionHint: "AI writes a study summary of this file you can read or download.",
+      summaryFailed: "Couldn't generate the summary. The file is uploaded — you can still use it for exams.",
+      summaryReady: "Summary ready",
+      summaryView: "View",
+      summaryDownload: "Download",
     },
   },
   ar: {
@@ -1608,6 +1620,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "إجابات قصيرة", qfShortNotesSub: "مفتوحة — تظهر إجابة نموذجية",
       genericBeginner: "مبتدئ", genericIntermediate: "متوسط",
       genericAdvanced: "متقدم", genericExpert: "خبير",
+      summaryOptionTitle: "إنشاء ملخص PDF أيضًا",
+      summaryOptionHint: "يكتب الذكاء الاصطناعي ملخصًا دراسيًا للملف يمكنك قراءته أو تنزيله.",
+      summaryFailed: "تعذّر إنشاء الملخص. تم رفع الملف ويمكنك استخدامه لإنشاء الامتحانات.",
+      summaryReady: "الملخص جاهز",
+      summaryView: "عرض",
+      summaryDownload: "تنزيل",
     },
   },
   fr: {
@@ -1705,6 +1723,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Réponses courtes", qfShortNotesSub: "Ouvertes — réponse modèle affichée",
       genericBeginner: "Débutant", genericIntermediate: "Intermédiaire",
       genericAdvanced: "Avancé", genericExpert: "Expert",
+      summaryOptionTitle: "Générer aussi un résumé PDF",
+      summaryOptionHint: "L'IA rédige un résumé d'étude de ce fichier que vous pouvez lire ou télécharger.",
+      summaryFailed: "Impossible de générer le résumé. Le fichier est bien envoyé et reste utilisable pour les examens.",
+      summaryReady: "Résumé prêt",
+      summaryView: "Voir",
+      summaryDownload: "Télécharger",
     },
   },
   es: {
@@ -1802,6 +1826,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Respuesta corta", qfShortNotesSub: "Abierta — se muestra respuesta modelo",
       genericBeginner: "Principiante", genericIntermediate: "Intermedio",
       genericAdvanced: "Avanzado", genericExpert: "Experto",
+      summaryOptionTitle: "Generar también un resumen en PDF",
+      summaryOptionHint: "La IA escribe un resumen de estudio del archivo que puedes leer o descargar.",
+      summaryFailed: "No se pudo generar el resumen. El archivo se subió y puedes usarlo igualmente para los exámenes.",
+      summaryReady: "Resumen listo",
+      summaryView: "Ver",
+      summaryDownload: "Descargar",
     },
   },
   de: {
@@ -1899,6 +1929,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Kurzantworten", qfShortNotesSub: "Offen — Musterantwort wird gezeigt",
       genericBeginner: "Anfänger", genericIntermediate: "Mittelstufe",
       genericAdvanced: "Fortgeschritten", genericExpert: "Experte",
+      summaryOptionTitle: "Auch eine PDF-Zusammenfassung erstellen",
+      summaryOptionHint: "Die KI schreibt eine Lern-Zusammenfassung der Datei zum Lesen oder Herunterladen.",
+      summaryFailed: "Zusammenfassung konnte nicht erstellt werden. Die Datei ist hochgeladen und weiterhin für Prüfungen nutzbar.",
+      summaryReady: "Zusammenfassung bereit",
+      summaryView: "Ansehen",
+      summaryDownload: "Herunterladen",
     },
   },
   it: {
@@ -1996,6 +2032,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Risposte brevi", qfShortNotesSub: "Aperte — risposta modello mostrata",
       genericBeginner: "Principiante", genericIntermediate: "Intermedio",
       genericAdvanced: "Avanzato", genericExpert: "Esperto",
+      summaryOptionTitle: "Genera anche un riassunto in PDF",
+      summaryOptionHint: "L'IA scrive un riassunto di studio del file che puoi leggere o scaricare.",
+      summaryFailed: "Impossibile generare il riassunto. Il file è caricato e resta utilizzabile per gli esami.",
+      summaryReady: "Riassunto pronto",
+      summaryView: "Visualizza",
+      summaryDownload: "Scarica",
     },
   },
   pt: {
@@ -2093,6 +2135,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Respostas curtas", qfShortNotesSub: "Abertas — resposta modelo exibida",
       genericBeginner: "Iniciante", genericIntermediate: "Intermediário",
       genericAdvanced: "Avançado", genericExpert: "Especialista",
+      summaryOptionTitle: "Gerar também um resumo em PDF",
+      summaryOptionHint: "A IA escreve um resumo de estudo do ficheiro que pode ler ou descarregar.",
+      summaryFailed: "Não foi possível gerar o resumo. O ficheiro foi carregado e continua disponível para os exames.",
+      summaryReady: "Resumo pronto",
+      summaryView: "Ver",
+      summaryDownload: "Descarregar",
     },
   },
   tr: {
@@ -2190,6 +2238,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "Kısa cevap", qfShortNotesSub: "Açık uçlu — örnek cevap gösterilir",
       genericBeginner: "Başlangıç", genericIntermediate: "Orta",
       genericAdvanced: "İleri", genericExpert: "Uzman",
+      summaryOptionTitle: "Ayrıca bir PDF özet oluştur",
+      summaryOptionHint: "Yapay zekâ bu dosyanın okuyabileceğin veya indirebileceğin bir çalışma özetini yazar.",
+      summaryFailed: "Özet oluşturulamadı. Dosya yüklendi ve sınavlar için kullanılabilir.",
+      summaryReady: "Özet hazır",
+      summaryView: "Görüntüle",
+      summaryDownload: "İndir",
     },
   },
   ur: {
@@ -2287,6 +2341,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "مختصر جوابات", qfShortNotesSub: "کھلے — نمونہ جواب دکھایا جاتا ہے",
       genericBeginner: "ابتدائی", genericIntermediate: "درمیانی",
       genericAdvanced: "اعلیٰ", genericExpert: "ماہر",
+      summaryOptionTitle: "ایک PDF خلاصہ بھی بنائیں",
+      summaryOptionHint: "AI اس فائل کا مطالعاتی خلاصہ لکھتا ہے جسے آپ پڑھ یا ڈاؤن لوڈ کر سکتے ہیں۔",
+      summaryFailed: "خلاصہ تیار نہیں ہو سکا۔ فائل اپ لوڈ ہو چکی ہے اور امتحانات کے لیے استعمال کی جا سکتی ہے۔",
+      summaryReady: "خلاصہ تیار",
+      summaryView: "دیکھیں",
+      summaryDownload: "ڈاؤن لوڈ",
     },
   },
   fa: {
@@ -2384,6 +2444,12 @@ const EXTRAS: Record<Locale, Extras> = {
       qfShortNotes: "پاسخ کوتاه", qfShortNotesSub: "تشریحی — پاسخ نمونه نمایش داده می‌شود",
       genericBeginner: "مبتدی", genericIntermediate: "متوسط",
       genericAdvanced: "پیشرفته", genericExpert: "خبره",
+      summaryOptionTitle: "یک خلاصه‌ی PDF هم تولید کن",
+      summaryOptionHint: "هوش مصنوعی یک خلاصه‌ی مطالعاتی از این فایل می‌نویسد که می‌توانید بخوانید یا دانلود کنید.",
+      summaryFailed: "تولید خلاصه ممکن نشد. فایل آپلود شده و برای آزمون‌ها قابل استفاده است.",
+      summaryReady: "خلاصه آماده است",
+      summaryView: "مشاهده",
+      summaryDownload: "دانلود",
     },
   },
 };

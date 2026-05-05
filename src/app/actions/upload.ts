@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { put } from "@vercel/blob";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PLAN_LIMITS, currentYearMonth } from "@/lib/plans";
@@ -10,8 +11,14 @@ import {
   ACCEPTED_MIME_TYPES,
   MAX_FILE_BYTES,
 } from "@/lib/file-upload";
+import { summariseFile } from "@/lib/file-summary";
 
-export type UploadState = { error?: string; ok?: boolean; fileId?: string } | null;
+export type UploadState = {
+  error?: string;
+  ok?: boolean;
+  fileId?: string;
+  summaryFailed?: boolean;
+} | null;
 
 export async function uploadFileAction(
   _prev: UploadState,
@@ -76,6 +83,8 @@ export async function uploadFileAction(
     };
   }
 
+  const wantSummary = formData.get("generateSummary") === "on";
+
   const record = await prisma.fileUpload.create({
     data: {
       userId: user.id,
@@ -88,6 +97,42 @@ export async function uploadFileAction(
     },
   });
 
+  let summaryFailed = false;
+  if (wantSummary) {
+    try {
+      const summary = await summariseFile({
+        text: extracted.text,
+        filename,
+      });
+
+      const safeName = filename.replace(/\.[^.]+$/, "").replace(/[^a-z0-9-_]+/gi, "_") || "file";
+      const blob = await put(
+        `file-summaries/${record.id}/${safeName}-summary.pdf`,
+        Buffer.from(summary.pdfBytes),
+        {
+          access: "public",
+          contentType: "application/pdf",
+          addRandomSuffix: true,
+        }
+      );
+
+      await prisma.fileUpload.update({
+        where: { id: record.id },
+        data: {
+          summaryText: summary.text,
+          summaryUrl: blob.url,
+          summaryPathname: blob.pathname,
+          summaryCreatedAt: new Date(),
+        },
+      });
+    } catch (e) {
+      // Surface the failure but don't lose the upload — the user can still use
+      // the file to generate exams; they'd just have to retry the summary.
+      summaryFailed = true;
+      console.error("[upload] summary generation failed:", e);
+    }
+  }
+
   revalidatePath("/exam/new");
-  return { ok: true, fileId: record.id };
+  return { ok: true, fileId: record.id, summaryFailed: summaryFailed || undefined };
 }
