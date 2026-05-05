@@ -45,7 +45,7 @@ export default function UploadForm() {
         />
       </Field>
 
-      <Field label="File" hint="PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), or text. Max 28 MB.">
+      <Field label="File" hint="PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), or text. Max 4 MB.">
         <input
           name="file"
           type="file"
@@ -54,6 +54,12 @@ export default function UploadForm() {
           className="mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
         />
       </Field>
+
+      <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        ⚠️ <strong>4 MB upload limit</strong> on the current Vercel plan. To upload larger files
+        (textbooks, full lecture decks), the option is to upgrade Vercel to Pro (50 MB) or migrate
+        to Vercel Blob storage. Ping me about either when you&apos;re ready.
+      </p>
 
       <label className="flex items-center gap-2 text-sm">
         <input

@@ -3,10 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      // Library uploads can include presentations and large PDFs — bumped from
-      // 10mb to fit typical lecture decks. Vercel function memory still caps
-      // the actual maximum we can process in-memory.
-      bodySizeLimit: "30mb",
+      // Vercel Hobby caps serverless function bodies at 4.5 MB at the edge
+      // regardless of this setting. Raising it doesn't help unless on Pro.
+      // Migrate to Vercel Blob client-upload for files larger than 4 MB.
+      bodySizeLimit: "4mb",
     },
   },
   // pdf-parse uses CommonJS internals + accesses test fixtures during evaluation
