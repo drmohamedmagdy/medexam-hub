@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import type { Plan } from "@/generated/prisma/client";
 import { formatPrice } from "@/lib/plans";
 import { applyPromoAction, type PromoApplyState } from "@/app/actions/promo";
@@ -333,6 +334,47 @@ function ManualForm({
   pending: boolean;
   instructions: React.ReactNode;
 }) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploaded, setUploaded] = useState<{ url: string; pathname: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progressPct, setProgressPct] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setPreview(null);
+      setUploaded(null);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("File too large. Max 10 MB.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please pick an image file (JPG, PNG, or HEIC).");
+      return;
+    }
+    setUploadError(null);
+    setPreview(URL.createObjectURL(file));
+    setUploaded(null);
+    setUploading(true);
+    setProgressPct(0);
+    try {
+      const blob = await upload(`payments/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/payments/proof-upload",
+        onUploadProgress: ({ percentage }) => setProgressPct(Math.round(percentage)),
+      });
+      setUploaded({ url: blob.url, pathname: blob.pathname });
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      setUploaded(null);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <form action={action} className="space-y-4">
       {instructions}
@@ -340,27 +382,84 @@ function ManualForm({
       <input type="hidden" name="plan" value={plan} />
       <input type="hidden" name="method" value={method} />
       {promoCode && <input type="hidden" name="promoCode" value={promoCode} />}
+      {uploaded && (
+        <>
+          <input type="hidden" name="proofImageUrl" value={uploaded.url} />
+          <input type="hidden" name="proofImagePathname" value={uploaded.pathname} />
+        </>
+      )}
 
       <div>
-        <label htmlFor="proofRef" className="block text-sm font-medium">
-          Transaction reference <span className="text-red-600">*</span>
+        <label htmlFor="proofImage" className="block text-sm font-medium">
+          Screenshot of the transaction <span className="text-red-600">*</span>
         </label>
-        <input
-          id="proofRef"
-          name="proofRef"
-          type="text"
-          required
-          minLength={3}
-          maxLength={120}
-          autoComplete="off"
-          placeholder={method === "VODAFONE_CASH" ? "e.g. VC123456789" : "e.g. IPN-2026-XXXXX"}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-        />
         <p className="mt-1 text-xs text-zinc-500">
           {method === "VODAFONE_CASH"
-            ? "From the SMS Vodafone sent you after sending the money."
-            : "From your bank's confirmation screen or SMS receipt."}
+            ? "Screenshot the SMS confirmation from Vodafone, or the success screen in My Vodafone."
+            : "Screenshot your bank's success screen or the Instapay receipt page."}
         </p>
+
+        {preview ? (
+          <div className="mt-3 space-y-3">
+            <div className="relative inline-block overflow-hidden rounded-lg border border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={preview}
+                alt="Transaction screenshot preview"
+                className="max-h-72 w-auto"
+              />
+              {uploading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white">
+                  <span className="text-sm font-medium">Uploading… {progressPct}%</span>
+                  <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-white/30">
+                    <div
+                      className="h-full bg-white transition-all"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {uploaded && (
+                <div className="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
+                  ✓ Uploaded
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPreview(null);
+                setUploaded(null);
+                setUploadError(null);
+              }}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            >
+              Choose a different screenshot
+            </button>
+          </div>
+        ) : (
+          <label
+            htmlFor="proofImage"
+            className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm hover:border-blue-500 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800/40 dark:hover:border-blue-500 dark:hover:bg-blue-950/20"
+          >
+            <span className="text-3xl" aria-hidden>📸</span>
+            <span className="font-medium">Tap to upload screenshot</span>
+            <span className="text-xs text-zinc-500">JPG, PNG, or HEIC · up to 10 MB</span>
+          </label>
+        )}
+        <input
+          id="proofImage"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          capture="environment"
+          onChange={onFileChange}
+          className="sr-only"
+        />
+        {uploadError && (
+          <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+            {uploadError}
+          </p>
+        )}
       </div>
 
       <div>
@@ -385,10 +484,16 @@ function ManualForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || uploading || !uploaded}
         className="w-full rounded-md bg-blue-600 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5"
       >
-        {pending ? "Submitting…" : `I've paid ${amount.toLocaleString()} EGP — submit for review`}
+        {pending
+          ? "Submitting…"
+          : uploading
+            ? "Uploading screenshot…"
+            : !uploaded
+              ? "Upload your screenshot first"
+              : `I've paid ${amount.toLocaleString()} EGP — submit for review`}
       </button>
       <p className="text-center text-xs text-zinc-500">
         Your plan activates as soon as we verify the payment (usually within 24 hours).

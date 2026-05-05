@@ -98,9 +98,22 @@ export default async function PendingPaymentPage({
         <Row label="Plan" value={cfg.label} />
         <Row label="Amount" value={`${amount} EGP`} />
         <Row label="Method" value={methodLabel} />
-        <Row label="Reference" value={order.proofRef ?? "—"} mono />
         <Row label="Submitted" value={order.createdAt.toLocaleString()} />
       </dl>
+
+      {order.proofImageUrl && (
+        <div className="mx-auto mt-4 max-w-sm">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Your screenshot
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={order.proofImageUrl}
+            alt="Transaction screenshot"
+            className="mx-auto max-h-64 w-auto rounded-lg border border-zinc-200 dark:border-zinc-800"
+          />
+        </div>
+      )}
 
       <p className="mt-6 text-xs text-zinc-500">
         You&apos;ll get a notification as soon as we verify your payment. Keep this page&apos;s URL —

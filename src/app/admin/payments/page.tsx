@@ -93,17 +93,39 @@ export default async function AdminPaymentsPage({
                 </div>
 
                 <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xs uppercase tracking-wide text-zinc-500">Reference:</span>
-                    <code className="font-mono font-semibold">{p.proofRef}</code>
-                  </div>
+                  {p.proofImageUrl ? (
+                    <a
+                      href={p.proofImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                      title="Open full-size screenshot in new tab"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.proofImageUrl}
+                        alt="Transaction screenshot"
+                        className="max-h-64 w-auto rounded-md border border-zinc-300 dark:border-zinc-700"
+                      />
+                      <span className="mt-1 block text-xs text-blue-600 hover:underline">
+                        Open full size →
+                      </span>
+                    </a>
+                  ) : p.proofRef ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs uppercase tracking-wide text-zinc-500">Reference:</span>
+                      <code className="font-mono font-semibold">{p.proofRef}</code>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-500">No proof attached.</p>
+                  )}
                   {p.proofNote && (
-                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                    <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
                       <span className="font-medium">Note:</span> {p.proofNote}
                     </p>
                   )}
                   {p.promoCodeUsed && (
-                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
+                    <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
                       Promo: <strong>{p.promoCodeUsed}</strong> (orig {(p.originalCents! / 100).toLocaleString()} EGP)
                     </p>
                   )}
@@ -199,9 +221,18 @@ export default async function AdminPaymentsPage({
                         : p.paymentMethod === "VODAFONE_CASH"
                           ? "📱 Vodafone"
                           : "⚡ Instapay"}
-                      {p.proofRef && (
+                      {p.proofImageUrl ? (
+                        <a
+                          href={p.proofImageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-blue-600 hover:underline"
+                        >
+                          View screenshot
+                        </a>
+                      ) : p.proofRef ? (
                         <div className="font-mono text-zinc-500">{p.proofRef}</div>
-                      )}
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-end font-mono">
                       {(p.amountCents / 100).toLocaleString()} {p.currency}

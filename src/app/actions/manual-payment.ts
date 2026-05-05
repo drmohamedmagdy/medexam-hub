@@ -23,7 +23,8 @@ export type ManualPayState =
 const SubmitSchema = z.object({
   plan: z.enum(["BASIC", "PRO", "PREMIUM"]),
   method: z.enum(["VODAFONE_CASH", "INSTAPAY"]),
-  proofRef: z.string().min(3).max(120),
+  proofImageUrl: z.string().url(),
+  proofImagePathname: z.string().min(1).max(500),
   proofNote: z.string().max(500).optional(),
   promoCode: z.string().max(40).optional(),
 });
@@ -37,15 +38,16 @@ export async function submitManualPaymentAction(
   const parsed = SubmitSchema.safeParse({
     plan: formData.get("plan"),
     method: formData.get("method"),
-    proofRef: String(formData.get("proofRef") ?? "").trim(),
+    proofImageUrl: String(formData.get("proofImageUrl") ?? "").trim(),
+    proofImagePathname: String(formData.get("proofImagePathname") ?? "").trim(),
     proofNote: String(formData.get("proofNote") ?? "").trim() || undefined,
     promoCode: String(formData.get("promoCode") ?? "").trim() || undefined,
   });
   if (!parsed.success) {
-    return { ok: false, error: "Please enter a valid transaction reference (3–120 chars)." };
+    return { ok: false, error: "Please upload a clear screenshot of your transaction." };
   }
 
-  const { plan, method, proofRef, proofNote, promoCode } = parsed.data;
+  const { plan, method, proofImageUrl, proofImagePathname, proofNote, promoCode } = parsed.data;
   const cfg = PLAN_LIMITS[plan];
   const originalCents = cfg.priceMonthly * 100;
 
@@ -63,19 +65,21 @@ export async function submitManualPaymentAction(
     promoCodeStored = validation.code;
   }
 
-  // Block obvious duplicate submissions: same user + method + proofRef in last 7 days.
-  const dup = await prisma.paymentOrder.findFirst({
+  // Block obvious spam: same user submitting more than 3 pending manual
+  // payments for the same plan in the last 24 hours.
+  const recentCount = await prisma.paymentOrder.count({
     where: {
       userId: user.id,
+      plan,
       paymentMethod: method,
-      proofRef,
-      createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      status: PaymentStatus.PENDING,
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
     },
   });
-  if (dup) {
+  if (recentCount >= 3) {
     return {
       ok: false,
-      error: "You've already submitted this transaction reference. Wait for admin review or contact support.",
+      error: "You already have pending submissions for this plan. Wait for admin review or contact support.",
     };
   }
 
@@ -87,7 +91,8 @@ export async function submitManualPaymentAction(
       currency: "EGP",
       paymentMethod: method,
       status: PaymentStatus.PENDING,
-      proofRef,
+      proofImageUrl,
+      proofImagePathname,
       proofNote: proofNote ?? null,
       promoCodeId: promoId,
       promoCodeUsed: promoCodeStored,

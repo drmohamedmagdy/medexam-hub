@@ -253,13 +253,15 @@ model PaymentOrder {
   paymobOrderId   String?       @unique
   paymobTxId      String?       @unique
   status          PaymentStatus @default(PENDING)
-  // For manual payments (Vodafone Cash / Instapay): the transaction reference
-  // the user entered, plus admin review metadata.
-  proofRef        String?
-  proofNote       String?
-  reviewedAt      DateTime?
-  reviewedBy      String?
-  rejectionReason String?
+  // For manual payments (Vodafone Cash / Instapay): a screenshot of the
+  // transaction the user uploaded, plus admin review metadata.
+  proofImageUrl      String?
+  proofImagePathname String?
+  proofRef           String? // legacy, kept for already-submitted payments
+  proofNote          String?
+  reviewedAt         DateTime?
+  reviewedBy         String?
+  rejectionReason    String?
   promoCodeId     String?
   promoCodeUsed   String?
   originalCents   Int?
