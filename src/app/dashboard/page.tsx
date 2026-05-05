@@ -9,6 +9,7 @@ import UpgradeBanner from "@/components/UpgradeBanner";
 import VerifyEmailBanner from "@/components/VerifyEmailBanner";
 import WelcomeToast from "@/components/WelcomeToast";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
+import type { Translations } from "@/lib/i18n";
 import type { Plan } from "@/generated/prisma/client";
 
 export default async function DashboardPage({
@@ -20,6 +21,7 @@ export default async function DashboardPage({
   const justVerified = sp.verify === "ok";
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
+  const dx = t.dashboardExtras;
 
   const [usage, exams, streak, todayCount, achievementsList] = await Promise.all([
     getMonthlyQuestionsUsage(user.id, user.plan),
@@ -54,8 +56,20 @@ export default async function DashboardPage({
   const inProgress = exams.find((e) => e.status === "IN_PROGRESS" || e.status === "READY");
 
   const usagePct = usage.limit === 0 ? 0 : Math.min(100, Math.round((usage.used / usage.limit) * 100));
-  const firstName = user.name?.split(" ")[0] ?? null;
-  const greet = greeting(firstName);
+  const firstName = user.name?.split(" ")[0] ?? "";
+  const greet = greeting(firstName, dx);
+  const remainingToday = Math.max(0, dailyGoal - todayCount);
+  const goalMsg =
+    todayCount === 0
+      ? dx.todaysGoalEmpty
+      : todayCount < dailyGoal
+        ? (remainingToday === 1 ? dx.todaysGoalRemainingOne : dx.todaysGoalRemainingMany).replace("{n}", String(remainingToday))
+        : dx.todaysGoalDone;
+
+  const reviewSub =
+    avgScore !== null
+      ? dx.qaReviewSub.replace("{n}", String(completed.length)).replace("{avg}", String(avgScore))
+      : dx.qaReviewSubNoScore.replace("{n}", String(completed.length));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -77,7 +91,13 @@ export default async function DashboardPage({
             </Link>
           </div>
         </div>
-        {streak > 0 && <StreakBadge streak={streak} />}
+        {streak > 0 && (
+          <StreakBadge
+            streak={streak}
+            label={dx.streakBadge.replace("{n}", String(streak))}
+            title={dx.streakBannerTitle.replace("{n}", String(streak))}
+          />
+        )}
       </div>
 
       {(!user.emailVerifiedAt || justVerified) && (
@@ -94,8 +114,8 @@ export default async function DashboardPage({
       <div className="mt-6 grid gap-3 sm:mt-8 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <QuickAction
           href="/exam/new"
-          title={inProgress ? "Start a new exam" : "Generate your first exam"}
-          subtitle={`${usage.remaining} questions remaining this month`}
+          title={inProgress ? dx.qaStartNew : dx.qaStartFirst}
+          subtitle={dx.qaRemaining.replace("{n}", String(usage.remaining))}
           accent="blue"
           icon={<IconSpark />}
           primary
@@ -103,7 +123,7 @@ export default async function DashboardPage({
         {inProgress ? (
           <QuickAction
             href={`/exam/${inProgress.id}`}
-            title="Resume in progress"
+            title={dx.qaResume}
             subtitle={inProgress.title}
             accent="amber"
             icon={<IconPlay />}
@@ -111,8 +131,8 @@ export default async function DashboardPage({
         ) : (
           <QuickAction
             href="/exams"
-            title="Review past exams"
-            subtitle={`${completed.length} completed · ${avgScore !== null ? `${avgScore}% avg` : "no scores yet"}`}
+            title={dx.qaReview}
+            subtitle={reviewSub}
             accent="emerald"
             icon={<IconBook />}
           />
@@ -120,16 +140,16 @@ export default async function DashboardPage({
         {user.plan === "PREMIUM" ? (
           <QuickAction
             href="/analytics"
-            title="See your weak areas"
-            subtitle="Personalized study targets"
+            title={dx.qaWeak}
+            subtitle={dx.qaWeakSub}
             accent="violet"
             icon={<IconChart />}
           />
         ) : (
           <QuickAction
             href="/plans"
-            title="Upgrade for more"
-            subtitle="50% off — limited time"
+            title={dx.qaUpgrade}
+            subtitle={dx.qaUpgradeSub.replace("{pct}", "50")}
             accent="violet"
             icon={<IconStar />}
           />
@@ -165,7 +185,7 @@ export default async function DashboardPage({
             <>
               {" — "}
               <Link href="/plans" className="font-medium text-blue-600 hover:underline dark:text-cyan-400">
-                upgrade for more
+                {dx.upgradeForMoreInline}
               </Link>
             </>
           )}
@@ -176,11 +196,11 @@ export default async function DashboardPage({
       <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/60 dark:backdrop-blur sm:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-slate-400">
-            Today&apos;s goal
+            {dx.todaysGoal}
           </h2>
           <span className="font-mono text-sm tabular-nums">
             <span className={`text-lg font-semibold ${todayCount >= dailyGoal ? "text-emerald-600 dark:text-emerald-400" : ""}`}>{todayCount}</span>
-            <span className="text-zinc-500"> / {dailyGoal} questions</span>
+            <span className="text-zinc-500"> / {dailyGoal} {dx.todaysGoalQuestionsSuffix}</span>
           </span>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-slate-800">
@@ -193,25 +213,19 @@ export default async function DashboardPage({
             style={{ width: `${dailyPct}%` }}
           />
         </div>
-        <p className="mt-2 text-xs text-zinc-500 dark:text-slate-400">
-          {todayCount === 0
-            ? "Start your day with a quick exam — even 5 minutes builds your streak."
-            : todayCount < dailyGoal
-              ? `${dailyGoal - todayCount} more question${dailyGoal - todayCount === 1 ? "" : "s"} to hit today's goal.`
-              : "🎉 Goal hit. Bonus questions still build your streak."}
-        </p>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-slate-400">{goalMsg}</p>
       </div>
 
       {/* ACHIEVEMENTS */}
       {totalUnlocked > 0 && (
         <div className="mt-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Achievements</h2>
+            <h2 className="text-lg font-semibold">{dx.achievements}</h2>
             <Link
               href="/achievements"
               className="text-sm font-medium text-blue-600 hover:underline dark:text-cyan-400"
             >
-              View all → ({totalUnlocked}/{achievementsList.length})
+              {dx.viewAll} → ({totalUnlocked}/{achievementsList.length})
             </Link>
           </div>
           <div className="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-4">
@@ -257,7 +271,7 @@ export default async function DashboardPage({
         <h2 className="text-lg font-semibold">{t.dashboard.recentExams}</h2>
         {exams.length > 0 && (
           <Link href="/exams" className="text-sm font-medium text-blue-600 hover:underline dark:text-cyan-400">
-            View all →
+            {dx.viewAll} →
           </Link>
         )}
       </div>
@@ -265,6 +279,7 @@ export default async function DashboardPage({
         {exams.length === 0 ? (
           <EmptyExamsState
             generateFirstLabel={t.dashboard.generateFirst}
+            emptyText={dx.emptyExams}
           />
         ) : (
           <ul className="divide-y divide-zinc-200 dark:divide-slate-800">
@@ -299,7 +314,7 @@ export default async function DashboardPage({
       </div>
 
       {/* First-time visitor toast — shown once via localStorage */}
-      <WelcomeToast firstName={firstName} />
+      <WelcomeToast firstName={firstName || null} />
     </div>
   );
 }
@@ -308,38 +323,29 @@ export default async function DashboardPage({
 // Helpers + small UI pieces
 // ─────────────────────────────────────────────────────────────────────────────
 
-function greeting(firstName: string | null): string {
-  // Use UTC hour for consistency — close enough for a friendly greeting.
+// Use UTC hour for consistency — close enough for a friendly greeting that
+// doesn't depend on browser timezone resolution on the server.
+function greeting(firstName: string, dx: Translations["dashboardExtras"]): string {
   const hour = new Date().getUTCHours();
-  let prefix: string;
-  let emoji: string;
-  if (hour >= 4 && hour < 11) {
-    prefix = "Good morning";
-    emoji = "☀️";
-  } else if (hour >= 11 && hour < 17) {
-    prefix = "Good afternoon";
-    emoji = "👋";
-  } else if (hour >= 17 && hour < 22) {
-    prefix = "Good evening";
-    emoji = "🌙";
-  } else {
-    prefix = "Studying late";
-    emoji = "🦉";
-  }
-  return firstName ? `${prefix}, ${firstName} ${emoji}` : `${prefix} ${emoji}`;
+  let template: string;
+  if (hour >= 4 && hour < 11) template = dx.greetingMorning;
+  else if (hour >= 11 && hour < 17) template = dx.greetingAfternoon;
+  else if (hour >= 17 && hour < 22) template = dx.greetingEvening;
+  else template = dx.greetingNight;
+  return firstName
+    ? template.replace("{name}", firstName)
+    : template.replace(/,\s*\{name\}/u, "");
 }
 
-function StreakBadge({ streak }: { streak: number }) {
+function StreakBadge({ streak, label, title }: { streak: number; label: string; title: string }) {
   const flame = streak >= 7 ? "🔥🔥" : "🔥";
   return (
     <div
       className="inline-flex items-center gap-2 self-start rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 text-sm font-semibold text-amber-900 shadow-sm dark:border-amber-700/60 dark:from-amber-950/60 dark:to-orange-950/60 dark:text-amber-200"
-      title={`${streak}-day study streak — keep it going!`}
+      title={title}
     >
       <span aria-hidden>{flame}</span>
-      <span>
-        {streak}-day streak
-      </span>
+      <span>{label}</span>
     </div>
   );
 }
@@ -420,14 +426,11 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-function EmptyExamsState({ generateFirstLabel }: { generateFirstLabel: string }) {
+function EmptyExamsState({ generateFirstLabel, emptyText }: { generateFirstLabel: string; emptyText: string }) {
   return (
     <div className="flex flex-col items-center px-6 py-12 text-center">
       <div className="text-4xl" aria-hidden>📚</div>
-      <p className="mt-3 max-w-sm text-sm text-zinc-600 dark:text-slate-300">
-        Nothing here yet. Generate your first AI exam — pick a specialty or exam format, choose
-        difficulty, and you&apos;ll have questions in 30 seconds.
-      </p>
+      <p className="mt-3 max-w-sm text-sm text-zinc-600 dark:text-slate-300">{emptyText}</p>
       <Link
         href="/exam/new"
         className="mt-5 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-lg"
