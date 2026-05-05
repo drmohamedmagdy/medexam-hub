@@ -25,6 +25,31 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Visible keyboard focus across the whole app. We use :focus-visible (not
+ * :focus) so mouse clicks don't show a ring — only Tab/Shift+Tab does. */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Buttons / links that already have rounded corners look better with a
+ * box-shadow ring than a square outline. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.85);
+}
+/* Inputs use a colored border + ring instead of an outline so the layout
+ * doesn't shift. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  border-color: #2563eb;
+}
+
 /* Slide up + fade-in for the welcome toast. */
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }

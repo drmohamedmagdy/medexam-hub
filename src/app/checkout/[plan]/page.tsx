@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { PLAN_LIMITS, PROMO_DISCOUNT_PCT, formatPrice } from "@/lib/plans";
 import type { Plan } from "@/generated/prisma/client";
+import { getLocale, getTranslations } from "@/lib/i18n-server";
 import CheckoutForm from "./CheckoutForm";
 
 const PAID_PLANS = ["BASIC", "PRO", "PREMIUM"] as const;
@@ -46,30 +47,38 @@ export default async function CheckoutPage({
   const plan = planUpper as PaidPlan;
   const cfg = PLAN_LIMITS[plan];
 
+  const locale = await getLocale();
+  const t = getTranslations(locale).checkout;
+  const subtitle = t.subtitle.replace("{price}", formatPrice(cfg.priceMonthly));
+  const promoBadge =
+    PROMO_DISCOUNT_PCT > 0 && cfg.originalPriceMonthly
+      ? t.promoBadge
+          .replace("{pct}", String(PROMO_DISCOUNT_PCT))
+          .replace("{amount}", (cfg.originalPriceMonthly - cfg.priceMonthly).toLocaleString())
+      : null;
+
+  // Split termsAgreement around the link text so we can wrap the link in a Next Link.
+  const termsParts = t.termsAgreement.split(t.termsLinkText);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/plans" className="text-sm text-zinc-500 hover:text-blue-600">
-        &larr; Back to plans
+        &larr; {t.back}
       </Link>
 
-      <h1 className="mt-4 text-xl font-semibold tracking-tight sm:text-2xl">Complete your upgrade</h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        You&apos;ll be charged {formatPrice(cfg.priceMonthly)} per month and can cancel anytime.
-      </p>
-      {PROMO_DISCOUNT_PCT > 0 && cfg.originalPriceMonthly && (
+      <h1 className="mt-4 text-xl font-semibold tracking-tight sm:text-2xl">{t.title}</h1>
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{subtitle}</p>
+      {promoBadge && (
         <p className="mt-2 inline-flex items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
           <span aria-hidden>🎉</span>
-          <span>
-            {PROMO_DISCOUNT_PCT}% off — save{" "}
-            {(cfg.originalPriceMonthly - cfg.priceMonthly).toLocaleString()} EGP/month
-          </span>
+          <span>{promoBadge}</span>
         </p>
       )}
 
       <div className="mt-6 grid gap-5 sm:mt-8 sm:gap-6 lg:grid-cols-[1fr_1.2fr]">
         <aside className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Order summary
+            {t.orderSummary}
           </h2>
           <div className="mt-4 flex items-baseline justify-between gap-3">
             <span className="text-lg font-semibold">{cfg.label} plan</span>
@@ -82,7 +91,7 @@ export default async function CheckoutPage({
               <span className="text-2xl font-semibold">{formatPrice(cfg.priceMonthly)}</span>
             </div>
           </div>
-          <p className="text-xs text-zinc-500">Billed monthly</p>
+          <p className="text-xs text-zinc-500">{t.billedMonthly}</p>
 
           <ul className="mt-6 space-y-2 text-sm">
             {PLAN_FEATURES[plan].map((f) => (
@@ -94,7 +103,7 @@ export default async function CheckoutPage({
           </ul>
 
           <div className="mt-6 flex items-baseline justify-between border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            <span className="text-sm font-medium">Total today</span>
+            <span className="text-sm font-medium">{t.totalToday}</span>
             <div className="text-right">
               {cfg.originalPriceMonthly && (
                 <div className="text-sm text-zinc-400 line-through">
@@ -104,26 +113,25 @@ export default async function CheckoutPage({
               <span className="text-2xl font-semibold">{formatPrice(cfg.priceMonthly)}</span>
             </div>
           </div>
-          <p className="mt-1 text-xs text-zinc-500">Egyptian Pounds, taxes may apply</p>
+          <p className="mt-1 text-xs text-zinc-500">{t.taxNote}</p>
         </aside>
 
         <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Payment
+            {t.paymentSection}
           </h2>
 
           <div className="mt-4 rounded-md bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800/50">
-            <span className="text-zinc-500">Account:</span>{" "}
+            <span className="text-zinc-500">{t.account}</span>{" "}
             <span className="font-medium">{user.email}</span>
           </div>
 
-          <CheckoutForm plan={plan} priceMonthly={cfg.priceMonthly} />
+          <CheckoutForm plan={plan} priceMonthly={cfg.priceMonthly} t={t} />
 
           <p className="mt-6 text-xs text-zinc-500">
-            By continuing you agree to the{" "}
-            <Link href="/terms" className="underline hover:text-zinc-700">terms of service</Link>.
-            Subscription is valid for 30 days. Card payments activate instantly via Paymob;
-            Vodafone Cash and Instapay payments are reviewed manually within 24 hours.
+            {termsParts[0]}
+            <Link href="/terms" className="underline hover:text-zinc-700">{t.termsLinkText}</Link>
+            {termsParts.slice(1).join(t.termsLinkText)}
           </p>
         </section>
       </div>

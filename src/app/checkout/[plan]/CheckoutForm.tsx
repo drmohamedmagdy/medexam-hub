@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import type { Plan } from "@/generated/prisma/client";
 import { formatPrice } from "@/lib/plans";
+import type { Translations } from "@/lib/i18n";
 import { applyPromoAction, type PromoApplyState } from "@/app/actions/promo";
 import { submitManualPaymentAction, type ManualPayState } from "@/app/actions/manual-payment";
 import {
@@ -22,12 +23,16 @@ type AppliedPromo = {
 
 type Method = "CARD" | "VODAFONE_CASH" | "INSTAPAY";
 
+type CheckoutT = Translations["checkout"];
+
 export default function CheckoutForm({
   plan,
   priceMonthly,
+  t,
 }: {
   plan: Plan;
   priceMonthly: number;
+  t: CheckoutT;
 }) {
   const [method, setMethod] = useState<Method>("CARD");
   const [pending, setPending] = useState(false);
@@ -87,11 +92,12 @@ export default function CheckoutForm({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                ✓ Promo &quot;{promo.code}&quot; applied
+                {t.promoApplied.replace("{code}", promo.code)}
               </p>
               <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                You save {(promo.discountCents / 100).toLocaleString()} EGP — new total{" "}
-                {(promo.finalCents / 100).toLocaleString()} EGP/month
+                {t.promoSavings
+                  .replace("{save}", (promo.discountCents / 100).toLocaleString())
+                  .replace("{total}", (promo.finalCents / 100).toLocaleString())}
               </p>
             </div>
             <button
@@ -99,13 +105,13 @@ export default function CheckoutForm({
               onClick={() => setPromo(null)}
               className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
             >
-              Remove
+              {t.promoRemove}
             </button>
           </div>
         ) : (
           <form action={promoAction} className="space-y-2">
             <label htmlFor="promo-code" className="block text-sm font-medium">
-              Have a promo code?
+              {t.promoLabel}
             </label>
             <input type="hidden" name="plan" value={plan} />
             <div className="flex gap-2">
@@ -122,7 +128,7 @@ export default function CheckoutForm({
                 disabled={promoPending}
                 className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                {promoPending ? "Checking…" : "Apply"}
+                {promoPending ? t.promoChecking : t.promoApply}
               </button>
             </div>
             {promoState && !promoState.ok && (
@@ -136,28 +142,28 @@ export default function CheckoutForm({
 
       {/* Method picker */}
       <fieldset>
-        <legend className="text-sm font-medium">Choose how to pay</legend>
+        <legend className="text-sm font-medium">{t.chooseMethod}</legend>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <MethodOption
             id="CARD"
-            label="Card"
-            sublabel="Visa / Mastercard via Paymob"
+            label={t.methodCard}
+            sublabel={t.methodCardSub}
             icon="💳"
             checked={method === "CARD"}
             onSelect={() => setMethod("CARD")}
           />
           <MethodOption
             id="VODAFONE_CASH"
-            label="Vodafone Cash"
-            sublabel="Send to wallet"
+            label={t.methodVodafone}
+            sublabel={t.methodVodafoneSub}
             icon="📱"
             checked={method === "VODAFONE_CASH"}
             onSelect={() => setMethod("VODAFONE_CASH")}
           />
           <MethodOption
             id="INSTAPAY"
-            label="Instapay"
-            sublabel="Pay via link"
+            label={t.methodInstapay}
+            sublabel={t.methodInstapaySub}
             icon="⚡"
             checked={method === "INSTAPAY"}
             onSelect={() => setMethod("INSTAPAY")}
@@ -168,13 +174,10 @@ export default function CheckoutForm({
       {/* Per-method content */}
       {method === "CARD" && (
         <div className="space-y-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            You&apos;ll be redirected to Paymob to enter your card details. After successful payment,
-            return to this site to activate your plan.
-          </p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.cardCopy}</p>
           <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-400">
             <span aria-hidden>🔒</span>
-            <span>Payments processed by Paymob. We never see your card number.</span>
+            <span>{t.cardSecurity}</span>
           </div>
           {error && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -186,7 +189,7 @@ export default function CheckoutForm({
             disabled={pending}
             className="w-full rounded-md bg-blue-600 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5"
           >
-            {pending ? "Redirecting to Paymob…" : `Pay ${formatPrice(finalAmount)} with Paymob`}
+            {pending ? t.cardRedirecting : t.cardPay.replace("{price}", formatPrice(finalAmount))}
           </button>
         </div>
       )}
@@ -200,8 +203,9 @@ export default function CheckoutForm({
           action={manualAction}
           state={manualState}
           pending={manualPending}
+          t={t}
           instructions={
-            <VodafoneInstructions amount={finalAmount} />
+            <VodafoneInstructions amount={finalAmount} t={t} />
           }
         />
       )}
@@ -215,8 +219,9 @@ export default function CheckoutForm({
           action={manualAction}
           state={manualState}
           pending={manualPending}
+          t={t}
           instructions={
-            <InstapayInstructions amount={finalAmount} />
+            <InstapayInstructions amount={finalAmount} t={t} />
           }
         />
       )}
@@ -258,7 +263,7 @@ function MethodOption({
   );
 }
 
-function VodafoneInstructions({ amount }: { amount: number }) {
+function VodafoneInstructions({ amount, t }: { amount: number; t: CheckoutT }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
     try {
@@ -267,9 +272,10 @@ function VodafoneInstructions({ amount }: { amount: number }) {
       setTimeout(() => setCopied(false), 1500);
     } catch {}
   }
+  const amountStr = amount.toLocaleString();
   return (
     <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/30">
-      <p className="font-semibold">Send {amount.toLocaleString()} EGP to this Vodafone Cash wallet</p>
+      <p className="font-semibold">{t.vodafoneTitle.replace("{amount}", amountStr)}</p>
       <div className="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-2 font-mono text-base font-semibold dark:bg-zinc-900">
         <span>{VODAFONE_CASH_DISPLAY}</span>
         <button
@@ -277,39 +283,40 @@ function VodafoneInstructions({ amount }: { amount: number }) {
           onClick={copy}
           className="ml-auto rounded-md bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
         >
-          {copied ? "Copied!" : "Copy number"}
+          {copied ? t.vodafoneCopied : t.vodafoneCopy}
         </button>
       </div>
       <ol className="list-decimal space-y-1 pl-5 text-xs text-zinc-700 dark:text-zinc-300">
-        <li>Open My Vodafone or dial *9*7# and choose Send Money.</li>
-        <li>Send <strong>{amount.toLocaleString()} EGP</strong> to <strong>{VODAFONE_CASH_DISPLAY}</strong>.</li>
-        <li>You&apos;ll get an SMS with a transaction reference (looks like <code>VC123456789</code>).</li>
-        <li>Paste that reference below — we&apos;ll verify and activate your plan, usually within 24h.</li>
+        <li>{t.vodafoneStep1}</li>
+        <li>{t.vodafoneStep2.replace("{amount}", amountStr).replace("{wallet}", VODAFONE_CASH_DISPLAY)}</li>
+        <li>{t.vodafoneStep3}</li>
+        <li>{t.vodafoneStep4}</li>
       </ol>
     </div>
   );
 }
 
-function InstapayInstructions({ amount }: { amount: number }) {
+function InstapayInstructions({ amount, t }: { amount: number; t: CheckoutT }) {
+  const amountStr = amount.toLocaleString();
   return (
     <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm dark:border-blue-900 dark:bg-blue-950/30">
-      <p className="font-semibold">Send {amount.toLocaleString()} EGP via Instapay</p>
+      <p className="font-semibold">{t.instapayTitle.replace("{amount}", amountStr)}</p>
       <a
         href={INSTAPAY_LINK}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
       >
-        Open Instapay link →
+        {t.instapayOpen}
       </a>
       <p className="text-xs text-zinc-600 dark:text-zinc-400 break-all">
-        Or copy this URL: <code className="font-mono">{INSTAPAY_HANDLE_DISPLAY}</code>
+        {t.instapayOrCopy} <code className="font-mono">{INSTAPAY_HANDLE_DISPLAY}</code>
       </p>
       <ol className="list-decimal space-y-1 pl-5 text-xs text-zinc-700 dark:text-zinc-300">
-        <li>Tap the button above — it opens your bank&apos;s Instapay flow.</li>
-        <li>Enter <strong>{amount.toLocaleString()} EGP</strong> and confirm.</li>
-        <li>Copy the transaction reference / receipt ID from your bank.</li>
-        <li>Paste it below — we&apos;ll verify and activate your plan, usually within 24h.</li>
+        <li>{t.instapayStep1}</li>
+        <li>{t.instapayStep2.replace("{amount}", amountStr)}</li>
+        <li>{t.instapayStep3}</li>
+        <li>{t.instapayStep4}</li>
       </ol>
     </div>
   );
@@ -324,6 +331,7 @@ function ManualForm({
   state,
   pending,
   instructions,
+  t,
 }: {
   plan: Plan;
   method: "VODAFONE_CASH" | "INSTAPAY";
@@ -333,6 +341,7 @@ function ManualForm({
   state: ManualPayState;
   pending: boolean;
   instructions: React.ReactNode;
+  t: CheckoutT;
 }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploaded, setUploaded] = useState<{ url: string; pathname: string } | null>(null);
@@ -391,12 +400,10 @@ function ManualForm({
 
       <div>
         <label htmlFor="proofImage" className="block text-sm font-medium">
-          Screenshot of the transaction <span className="text-red-600">*</span>
+          {t.proofLabel} <span className="text-red-600">*</span>
         </label>
         <p className="mt-1 text-xs text-zinc-500">
-          {method === "VODAFONE_CASH"
-            ? "Screenshot the SMS confirmation from Vodafone, or the success screen in My Vodafone."
-            : "Screenshot your bank's success screen or the Instapay receipt page."}
+          {method === "VODAFONE_CASH" ? t.proofHintVodafone : t.proofHintInstapay}
         </p>
 
         {preview ? (
@@ -410,7 +417,7 @@ function ManualForm({
               />
               {uploading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white">
-                  <span className="text-sm font-medium">Uploading… {progressPct}%</span>
+                  <span className="text-sm font-medium">{t.proofUploading.replace("{pct}", String(progressPct))}</span>
                   <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-white/30">
                     <div
                       className="h-full bg-white transition-all"
@@ -421,7 +428,7 @@ function ManualForm({
               )}
               {uploaded && (
                 <div className="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
-                  ✓ Uploaded
+                  {t.proofUploaded}
                 </div>
               )}
             </div>
@@ -434,7 +441,7 @@ function ManualForm({
               }}
               className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
             >
-              Choose a different screenshot
+              {t.proofChooseDifferent}
             </button>
           </div>
         ) : (
@@ -443,8 +450,8 @@ function ManualForm({
             className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm hover:border-blue-500 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800/40 dark:hover:border-blue-500 dark:hover:bg-blue-950/20"
           >
             <span className="text-3xl" aria-hidden>📸</span>
-            <span className="font-medium">Tap to upload screenshot</span>
-            <span className="text-xs text-zinc-500">JPG, PNG, or HEIC · up to 10 MB</span>
+            <span className="font-medium">{t.proofUpload}</span>
+            <span className="text-xs text-zinc-500">{t.proofUploadHint}</span>
           </label>
         )}
         <input
@@ -463,14 +470,14 @@ function ManualForm({
 
       <div>
         <label htmlFor="proofNote" className="block text-sm font-medium">
-          Note (optional)
+          {t.noteLabel}
         </label>
         <textarea
           id="proofNote"
           name="proofNote"
           rows={2}
           maxLength={500}
-          placeholder="Anything you'd like the admin to know."
+          placeholder={t.notePlaceholder}
           className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
@@ -487,16 +494,14 @@ function ManualForm({
         className="w-full rounded-md bg-blue-600 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5"
       >
         {pending
-          ? "Submitting…"
+          ? t.submitting
           : uploading
-            ? "Uploading screenshot…"
+            ? t.submitUploading
             : !uploaded
-              ? "Upload your screenshot first"
-              : `I've paid ${amount.toLocaleString()} EGP — submit for review`}
+              ? t.submitDisabled
+              : t.submitButton.replace("{amount}", amount.toLocaleString())}
       </button>
-      <p className="text-center text-xs text-zinc-500">
-        Your plan activates as soon as we verify the payment (usually within 24 hours).
-      </p>
+      <p className="text-center text-xs text-zinc-500">{t.submitFootnote}</p>
     </form>
   );
 }

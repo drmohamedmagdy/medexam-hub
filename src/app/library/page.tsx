@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLocale, getTranslations } from "@/lib/i18n-server";
+import type { Translations } from "@/lib/i18n";
 import {
   canPreviewInline,
   fileKind,
@@ -20,6 +22,8 @@ export default async function LibraryPage({
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
   const filterCategory = sp.category;
+  const locale = await getLocale();
+  const t = getTranslations(locale).library;
 
   type ResourceWhere = NonNullable<Parameters<typeof prisma.libraryResource.findMany>[0]>["where"];
   const where: ResourceWhere = { isPublished: true };
@@ -72,9 +76,9 @@ export default async function LibraryPage({
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">📚 Library</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.title}</h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-slate-400">
-            Curated study resources — PDFs, slides, notes. Free for all members.
+            {t.subtitle}
           </p>
         </div>
       </div>
@@ -84,21 +88,21 @@ export default async function LibraryPage({
         <input
           name="q"
           defaultValue={q}
-          placeholder="Search title, category, description…"
+          placeholder={t.searchPlaceholder}
           className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/60"
         />
         <button
           type="submit"
           className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Search
+          {t.search}
         </button>
         {(q || filterCategory) && (
           <Link
             href="/library"
             className="rounded-md border border-zinc-300 px-4 py-2.5 text-sm dark:border-slate-700"
           >
-            Reset
+            {t.reset}
           </Link>
         )}
       </form>
@@ -114,7 +118,7 @@ export default async function LibraryPage({
                 : "border-zinc-300 bg-white hover:bg-zinc-100 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:bg-slate-800"
             }`}
           >
-            All
+            {t.filterAll}
           </Link>
           {allCategories.map((c) => (
             <Link
@@ -138,15 +142,15 @@ export default async function LibraryPage({
           <div className="text-4xl" aria-hidden>📚</div>
           <p className="mt-3 text-sm text-zinc-600 dark:text-slate-300">
             {q || filterCategory
-              ? "No resources match your search. Try a different keyword."
-              : "The library is empty for now. Check back soon — new resources are added regularly."}
+              ? `${t.noMatch} ${t.noMatchHint}`
+              : t.empty}
           </p>
         </div>
       ) : filterCategory || q ? (
         // Search/filter view: flat grid
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {resources.map((r) => (
-            <ResourceCard key={r.id} r={r} />
+            <ResourceCard key={r.id} r={r} t={t} />
           ))}
         </div>
       ) : (
@@ -165,7 +169,7 @@ export default async function LibraryPage({
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {(grouped.get(cat) ?? []).slice(0, 6).map((r) => (
-                  <ResourceCard key={r.id} r={r} />
+                  <ResourceCard key={r.id} r={r} t={t} />
                 ))}
               </div>
             </section>
@@ -178,6 +182,7 @@ export default async function LibraryPage({
 
 function ResourceCard({
   r,
+  t,
 }: {
   r: {
     id: string;
@@ -191,6 +196,7 @@ function ResourceCard({
     downloadCount: number;
     createdAt: Date;
   };
+  t: Translations["library"];
 }) {
   const kind = fileKind(r.mimeType);
   const previewable = canPreviewInline(kind);
@@ -242,7 +248,7 @@ function ResourceCard({
                 rel="noopener noreferrer"
                 className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-slate-700 dark:hover:bg-slate-800"
               >
-                Read
+                {t.read}
               </a>
             )}
             <a
@@ -254,7 +260,7 @@ function ResourceCard({
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Download
+              {t.download}
             </a>
           </div>
         </div>

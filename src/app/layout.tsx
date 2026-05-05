@@ -43,7 +43,7 @@ export default async function RootLayout({
     ? [
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
         { href: "/dashboard", label: t.nav.dashboard },
-        { href: "/library", label: "Library" },
+        { href: "/library", label: t.nav.library },
         { href: "/exams", label: t.dashboard.recentExams },
         { href: "/plans", label: t.nav.plans },
         ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
@@ -92,7 +92,7 @@ export default async function RootLayout({
               {user ? (
                 <>
                   <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
-                  <Link href="/library" className="hover:text-blue-600">Library</Link>
+                  <Link href="/library" className="hover:text-blue-600">{t.nav.library}</Link>
                   {showAdmin && (
                     <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">
                       Admin
@@ -155,13 +155,13 @@ export default async function RootLayout({
         <main className="flex-1">{children}</main>
         <footer className="border-t border-zinc-200 pb-24 dark:border-slate-800/60 sm:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-xs text-zinc-500 sm:px-6 sm:flex-row sm:justify-between">
-            <p className="text-center sm:text-start">{t.footer}</p>
+            <p className="text-center sm:text-start">{t.footer.disclaimer}</p>
             <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-              <Link href="/about" className="hover:text-zinc-900 dark:hover:text-zinc-100">About</Link>
-              <Link href="/contact" className="hover:text-zinc-900 dark:hover:text-zinc-100">Contact</Link>
-              <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-100">Privacy</Link>
-              <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-100">Terms</Link>
-              <Link href="/disclaimer" className="hover:text-zinc-900 dark:hover:text-zinc-100">Medical Disclaimer</Link>
+              <Link href="/about" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.about}</Link>
+              <Link href="/contact" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.contact}</Link>
+              <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.privacy}</Link>
+              <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.terms}</Link>
+              <Link href="/disclaimer" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.medicalDisclaimer}</Link>
             </nav>
           </div>
         </footer>

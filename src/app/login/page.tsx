@@ -22,7 +22,7 @@ export default async function LoginPage({
       <h1 className="text-2xl font-semibold tracking-tight">{t.login.title}</h1>
       {verifyInvalid && (
         <div className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
-          That verification link is invalid or expired. Sign in and we&apos;ll send you a fresh one.
+          {t.login.verificationError}
         </div>
       )}
       <LoginForm
