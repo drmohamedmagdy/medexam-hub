@@ -104,6 +104,8 @@ model LibraryResource {
   sizeBytes     Int
   fileUrl       String   // public Vercel Blob URL
   filePathname  String   // pathname inside the Blob store (used for delete)
+  coverUrl      String?  // optional book/document cover image URL (Vercel Blob)
+  coverPathname String?  // pathname inside the Blob store (used for delete)
   uploadedBy    String   // admin user id who uploaded it
   downloadCount Int      @default(0)
   isPublished   Boolean  @default(true)

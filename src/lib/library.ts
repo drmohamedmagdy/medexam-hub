@@ -7,7 +7,7 @@
  * we can swap fileData -> a Vercel Blob URL with no schema-shape churn.
  */
 
-export const ALLOWED_MIME_TYPES = [
+export const ALLOWED_CONTENT_MIME_TYPES = [
   // PDF
   "application/pdf",
   // Word
@@ -18,6 +18,20 @@ export const ALLOWED_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   // Plain text fallbacks (sometimes useful)
   "text/plain",
+] as const;
+
+export const ALLOWED_COVER_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+
+// Combined list for the /api/library/upload signing route — accepts either
+// a content file or a cover image, lets the client decide which.
+export const ALLOWED_MIME_TYPES = [
+  ...ALLOWED_CONTENT_MIME_TYPES,
+  ...ALLOWED_COVER_MIME_TYPES,
 ] as const;
 
 // Hard ceiling enforced at the Blob signing step too (maximumSizeInBytes

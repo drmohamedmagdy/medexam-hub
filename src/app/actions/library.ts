@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { del } from "@vercel/blob";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
-import { ALLOWED_MIME_TYPES } from "@/lib/library";
+import { ALLOWED_CONTENT_MIME_TYPES } from "@/lib/library";
 
 export type LibraryCreateState = { ok?: boolean; error?: string } | null;
 
@@ -20,6 +20,8 @@ const CreateSchema = z.object({
   filename: z.string().min(1).max(300),
   mimeType: z.string().min(1).max(200),
   sizeBytes: z.coerce.number().int().min(1),
+  coverUrl: z.string().url().optional().or(z.literal("")),
+  coverPathname: z.string().max(500).optional().or(z.literal("")),
 });
 
 /**
@@ -43,12 +45,18 @@ export async function adminCreateLibraryRecordAction(
     filename: formData.get("filename") ?? "",
     mimeType: formData.get("mimeType") ?? "",
     sizeBytes: formData.get("sizeBytes") ?? "0",
+    coverUrl: formData.get("coverUrl") ?? "",
+    coverPathname: formData.get("coverPathname") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  if (!ALLOWED_MIME_TYPES.includes(parsed.data.mimeType as (typeof ALLOWED_MIME_TYPES)[number])) {
+  if (
+    !ALLOWED_CONTENT_MIME_TYPES.includes(
+      parsed.data.mimeType as (typeof ALLOWED_CONTENT_MIME_TYPES)[number]
+    )
+  ) {
     return {
       error:
         "Unsupported file type. Allowed: PDF, Word, PowerPoint, or plain text.",
@@ -65,6 +73,8 @@ export async function adminCreateLibraryRecordAction(
       sizeBytes: parsed.data.sizeBytes,
       fileUrl: parsed.data.fileUrl,
       filePathname: parsed.data.filePathname,
+      coverUrl: parsed.data.coverUrl || null,
+      coverPathname: parsed.data.coverPathname || null,
       uploadedBy: admin.id,
       isPublished: parsed.data.isPublished,
     },
@@ -122,21 +132,92 @@ export async function adminDeleteLibraryAction(formData: FormData): Promise<void
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  // Look up the blob URL so we can delete the file from Vercel Blob too.
-  // If blob deletion fails, we still proceed with the DB delete — better to
-  // have an orphan blob than a stuck row.
+  // Look up the blob URLs so we can delete both the content file AND the
+  // cover image from Vercel Blob. If a blob deletion fails, we still
+  // proceed with the DB delete — orphaned blobs are recoverable later;
+  // a stuck row blocks admin work.
   const r = await prisma.libraryResource.findUnique({
     where: { id },
-    select: { fileUrl: true },
+    select: { fileUrl: true, coverUrl: true },
   });
-  if (r?.fileUrl) {
-    await del(r.fileUrl).catch(() => {});
-  }
+  if (r?.fileUrl) await del(r.fileUrl).catch(() => {});
+  if (r?.coverUrl) await del(r.coverUrl).catch(() => {});
 
   await prisma.libraryResource.delete({ where: { id } });
   revalidatePath("/admin/library");
   revalidatePath("/library");
   redirect("/admin/library");
+}
+
+/**
+ * Updates just the cover image URL on an existing resource. The new cover
+ * was already uploaded to Blob client-side; this action saves the URL and
+ * removes the old cover from storage if there was one.
+ */
+const SetCoverSchema = z.object({
+  id: z.string().min(1),
+  coverUrl: z.string().url(),
+  coverPathname: z.string().min(1).max(500),
+});
+
+export type LibrarySetCoverState = { ok?: boolean; error?: string } | null;
+
+export async function adminSetLibraryCoverAction(
+  _prev: LibrarySetCoverState,
+  formData: FormData
+): Promise<LibrarySetCoverState> {
+  await requireAdmin();
+  const parsed = SetCoverSchema.safeParse({
+    id: formData.get("id") ?? "",
+    coverUrl: formData.get("coverUrl") ?? "",
+    coverPathname: formData.get("coverPathname") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid cover" };
+  }
+
+  const existing = await prisma.libraryResource.findUnique({
+    where: { id: parsed.data.id },
+    select: { coverUrl: true },
+  });
+  if (!existing) return { error: "Resource not found" };
+
+  // Remove the old cover from Blob, if any
+  if (existing.coverUrl) {
+    await del(existing.coverUrl).catch(() => {});
+  }
+
+  await prisma.libraryResource.update({
+    where: { id: parsed.data.id },
+    data: {
+      coverUrl: parsed.data.coverUrl,
+      coverPathname: parsed.data.coverPathname,
+    },
+  });
+
+  revalidatePath("/admin/library");
+  revalidatePath(`/admin/library/${parsed.data.id}`);
+  revalidatePath("/library");
+  return { ok: true };
+}
+
+/** Removes the cover image from a resource (file blob deleted; field cleared). */
+export async function adminClearLibraryCoverAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const r = await prisma.libraryResource.findUnique({
+    where: { id },
+    select: { coverUrl: true },
+  });
+  if (r?.coverUrl) await del(r.coverUrl).catch(() => {});
+  await prisma.libraryResource.update({
+    where: { id },
+    data: { coverUrl: null, coverPathname: null },
+  });
+  revalidatePath("/admin/library");
+  revalidatePath(`/admin/library/${id}`);
+  revalidatePath("/library");
 }
 
 export async function adminTogglePublishLibraryAction(formData: FormData): Promise<void> {

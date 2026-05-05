@@ -23,6 +23,7 @@ export default async function EditLibraryResourcePage({
       filename: true,
       mimeType: true,
       sizeBytes: true,
+      coverUrl: true,
       downloadCount: true,
       isPublished: true,
       createdAt: true,
@@ -82,6 +83,7 @@ export default async function EditLibraryResourcePage({
           description: r.description ?? "",
           category: r.category,
           isPublished: r.isPublished,
+          coverUrl: r.coverUrl,
         }}
       />
     </div>
