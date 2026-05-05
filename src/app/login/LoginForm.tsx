@@ -56,14 +56,6 @@ export default function LoginForm({ labels }: { labels: Labels }) {
       >
         {pending ? labels.submitLoading : labels.submit}
       </button>
-      <p className="text-center text-sm">
-        <Link
-          href="/forgot-password"
-          className="font-medium text-blue-600 hover:underline dark:text-cyan-400"
-        >
-          Forgot your password?
-        </Link>
-      </p>
     </form>
   );
 }
