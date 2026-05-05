@@ -120,9 +120,10 @@ export default async function CheckoutPage({
           <CheckoutForm plan={plan} priceMonthly={cfg.priceMonthly} />
 
           <p className="mt-6 text-xs text-zinc-500">
-            By clicking continue you agree to the{" "}
-            <Link href="/" className="underline hover:text-zinc-700">terms of service</Link>.
-            Subscription renews monthly and can be cancelled at any time.
+            By continuing you agree to the{" "}
+            <Link href="/terms" className="underline hover:text-zinc-700">terms of service</Link>.
+            Subscription is valid for 30 days. Card payments activate instantly via Paymob;
+            Vodafone Cash and Instapay payments are reviewed manually within 24 hours.
           </p>
         </section>
       </div>

@@ -237,15 +237,29 @@ enum PaymentStatus {
   FAILED
 }
 
+enum PaymentMethod {
+  CARD
+  VODAFONE_CASH
+  INSTAPAY
+}
+
 model PaymentOrder {
   id              String        @id @default(cuid())
   userId          String
   plan            Plan
   amountCents     Int
   currency        String        @default("EGP")
+  paymentMethod   PaymentMethod @default(CARD)
   paymobOrderId   String?       @unique
   paymobTxId      String?       @unique
   status          PaymentStatus @default(PENDING)
+  // For manual payments (Vodafone Cash / Instapay): the transaction reference
+  // the user entered, plus admin review metadata.
+  proofRef        String?
+  proofNote       String?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  rejectionReason String?
   promoCodeId     String?
   promoCodeUsed   String?
   originalCents   Int?
@@ -258,6 +272,7 @@ model PaymentOrder {
 
   @@index([userId, createdAt])
   @@index([promoCodeId])
+  @@index([status, paymentMethod])
 }
 
 enum PromoDiscountType {
