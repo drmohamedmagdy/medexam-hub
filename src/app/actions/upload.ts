@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { put } from "@vercel/blob";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PLAN_LIMITS, currentYearMonth } from "@/lib/plans";
@@ -12,6 +11,7 @@ import {
   MAX_FILE_BYTES,
 } from "@/lib/file-upload";
 import { summariseFile } from "@/lib/file-summary";
+import { getLocale } from "@/lib/i18n-server";
 
 export type UploadState = {
   error?: string;
@@ -100,28 +100,17 @@ export async function uploadFileAction(
   let summaryFailed = false;
   if (wantSummary) {
     try {
-      const summary = await summariseFile({
+      const locale = await getLocale();
+      const summaryText = await summariseFile({
         text: extracted.text,
         filename,
+        language: locale,
       });
-
-      const safeName = filename.replace(/\.[^.]+$/, "").replace(/[^a-z0-9-_]+/gi, "_") || "file";
-      const blob = await put(
-        `file-summaries/${record.id}/${safeName}-summary.pdf`,
-        Buffer.from(summary.pdfBytes),
-        {
-          access: "public",
-          contentType: "application/pdf",
-          addRandomSuffix: true,
-        }
-      );
 
       await prisma.fileUpload.update({
         where: { id: record.id },
         data: {
-          summaryText: summary.text,
-          summaryUrl: blob.url,
-          summaryPathname: blob.pathname,
+          summaryText,
           summaryCreatedAt: new Date(),
         },
       });

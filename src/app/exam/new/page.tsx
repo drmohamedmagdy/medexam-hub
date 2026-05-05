@@ -21,7 +21,14 @@ export default async function NewExamPage() {
           where: { userId: user.id },
           orderBy: { createdAt: "desc" },
           take: 10,
-          select: { id: true, filename: true, charCount: true, createdAt: true, summaryUrl: true },
+          select: {
+            id: true,
+            filename: true,
+            charCount: true,
+            createdAt: true,
+            summaryUrl: true,
+            summaryText: true,
+          },
         })
       : Promise.resolve([]),
   ]);
@@ -48,7 +55,8 @@ export default async function NewExamPage() {
           filename: f.filename,
           charCount: f.charCount,
           createdAt: f.createdAt.toISOString(),
-          summaryUrl: f.summaryUrl,
+          // hasSummary covers both new (text-based) and legacy (Blob URL) summaries
+          hasSummary: Boolean(f.summaryText) || Boolean(f.summaryUrl),
         }))}
         defaults={{
           generationMode:

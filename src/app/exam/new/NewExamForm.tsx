@@ -47,7 +47,7 @@ type RecentFile = {
   filename: string;
   charCount: number;
   createdAt: string;
-  summaryUrl: string | null;
+  hasSummary: boolean;
 };
 
 type FileQuotaStatus = { used: number; limit: number; remaining: number } | null;
@@ -319,7 +319,7 @@ export default function NewExamForm({
                 {recentFiles.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.filename} ({Math.round(f.charCount / 100) / 10}k chars)
-                    {f.summaryUrl ? " · 📄" : ""}
+                    {f.hasSummary ? " · 📄" : ""}
                   </option>
                 ))}
               </select>
@@ -579,13 +579,14 @@ function SummaryLinks({
   file: RecentFile | null;
   labels: Labels;
 }) {
-  if (!file || !file.summaryUrl) return null;
+  if (!file || !file.hasSummary) return null;
+  const summaryHref = `/file/${file.id}/summary`;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs dark:border-emerald-900 dark:bg-emerald-950/30">
       <span aria-hidden>📄</span>
       <span className="font-medium text-emerald-900 dark:text-emerald-200">{labels.summaryReady}</span>
       <a
-        href={file.summaryUrl}
+        href={summaryHref}
         target="_blank"
         rel="noopener noreferrer"
         className="rounded-md border border-emerald-300 bg-white px-2.5 py-1 font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
@@ -593,8 +594,9 @@ function SummaryLinks({
         {labels.summaryView}
       </a>
       <a
-        href={file.summaryUrl}
-        download
+        href={`${summaryHref}?print=1`}
+        target="_blank"
+        rel="noopener noreferrer"
         className="rounded-md border border-emerald-300 bg-white px-2.5 py-1 font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
       >
         {labels.summaryDownload}
