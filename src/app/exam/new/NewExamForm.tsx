@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { createExamAction, type NewExamState } from "@/app/actions/exam";
 import { uploadFileAction, type UploadState } from "@/app/actions/upload";
-import { SPECIALTIES } from "@/lib/specialties";
+import { SPECIALTIES, SPECIALTY_GROUPS } from "@/lib/specialties";
 import { EXAM_TYPE_GROUPS, getAllExamTypeIds } from "@/lib/exam-types";
 import { EXAM_LANGUAGES, DEFAULT_LANGUAGE, findLanguage } from "@/lib/languages";
 import type { Translations } from "@/lib/i18n";
@@ -184,8 +184,12 @@ export default function NewExamForm({
                 defaultValue={specialtyDefault}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               >
-                {SPECIALTIES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {SPECIALTY_GROUPS.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.items.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </Field>
@@ -231,8 +235,12 @@ export default function NewExamForm({
                   className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
                 >
                   <option value="">{labels.any}</option>
-                  {SPECIALTIES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                  {SPECIALTY_GROUPS.map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.items.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </Field>
