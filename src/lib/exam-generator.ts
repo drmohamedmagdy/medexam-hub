@@ -10,11 +10,13 @@ import { findLanguage, DEFAULT_LANGUAGE } from "@/lib/languages";
 
 const McqQuestionSchema = z.object({
   prompt: z.string().min(10),
+  // id max bumped from 4 to 16 so True/False can use "True" (4) and "False"
+  // (5) as ids. MCQ still uses single-letter ids in practice.
   options: z
-    .array(z.object({ id: z.string().min(1).max(4), text: z.string().min(1) }))
+    .array(z.object({ id: z.string().min(1).max(16), text: z.string().min(1) }))
     .min(2)
     .max(6),
-  correctId: z.string().min(1),
+  correctId: z.string().min(1).max(16),
   explanation: z.string().min(10),
   learningPoint: z.string().nullable().optional(),
 });
@@ -247,9 +249,21 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("Empty response from OpenAI");
 
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    throw new Error("The AI returned an invalid response. Please try again.");
+  }
+
   if (format === "SHORT_NOTES") {
-    const parsed = ShortNotesExamSchema.parse(JSON.parse(raw));
-    return parsed.questions.map((q) => ({
+    const result = ShortNotesExamSchema.safeParse(json);
+    if (!result.success) {
+      throw new Error(
+        "The AI's response didn't match the expected short-notes format. Please try again."
+      );
+    }
+    return result.data.questions.map((q) => ({
       prompt: q.prompt,
       modelAnswer: q.modelAnswer,
       explanation: q.explanation,
@@ -257,22 +271,23 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
     }));
   }
 
-  const parsed = McqExamSchema.parse(JSON.parse(raw));
-  for (const q of parsed.questions) {
+  const result = McqExamSchema.safeParse(json);
+  if (!result.success) {
+    throw new Error(
+      "The AI's response didn't match the expected question format. Please try again."
+    );
+  }
+
+  for (const q of result.data.questions) {
     const ids = new Set(q.options.map((o) => o.id));
     if (!ids.has(q.correctId)) {
       throw new Error(
-        `correctId "${q.correctId}" not found in options for question: ${q.prompt.slice(0, 60)}`
+        "The AI returned a question whose correct answer doesn't match any option. Please try again."
       );
-    }
-    if (format === "TRUE_FALSE") {
-      // Sanity-check: the model should have produced True/False options.
-      // If it ignored that and produced A/B/C/D, accept anyway — they're still
-      // grade-able. We only fail hard on the correctId mismatch above.
     }
   }
 
-  return parsed.questions.map((q) => ({
+  return result.data.questions.map((q) => ({
     prompt: q.prompt,
     options: q.options,
     correctId: q.correctId,
