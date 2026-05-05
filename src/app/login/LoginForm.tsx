@@ -27,11 +27,11 @@ export default function LoginForm({ labels }: { labels: Labels }) {
         />
       </div>
       <div>
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-baseline justify-between gap-2">
           <label htmlFor="password" className="block text-sm font-medium">{labels.password}</label>
           <Link
             href="/forgot-password"
-            className="text-xs font-medium text-blue-600 hover:underline"
+            className="text-sm font-medium text-blue-600 hover:underline dark:text-cyan-400"
           >
             Forgot password?
           </Link>
@@ -56,6 +56,14 @@ export default function LoginForm({ labels }: { labels: Labels }) {
       >
         {pending ? labels.submitLoading : labels.submit}
       </button>
+      <p className="text-center text-sm">
+        <Link
+          href="/forgot-password"
+          className="font-medium text-blue-600 hover:underline dark:text-cyan-400"
+        >
+          Forgot your password?
+        </Link>
+      </p>
     </form>
   );
 }
