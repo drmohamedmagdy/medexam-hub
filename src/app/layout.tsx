@@ -32,7 +32,11 @@ export default async function RootLayout({
   const t = getTranslations(locale);
   const dir = isRtl(locale) ? "rtl" : "ltr";
   const showAdmin = user ? isAdmin(user) : false;
-  const unreadCount = user ? await getUnreadCount(user.id) : 0;
+  // Defensive: if the Notification table is missing or any other DB issue
+  // arises, never crash the whole app shell. The bell just shows 0.
+  const unreadCount = user
+    ? await getUnreadCount(user.id).catch(() => 0)
+    : 0;
 
   type NavItem = { href: string; label: string; emphasis?: "primary" | "admin" | "muted" };
   const mobileItems: NavItem[] = user

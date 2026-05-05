@@ -180,50 +180,45 @@ export function tierColor(tier: Achievement["tier"]): {
 }
 
 export async function loadUserStats(userId: string): Promise<UserStats> {
-  const [questionAgg, examAgg, completedExams, fileUploads, specialties, streak] =
-    await Promise.all([
-      prisma.question.aggregate({
-        where: {
-          exam: { userId, status: "COMPLETED" },
-        },
-        _count: true,
-        _sum: {},
-      }),
-      prisma.exam.findMany({
-        where: { userId, status: "COMPLETED" },
-        select: { scorePct: true },
-      }),
-      prisma.exam.count({
-        where: { userId, status: "COMPLETED" },
-      }),
-      prisma.fileUpload.count({ where: { userId } }),
-      prisma.exam.findMany({
-        where: { userId, specialty: { not: null } },
-        distinct: ["specialty"],
-        select: { specialty: true },
-      }),
-      getStudyStreak(userId),
-    ]);
+  const [
+    totalQuestionsAnswered,
+    totalCorrect,
+    completedExamsRaw,
+    fileUploads,
+    specialties,
+    streak,
+  ] = await Promise.all([
+    prisma.question.count({
+      where: { exam: { userId, status: "COMPLETED" } },
+    }),
+    prisma.question.count({
+      where: { exam: { userId, status: "COMPLETED" }, isCorrect: true },
+    }),
+    prisma.exam.findMany({
+      where: { userId, status: "COMPLETED" },
+      select: { scorePct: true },
+    }),
+    prisma.fileUpload.count({ where: { userId } }),
+    prisma.exam.findMany({
+      where: { userId, specialty: { not: null } },
+      distinct: ["specialty"],
+      select: { specialty: true },
+    }),
+    getStudyStreak(userId),
+  ]);
 
-  const correctAgg = await prisma.question.count({
-    where: {
-      exam: { userId, status: "COMPLETED" },
-      isCorrect: true,
-    },
-  });
-
-  const scores = examAgg
+  const scores = completedExamsRaw
     .map((e) => e.scorePct)
     .filter((s): s is number => typeof s === "number");
   const bestScore = scores.length ? Math.round(Math.max(...scores)) : 0;
   const has100Score = scores.some((s) => s >= 99.99);
 
   return {
-    completedExamCount: completedExams,
+    completedExamCount: completedExamsRaw.length,
     bestScore,
     has100Score,
-    totalQuestionsAnswered: questionAgg._count,
-    totalCorrect: correctAgg,
+    totalQuestionsAnswered,
+    totalCorrect,
     uniqueSpecialties: specialties.length,
     fileUploads,
     streak,
