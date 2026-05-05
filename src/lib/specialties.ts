@@ -57,6 +57,8 @@ export const SPECIALTIES = [
   // Basic sciences
   "Anatomy",
   "Physiology",
+  "Biochemistry",
+  "Molecular Biology",
   "Pathology",
   "Pharmacology",
   "Microbiology",
