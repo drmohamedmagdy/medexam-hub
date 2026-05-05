@@ -4,6 +4,7 @@ import { PLAN_LIMITS } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { prisma } from "@/lib/db";
 import NewExamForm from "./NewExamForm";
+import OnboardingTour from "./OnboardingTour";
 
 export default async function NewExamPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
@@ -27,6 +28,7 @@ export default async function NewExamPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+      <OnboardingTour />
       <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.newExam.pageTitle}</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         {t.newExam.remainingLine
@@ -48,7 +50,12 @@ export default async function NewExamPage() {
           createdAt: f.createdAt.toISOString(),
         }))}
         defaults={{
-          generationMode: user.defaultGenerationMode === "exam" ? "exam" : "specialty",
+          generationMode:
+            user.defaultGenerationMode === "exam"
+              ? "exam"
+              : user.defaultGenerationMode === "custom"
+                ? "custom"
+                : "specialty",
           specialty: user.defaultSpecialty,
           topic: user.defaultTopic,
           examType: user.defaultExamType,

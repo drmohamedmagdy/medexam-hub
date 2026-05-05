@@ -3,7 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getMonthlyQuestionsUsage } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
-import { getStudyStreak } from "@/lib/streak";
+import { getDailyGoal, getQuestionsAnsweredToday, getStudyStreak } from "@/lib/streak";
+import { getAchievementProgress, tierColor } from "@/lib/achievements";
 import UpgradeBanner from "@/components/UpgradeBanner";
 import VerifyEmailBanner from "@/components/VerifyEmailBanner";
 import WelcomeToast from "@/components/WelcomeToast";
@@ -20,7 +21,7 @@ export default async function DashboardPage({
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
 
-  const [usage, exams, streak] = await Promise.all([
+  const [usage, exams, streak, todayCount, achievementsList] = await Promise.all([
     getMonthlyQuestionsUsage(user.id, user.plan),
     prisma.exam.findMany({
       where: { userId: user.id },
@@ -32,7 +33,13 @@ export default async function DashboardPage({
       },
     }),
     getStudyStreak(user.id),
+    getQuestionsAnsweredToday(user.id),
+    getAchievementProgress(user.id, user.achievements),
   ]);
+  const dailyGoal = getDailyGoal(user.plan);
+  const dailyPct = dailyGoal === 0 ? 0 : Math.min(100, Math.round((todayCount / dailyGoal) * 100));
+  const recentUnlocked = achievementsList.filter((a) => a.unlocked).slice(0, 4);
+  const totalUnlocked = achievementsList.filter((a) => a.unlocked).length;
 
   const planCfg = PLAN_LIMITS[user.plan];
   const planTr = t.plans.perPlan[user.plan];
@@ -164,6 +171,73 @@ export default async function DashboardPage({
           )}
         </p>
       </div>
+
+      {/* DAILY GOAL — encourages daily return without nagging */}
+      <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/60 dark:backdrop-blur sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-slate-400">
+            Today&apos;s goal
+          </h2>
+          <span className="font-mono text-sm tabular-nums">
+            <span className={`text-lg font-semibold ${todayCount >= dailyGoal ? "text-emerald-600 dark:text-emerald-400" : ""}`}>{todayCount}</span>
+            <span className="text-zinc-500"> / {dailyGoal} questions</span>
+          </span>
+        </div>
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-slate-800">
+          <div
+            className={`h-full rounded-full transition-all ${
+              dailyPct >= 100
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500"
+                : "bg-gradient-to-r from-violet-500 to-blue-500"
+            }`}
+            style={{ width: `${dailyPct}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-slate-400">
+          {todayCount === 0
+            ? "Start your day with a quick exam — even 5 minutes builds your streak."
+            : todayCount < dailyGoal
+              ? `${dailyGoal - todayCount} more question${dailyGoal - todayCount === 1 ? "" : "s"} to hit today's goal.`
+              : "🎉 Goal hit. Bonus questions still build your streak."}
+        </p>
+      </div>
+
+      {/* ACHIEVEMENTS */}
+      {totalUnlocked > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Achievements</h2>
+            <Link
+              href="/achievements"
+              className="text-sm font-medium text-blue-600 hover:underline dark:text-cyan-400"
+            >
+              View all → ({totalUnlocked}/{achievementsList.length})
+            </Link>
+          </div>
+          <div className="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-4">
+            {recentUnlocked.map((a) => {
+              const tColors = tierColor(a.tier);
+              return (
+                <Link
+                  key={a.id}
+                  href="/achievements"
+                  className={`flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/60 sm:p-4`}
+                >
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ring-2 ${tColors.bg} ${tColors.ring}`}
+                  >
+                    <span aria-hidden>{a.emoji}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`truncate text-sm font-semibold ${tColors.text}`}>{a.title}</div>
+                    <div className="truncate text-[11px] uppercase tracking-wide text-zinc-400 dark:text-slate-500">{a.tier}</div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <PlanGuide
         plan={user.plan}

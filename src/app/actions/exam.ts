@@ -10,6 +10,8 @@ import { PLAN_LIMITS } from "@/lib/plans";
 import { Difficulty, ExamMode, ExamStatus } from "@/generated/prisma/client";
 import { getAllExamTypeIds, findExamType } from "@/lib/exam-types";
 import { truncateForPrompt } from "@/lib/file-upload";
+import { detectAndPersistAchievements } from "@/lib/achievements";
+import { createNotification } from "@/lib/notifications";
 
 const NewExamSchema = z
   .object({
@@ -257,6 +259,30 @@ export async function submitExamAction(formData: FormData): Promise<void> {
       scorePct,
     },
   });
+
+  // Detect any newly-unlocked achievements and create in-app notifications
+  // for each. Fire-and-forget — never block the user's redirect on this.
+  void (async () => {
+    try {
+      const fresh = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { achievements: true },
+      });
+      const newly = await detectAndPersistAchievements(user.id, fresh?.achievements ?? null);
+      for (const a of newly) {
+        await createNotification({
+          userId: user.id,
+          category: "achievement",
+          title: `Achievement unlocked: ${a.title}`,
+          body: a.description,
+          href: "/achievements",
+          emoji: a.emoji,
+        });
+      }
+    } catch {
+      // best-effort
+    }
+  })();
 
   redirect(`/exam/${examId}/results`);
 }

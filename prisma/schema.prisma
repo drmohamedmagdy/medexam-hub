@@ -50,6 +50,8 @@ model User {
   // Email preferences
   emailMarketing        Boolean       @default(true)
   emailReminders        Boolean       @default(true)
+  // Achievement progress — JSON array of unlocked achievement ids
+  achievements          String?
   // Last sent timestamps so the daily cron doesn't double-send within a window
   lastReminderSentAt    DateTime?
   lastReengagementAt    DateTime?
@@ -72,6 +74,24 @@ model User {
   fileUploads      FileUpload[]
   emailLogs        EmailLog[]
   promoRedemptions PromoRedemption[]
+  notifications    Notification[]
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  category  String    // achievement | system | reminder | broadcast
+  title     String
+  body      String?
+  href      String?
+  emoji     String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }
 
 model EmailLog {

@@ -8,6 +8,8 @@ import { logoutAction } from "@/app/actions/auth";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import MobileNav from "@/components/MobileNav";
+import NotificationBell from "@/components/NotificationBell";
+import { getUnreadCount } from "@/lib/notifications";
 import { isRtl } from "@/lib/i18n";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { isAdmin } from "@/lib/admin";
@@ -30,6 +32,7 @@ export default async function RootLayout({
   const t = getTranslations(locale);
   const dir = isRtl(locale) ? "rtl" : "ltr";
   const showAdmin = user ? isAdmin(user) : false;
+  const unreadCount = user ? await getUnreadCount(user.id) : 0;
 
   type NavItem = { href: string; label: string; emphasis?: "primary" | "admin" | "muted" };
   const mobileItems: NavItem[] = user
@@ -95,6 +98,7 @@ export default async function RootLayout({
                   >
                     {t.nav.generate}
                   </Link>
+                  <NotificationBell unread={unreadCount} />
                   <form action={logoutAction}>
                     <button
                       type="submit"
@@ -136,6 +140,7 @@ export default async function RootLayout({
                   </Link>
                 </>
               )}
+              {user && <NotificationBell unread={unreadCount} />}
               <LanguageSwitcher current={locale} />
               <MobileNav items={mobileItems} signedIn={!!user} signoutLabel={t.nav.signout} />
             </div>

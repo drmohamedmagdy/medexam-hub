@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { canExportPdf } from "@/lib/plans";
 import PrintPdfButton from "./PrintPdfButton";
 import ScoreCelebration from "./ScoreCelebration";
+import Confetti from "@/components/Confetti";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,9 +22,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
   const correct = exam.questions.filter((q) => q.isCorrect).length;
   const total = exam.questions.length;
   const canPdf = canExportPdf(user.plan);
+  const scoreInt = Math.round(exam.scorePct ?? 0);
+  const showConfetti = scoreInt >= 95;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 print:max-w-full print:px-0 print:py-0">
+      <Confetti trigger={showConfetti} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{exam.title}</h1>

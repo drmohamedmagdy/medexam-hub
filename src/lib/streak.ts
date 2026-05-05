@@ -1,4 +1,40 @@
 import { prisma } from "@/lib/db";
+import type { Plan } from "@/generated/prisma/client";
+
+/**
+ * Daily question target by plan tier — matches the rough "use roughly 1/30
+ * of your monthly quota each day to fully utilize your plan" heuristic.
+ */
+const DAILY_GOAL_BY_PLAN: Record<Plan, number> = {
+  FREE: 5,
+  BASIC: 15,
+  PRO: 50,
+  PREMIUM: 100,
+};
+
+export function getDailyGoal(plan: Plan): number {
+  return DAILY_GOAL_BY_PLAN[plan];
+}
+
+/**
+ * Count of questions the user has answered today (UTC) — used to render a
+ * "X / Y questions today" progress bar on the dashboard.
+ */
+export async function getQuestionsAnsweredToday(userId: string): Promise<number> {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  const count = await prisma.question.count({
+    where: {
+      exam: {
+        userId,
+        status: "COMPLETED",
+        submittedAt: { gte: startOfDay },
+      },
+    },
+  });
+  return count;
+}
 
 /**
  * Count of consecutive days (UTC) the user has completed at least one exam,

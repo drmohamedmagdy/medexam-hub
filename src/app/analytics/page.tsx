@@ -96,6 +96,27 @@ export default async function AnalyticsPage() {
         />
       </section>
 
+      {/* SPECIALTY MASTERY — visual progress bars per specialty */}
+      {data.bySpecialty.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold">Specialty mastery</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Your accuracy in each specialty you&apos;ve practised, mapped to mastery tiers.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {data.bySpecialty.slice(0, 12).map((b) => (
+              <MasteryRow
+                key={`mastery-${b.key}`}
+                title={b.key}
+                accuracy={b.accuracy}
+                questionCount={b.questionCount}
+                examCount={b.examCount}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Weak areas + recommendations */}
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Where to focus</h2>
@@ -208,6 +229,58 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
       <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs">{label}</div>
       <div className="mt-2 text-xl font-semibold sm:text-2xl">{value}</div>
       <div className="mt-1 text-xs text-zinc-500">{hint}</div>
+    </div>
+  );
+}
+
+type MasteryTier = {
+  label: string;
+  emoji: string;
+  bg: string;
+  textColor: string;
+};
+
+function masteryTier(accuracy: number): MasteryTier {
+  if (accuracy >= 95) return { label: "Master", emoji: "👑", bg: "from-violet-500 via-fuchsia-500 to-pink-500", textColor: "text-violet-700 dark:text-violet-300" };
+  if (accuracy >= 80) return { label: "Expert", emoji: "🌟", bg: "from-emerald-500 to-teal-500", textColor: "text-emerald-700 dark:text-emerald-300" };
+  if (accuracy >= 60) return { label: "Skilled", emoji: "✨", bg: "from-cyan-500 to-blue-500", textColor: "text-cyan-700 dark:text-cyan-300" };
+  if (accuracy >= 30) return { label: "Apprentice", emoji: "📘", bg: "from-amber-500 to-orange-500", textColor: "text-amber-700 dark:text-amber-300" };
+  return { label: "Novice", emoji: "🌱", bg: "from-zinc-400 to-zinc-500", textColor: "text-zinc-700 dark:text-zinc-300" };
+}
+
+function MasteryRow({
+  title,
+  accuracy,
+  questionCount,
+  examCount,
+}: {
+  title: string;
+  accuracy: number;
+  questionCount: number;
+  examCount: number;
+}) {
+  const pct = Math.round(accuracy);
+  const tier = masteryTier(pct);
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 dark:backdrop-blur sm:p-5">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold">{title}</div>
+          <div className={`mt-0.5 text-xs font-bold uppercase tracking-wide ${tier.textColor}`}>
+            <span aria-hidden>{tier.emoji}</span> {tier.label}
+          </div>
+        </div>
+        <span className="font-mono text-base font-semibold tabular-nums">{pct}%</span>
+      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-slate-800">
+        <div
+          className={`h-full rounded-full bg-gradient-to-r ${tier.bg} transition-all`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-2 text-xs text-zinc-500 dark:text-slate-400">
+        {questionCount} {questionCount === 1 ? "question" : "questions"} · {examCount} {examCount === 1 ? "exam" : "exams"}
+      </div>
     </div>
   );
 }
