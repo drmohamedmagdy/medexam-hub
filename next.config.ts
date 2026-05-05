@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: "10mb",
+      // Library uploads can include presentations and large PDFs — bumped from
+      // 10mb to fit typical lecture decks. Vercel function memory still caps
+      // the actual maximum we can process in-memory.
+      bodySizeLimit: "30mb",
     },
   },
   // pdf-parse uses CommonJS internals + accesses test fixtures during evaluation

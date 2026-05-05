@@ -94,6 +94,25 @@ model Notification {
   @@index([userId, readAt])
 }
 
+model LibraryResource {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  category      String   // freeform tag like "Cardiology", "USMLE Step 1", "Anatomy"
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  fileData      Bytes
+  uploadedBy    String   // admin user id who uploaded it
+  downloadCount Int      @default(0)
+  isPublished   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublished, createdAt])
+}
+
 model EmailLog {
   id        String   @id @default(cuid())
   userId    String

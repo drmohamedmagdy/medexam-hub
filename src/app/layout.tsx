@@ -43,6 +43,7 @@ export default async function RootLayout({
     ? [
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
         { href: "/dashboard", label: t.nav.dashboard },
+        { href: "/library", label: "Library" },
         { href: "/exams", label: t.dashboard.recentExams },
         { href: "/plans", label: t.nav.plans },
         ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
@@ -91,6 +92,7 @@ export default async function RootLayout({
               {user ? (
                 <>
                   <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
+                  <Link href="/library" className="hover:text-blue-600">Library</Link>
                   {showAdmin && (
                     <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">
                       Admin

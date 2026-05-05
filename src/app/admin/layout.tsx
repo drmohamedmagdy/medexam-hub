@@ -20,6 +20,7 @@ export default async function AdminLayout({
           <Link href="/admin/exams" className="hover:underline">Exams</Link>
           <Link href="/admin/promos" className="hover:underline">Promos</Link>
           <Link href="/admin/email" className="hover:underline">Emails</Link>
+          <Link href="/admin/library" className="hover:underline">Library</Link>
         </nav>
       </div>
       {children}
