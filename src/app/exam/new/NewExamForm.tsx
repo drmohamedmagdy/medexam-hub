@@ -85,7 +85,7 @@ export default function NewExamForm({
   const specialtyDefault =
     defaults?.specialty && SPECIALTIES.includes(defaults.specialty as (typeof SPECIALTIES)[number])
       ? defaults.specialty
-      : "Diabetic Foot";
+      : "";
 
   const examTypeDefault =
     defaults?.examType && getAllExamTypeIds().includes(defaults.examType)
@@ -209,6 +209,9 @@ export default function NewExamForm({
                 defaultValue={specialtyDefault}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               >
+                <option value="" disabled>
+                  {labels.specialty}…
+                </option>
                 {SPECIALTY_GROUPS.map((g) => (
                   <optgroup key={g.label} label={g.label}>
                     {g.items.map((s) => (
