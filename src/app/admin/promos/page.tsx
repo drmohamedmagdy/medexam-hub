@@ -45,7 +45,7 @@ export default async function AdminPromosPage() {
         </Link>
       </div>
 
-      <section className="mt-6 grid gap-3 grid-cols-2 sm:gap-4 lg:grid-cols-4">
+      <section className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:gap-4 lg:grid-cols-4">
         <Stat label="Total codes" value={totalPromos.toLocaleString()} hint={`${activePromos} active`} />
         <Stat label="Total redemptions" value={totalRedemptions.toLocaleString()} hint="across all codes" />
         <Stat
