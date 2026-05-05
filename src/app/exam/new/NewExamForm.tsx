@@ -20,12 +20,14 @@ const DIFFICULTY_KEYS = [
 // specific labels (Intern, Resident, Consultant…) don't apply to non-medical
 // content. Each generic level maps to a Difficulty enum value so the DB and
 // AI prompt logic stay unchanged.
-const GENERIC_DIFFICULTY: ReadonlyArray<{ value: Difficulty; label: string }> = [
-  { value: "BEGINNER", label: "Beginner" },
-  { value: "INTERN", label: "Intermediate" },
-  { value: "SPECIALIST", label: "Advanced" },
-  { value: "BOARD", label: "Expert" },
-];
+function genericDifficulty(labels: Labels): ReadonlyArray<{ value: Difficulty; label: string }> {
+  return [
+    { value: "BEGINNER", label: labels.genericBeginner },
+    { value: "INTERN", label: labels.genericIntermediate },
+    { value: "SPECIALIST", label: labels.genericAdvanced },
+    { value: "BOARD", label: labels.genericExpert },
+  ];
+}
 
 const GENERIC_VALUES = new Set<Difficulty>(["BEGINNER", "INTERN", "SPECIALIST", "BOARD"]);
 
@@ -118,7 +120,7 @@ export default function NewExamForm({
       {fileEnabled && mode === "file" && (
         <form action={uploadAction} className="mt-6 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
           <div>
-            <label className="block text-sm font-medium">Upload a new file</label>
+            <label className="block text-sm font-medium">{labels.uploadNew}</label>
             <input
               type="file"
               name="file"
@@ -127,7 +129,7 @@ export default function NewExamForm({
               className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
             />
             <p className="mt-1 text-xs text-zinc-500">
-              PDF, DOCX, TXT, or MD. Max 10 MB. {fileUsage ? `${fileUsage.remaining} of ${fileUsage.limit} uploads remaining this month.` : ""}
+              {labels.uploadHint}{fileUsage ? ` ${labels.uploadRemaining.replace("{remaining}", String(fileUsage.remaining)).replace("{limit}", String(fileUsage.limit))}` : ""}
             </p>
           </div>
           {uploadState?.error && (
@@ -137,7 +139,7 @@ export default function NewExamForm({
           )}
           {uploadState?.ok && (
             <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-              Uploaded. Selected for the exam below.
+              {labels.uploadDone}
             </p>
           )}
           <button
@@ -145,7 +147,7 @@ export default function NewExamForm({
             disabled={uploadPending || (fileUsage?.remaining ?? 0) < 1}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
-            {uploadPending ? "Reading file…" : "Upload"}
+            {uploadPending ? labels.uploadReading : labels.uploadButton}
           </button>
         </form>
       )}
@@ -153,7 +155,7 @@ export default function NewExamForm({
       <form action={action} className="mt-6 space-y-5">
         {defaults && (defaults.specialty || defaults.examType) && (
           <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
-            Pre-filled from your last exam. Adjust anything you want before generating.
+            {labels.prefilledNote}
           </p>
         )}
 
@@ -185,7 +187,7 @@ export default function NewExamForm({
                   mode === "file" ? "bg-white shadow-sm dark:bg-zinc-900" : "text-zinc-600 dark:text-zinc-400"
                 }`}
               >
-                From file
+                {labels.tabFile}
               </button>
             )}
             <button
@@ -195,7 +197,7 @@ export default function NewExamForm({
                 mode === "custom" ? "bg-white shadow-sm dark:bg-zinc-900" : "text-zinc-600 dark:text-zinc-400"
               }`}
             >
-              Custom
+              {labels.tabCustom}
             </button>
           </div>
         </div>
@@ -288,7 +290,7 @@ export default function NewExamForm({
 
         {mode === "file" && (
           <>
-            <Field label="Source file">
+            <Field label={labels.sourceFile}>
               <select
                 name="sourceFileId"
                 required
@@ -296,7 +298,7 @@ export default function NewExamForm({
                 onChange={(e) => setSelectedFileId(e.target.value)}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               >
-                <option value="">— pick a file —</option>
+                <option value="">{labels.pickFile}</option>
                 {recentFiles.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.filename} ({Math.round(f.charCount / 100) / 10}k chars)
@@ -304,8 +306,7 @@ export default function NewExamForm({
                 ))}
               </select>
               <p className="mt-1 text-xs text-zinc-500">
-                Questions will be generated strictly from this file&apos;s content. Upload a new file
-                above if your file isn&apos;t in the list.
+                {labels.fileExplain}
               </p>
             </Field>
             <Field label={labels.topicOptional}>
@@ -313,7 +314,7 @@ export default function NewExamForm({
                 name="topic"
                 maxLength={120}
                 defaultValue=""
-                placeholder="e.g. Focus on chapter 3, or specific topic within the file"
+                placeholder={labels.fileTopicPlaceholder}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               />
             </Field>
@@ -325,36 +326,34 @@ export default function NewExamForm({
         {mode === "custom" && (
           <>
             <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-              <p className="font-medium">Build your own exam</p>
+              <p className="font-medium">{labels.customTitle}</p>
               <p className="mt-1 text-xs">
-                Whether you&apos;re a paramedical or non-medical student, you can easily build your own
-                exam. Choose your subject, set your difficulty, and generate questions that match your
-                learning goals.
+                {labels.customExplain}
               </p>
             </div>
-            <Field label="Subject / field of study">
+            <Field label={labels.subject}>
               <input
                 name="specialty"
                 required
                 minLength={2}
                 maxLength={80}
                 defaultValue={defaults?.generationMode === "custom" ? defaults?.specialty ?? "" : ""}
-                placeholder="e.g. Nursing, Pharmacy Technology, Mathematics, Biology, Law"
+                placeholder={labels.subjectPlaceholder}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               />
             </Field>
-            <Field label="Topic / focus area">
+            <Field label={labels.topicArea}>
               <input
                 name="topic"
                 required
                 minLength={2}
                 maxLength={120}
                 defaultValue={defaults?.generationMode === "custom" ? defaults?.topic ?? "" : ""}
-                placeholder="e.g. ECG basics for nurses, Linear algebra, Cell biology, Tort law"
+                placeholder={labels.topicAreaPlaceholder}
                 className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
               />
             </Field>
-            <Field label="Audience">
+            <Field label={labels.audience}>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
                   <input
@@ -365,9 +364,9 @@ export default function NewExamForm({
                     className="mt-0.5 h-4 w-4"
                   />
                   <span>
-                    <span className="block font-medium">Paramedical / health sciences</span>
+                    <span className="block font-medium">{labels.audienceParamedical}</span>
                     <span className="block text-xs text-zinc-500">
-                      Nursing, pharmacy tech, lab, radiography, EMT, dietetics…
+                      {labels.audienceParamedicalSub}
                     </span>
                   </span>
                 </label>
@@ -379,9 +378,9 @@ export default function NewExamForm({
                     className="mt-0.5 h-4 w-4"
                   />
                   <span>
-                    <span className="block font-medium">Non-medical / general</span>
+                    <span className="block font-medium">{labels.audienceNonmedical}</span>
                     <span className="block text-xs text-zinc-500">
-                      Math, sciences, languages, business, law, anything else.
+                      {labels.audienceNonmedicalSub}
                     </span>
                   </span>
                 </label>
@@ -392,7 +391,7 @@ export default function NewExamForm({
           </>
         )}
 
-        <Field label="Question format">
+        <Field label={labels.questionFormat}>
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
               <input
@@ -403,8 +402,8 @@ export default function NewExamForm({
                 className="mt-0.5 h-4 w-4"
               />
               <span>
-                <span className="block font-medium">MCQs</span>
-                <span className="block text-xs text-zinc-500">Multiple choice — auto-graded</span>
+                <span className="block font-medium">{labels.qfMcq}</span>
+                <span className="block text-xs text-zinc-500">{labels.qfMcqSub}</span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
@@ -415,8 +414,8 @@ export default function NewExamForm({
                 className="mt-0.5 h-4 w-4"
               />
               <span>
-                <span className="block font-medium">True / False</span>
-                <span className="block text-xs text-zinc-500">Statements — auto-graded</span>
+                <span className="block font-medium">{labels.qfTrueFalse}</span>
+                <span className="block text-xs text-zinc-500">{labels.qfTrueFalseSub}</span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
@@ -427,8 +426,8 @@ export default function NewExamForm({
                 className="mt-0.5 h-4 w-4"
               />
               <span>
-                <span className="block font-medium">Short notes</span>
-                <span className="block text-xs text-zinc-500">Open-ended — model answer shown</span>
+                <span className="block font-medium">{labels.qfShortNotes}</span>
+                <span className="block text-xs text-zinc-500">{labels.qfShortNotesSub}</span>
               </span>
             </label>
           </div>
@@ -444,7 +443,7 @@ export default function NewExamForm({
               className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
             >
               {useGenericDifficulty
-                ? GENERIC_DIFFICULTY.map((d) => (
+                ? genericDifficulty(labels).map((d) => (
                     <option key={d.value} value={d.value}>
                       {d.label}
                     </option>
