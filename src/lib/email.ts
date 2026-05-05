@@ -96,6 +96,48 @@ type SendArgs = {
   html: string;
 };
 
+// Keep deliverability-improving headers consistent across all sends.
+// Microsoft (Outlook/Hotmail) is especially sensitive to senders that
+// don't expose a Reply-To or List-Unsubscribe — having both significantly
+// improves inbox placement for new domains.
+const REPLY_TO = "MedExam Hub Support <info@medexamhub.org>";
+
+function unsubscribeHeaders(userId: string, category: EmailCategory): Record<string, string> {
+  // Pick the right unsubscribe bucket based on category. Transactional
+  // emails (verification, password_reset) skip List-Unsubscribe because
+  // they're operationally critical — but everything else gets it.
+  if (category === "verification" || category === "password_reset") return {};
+  const kind: "marketing" | "reminders" =
+    category === "renewal_7d" || category === "renewal_1d" || category === "expired"
+      ? "reminders"
+      : "marketing";
+  const url = `${appBaseUrl()}/api/email/unsubscribe?token=${makeUnsubToken(userId, kind)}`;
+  return {
+    "List-Unsubscribe": `<${url}>, <mailto:info@medexamhub.org?subject=unsubscribe>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
+
+// Plain-text fallback — Outlook gives multipart emails better deliverability
+// than HTML-only. Strip HTML tags and decode common entities.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/(li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: string }> {
   const resend = getResend();
   const from = process.env.EMAIL_FROM || FROM_DEFAULT;
@@ -116,9 +158,12 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
   try {
     const { error } = await resend.emails.send({
       from,
+      replyTo: REPLY_TO,
       to: [args.toEmail],
       subject: args.subject,
       html: args.html,
+      text: htmlToText(args.html),
+      headers: unsubscribeHeaders(args.toUserId, args.category),
     });
     if (error) {
       await prisma.emailLog.create({
