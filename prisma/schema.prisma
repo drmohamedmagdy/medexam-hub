@@ -102,7 +102,8 @@ model LibraryResource {
   filename      String
   mimeType      String
   sizeBytes     Int
-  fileData      Bytes
+  fileUrl       String   // public Vercel Blob URL
+  filePathname  String   // pathname inside the Blob store (used for delete)
   uploadedBy    String   // admin user id who uploaded it
   downloadCount Int      @default(0)
   isPublished   Boolean  @default(true)

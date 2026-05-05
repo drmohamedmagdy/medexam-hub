@@ -20,12 +20,11 @@ export const ALLOWED_MIME_TYPES = [
   "text/plain",
 ] as const;
 
-// Vercel's Hobby plan caps serverless function payloads at 4.5 MB regardless
-// of what next.config.ts says. Set the cap below that so the user gets a
-// friendly app-level error rather than a generic edge-level 413/network
-// failure. To raise this: upgrade Vercel to Pro (50 MB) OR migrate uploads
-// to Vercel Blob's client-upload pattern (no body-size limit).
-export const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
+// Hard ceiling enforced at the Blob signing step too (maximumSizeInBytes
+// in /api/library/upload). 100 MB covers most lecture decks and standard-
+// length textbook chapters. Files this large stream directly from the
+// browser to Vercel Blob, never touching our serverless function.
+export const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 
 export type FileKind = "pdf" | "word" | "powerpoint" | "text" | "other";
 

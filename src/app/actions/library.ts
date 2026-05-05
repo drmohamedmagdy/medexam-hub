@@ -3,64 +3,68 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { del } from "@vercel/blob";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
-import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from "@/lib/library";
+import { ALLOWED_MIME_TYPES } from "@/lib/library";
 
-export type LibraryUploadState = { ok?: boolean; error?: string } | null;
+export type LibraryCreateState = { ok?: boolean; error?: string } | null;
 
-const MetaSchema = z.object({
+const CreateSchema = z.object({
   title: z.string().min(2).max(200).trim(),
   description: z.string().max(2000).optional().or(z.literal("")),
   category: z.string().min(2).max(80).trim(),
   isPublished: z.boolean().default(true),
+  fileUrl: z.string().url(),
+  filePathname: z.string().min(1).max(500),
+  filename: z.string().min(1).max(300),
+  mimeType: z.string().min(1).max(200),
+  sizeBytes: z.coerce.number().int().min(1),
 });
 
-export async function adminUploadLibraryAction(
-  _prev: LibraryUploadState,
+/**
+ * Saves the metadata row for a library resource AFTER the client has
+ * already uploaded the file directly to Vercel Blob. Called from the
+ * UploadForm once the blob URL is in hand.
+ */
+export async function adminCreateLibraryRecordAction(
+  _prev: LibraryCreateState,
   formData: FormData
-): Promise<LibraryUploadState> {
+): Promise<LibraryCreateState> {
   const admin = await requireAdmin();
 
-  const parsed = MetaSchema.safeParse({
+  const parsed = CreateSchema.safeParse({
     title: formData.get("title") ?? "",
     description: formData.get("description") ?? "",
     category: formData.get("category") ?? "",
-    isPublished: formData.get("isPublished") === "on" || formData.get("isPublished") === "true",
+    isPublished: formData.get("isPublished") === "true",
+    fileUrl: formData.get("fileUrl") ?? "",
+    filePathname: formData.get("filePathname") ?? "",
+    filename: formData.get("filename") ?? "",
+    mimeType: formData.get("mimeType") ?? "",
+    sizeBytes: formData.get("sizeBytes") ?? "0",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: "Pick a file to upload." };
-  }
-
-  if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
+  if (!ALLOWED_MIME_TYPES.includes(parsed.data.mimeType as (typeof ALLOWED_MIME_TYPES)[number])) {
     return {
       error:
-        "Unsupported file type. Allowed: PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), or plain text.",
+        "Unsupported file type. Allowed: PDF, Word, PowerPoint, or plain text.",
     };
   }
-
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return {
-      error: `File is too large (max ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB).`,
-    };
-  }
-
-  const buf = Buffer.from(await file.arrayBuffer());
 
   await prisma.libraryResource.create({
     data: {
       title: parsed.data.title,
       description: parsed.data.description || null,
       category: parsed.data.category,
-      filename: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-      fileData: buf,
+      filename: parsed.data.filename,
+      mimeType: parsed.data.mimeType,
+      sizeBytes: parsed.data.sizeBytes,
+      fileUrl: parsed.data.fileUrl,
+      filePathname: parsed.data.filePathname,
       uploadedBy: admin.id,
       isPublished: parsed.data.isPublished,
     },
@@ -68,7 +72,7 @@ export async function adminUploadLibraryAction(
 
   revalidatePath("/admin/library");
   revalidatePath("/library");
-  redirect("/admin/library");
+  return { ok: true };
 }
 
 export type LibraryEditState = { ok?: boolean; error?: string } | null;
@@ -117,6 +121,18 @@ export async function adminDeleteLibraryAction(formData: FormData): Promise<void
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+
+  // Look up the blob URL so we can delete the file from Vercel Blob too.
+  // If blob deletion fails, we still proceed with the DB delete — better to
+  // have an orphan blob than a stuck row.
+  const r = await prisma.libraryResource.findUnique({
+    where: { id },
+    select: { fileUrl: true },
+  });
+  if (r?.fileUrl) {
+    await del(r.fileUrl).catch(() => {});
+  }
+
   await prisma.libraryResource.delete({ where: { id } });
   revalidatePath("/admin/library");
   revalidatePath("/library");
