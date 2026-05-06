@@ -13,7 +13,8 @@ export type EmailCategory =
   | "reengagement"
   | "broadcast"
   | "group_invite"
-  | "community_digest";
+  | "community_digest"
+  | "public_group_announcement";
 
 const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour — short window for password reset
@@ -504,6 +505,35 @@ export function groupInviteEmail(args: {
       <p style="font-size:12px;color:#666;word-break:break-all;">${args.acceptUrl}</p>
       <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
       <p style="font-size:11px; color:#888;">MedExam Hub · You're getting this because someone added your email to a group.</p>
+    `),
+  };
+}
+
+export function publicGroupAnnouncementEmail(args: {
+  creatorName: string;
+  groupName: string;
+  description: string | null;
+  groupUrl: string;
+}): { subject: string; html: string } {
+  const creator = escape(args.creatorName);
+  const group = escape(args.groupName);
+  const desc = args.description ? escape(args.description) : null;
+  return {
+    subject: `New public group on MedExam Hub: ${args.groupName}`,
+    html: wrapHtml(`
+      <h1 style="margin:0 0 12px; font-size:22px;">A new public group just opened 🌐</h1>
+      <p><strong>${creator}</strong> just created a new public group called <strong>${group}</strong>. Anyone signed in can join — no invite needed.</p>
+      ${
+        desc
+          ? `<blockquote style="margin:16px 0;padding:12px 16px;border-left:3px solid #2563eb;background:#f8fafc;color:#374151;font-size:14px;line-height:1.5;">${desc}</blockquote>`
+          : ""
+      }
+      <p style="margin-top:20px;">
+        <a href="${args.groupUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;">View the group →</a>
+      </p>
+      <p style="font-size:13px;color:#666;">Don&apos;t want these announcements? You can switch off marketing emails any time from your account settings.</p>
+      <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+      <p style="font-size:11px; color:#888;">MedExam Hub · You're getting this because you opted in to community updates.</p>
     `),
   };
 }

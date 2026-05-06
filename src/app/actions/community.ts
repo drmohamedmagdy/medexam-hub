@@ -8,7 +8,11 @@ import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
-import { sendEmail, groupInviteEmail } from "@/lib/email";
+import {
+  sendEmail,
+  groupInviteEmail,
+  publicGroupAnnouncementEmail,
+} from "@/lib/email";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -221,6 +225,42 @@ export async function createGroupAction(
       },
     },
   });
+
+  // Public groups get announced to all opted-in, verified users so they can
+  // join. Private groups stay invite-only and never trigger this fan-out.
+  if (parsed.data.isPublic) {
+    const recipients = await prisma.user.findMany({
+      where: {
+        id: { not: user.id },
+        emailMarketing: true,
+        emailVerifiedAt: { not: null },
+      },
+      select: { id: true, email: true, name: true },
+      take: 1000,
+    });
+
+    const origin = await siteOrigin();
+    const tpl = publicGroupAnnouncementEmail({
+      creatorName: user.name?.split(" ")[0] ?? user.email.split("@")[0],
+      groupName: group.name,
+      description: group.description,
+      groupUrl: `${origin}/community/groups/${group.id}`,
+    });
+
+    // Parallel fan-out. Resend + EmailLog handle per-recipient errors and
+    // we don't want a single failure to block the redirect.
+    await Promise.allSettled(
+      recipients.map((r) =>
+        sendEmail({
+          toUserId: r.id,
+          toEmail: r.email,
+          subject: tpl.subject,
+          category: "public_group_announcement",
+          html: tpl.html,
+        })
+      )
+    );
+  }
 
   revalidatePath("/community/groups");
   redirect(`/community/groups/${group.id}`);
