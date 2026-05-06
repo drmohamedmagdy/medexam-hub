@@ -8,6 +8,7 @@ import {
   joinPublicGroupAction,
   leaveGroupAction,
   deleteGroupAction,
+  setGroupVisibilityAction,
 } from "@/app/actions/community";
 
 export const metadata = { title: "Group — MedExam Hub" };
@@ -116,6 +117,19 @@ export default async function GroupDetailPage({
                 <input type="hidden" name="id" value={group.id} />
                 <button type="submit" className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
                   Leave
+                </button>
+              </form>
+            )}
+            {isOwner && (
+              <form action={setGroupVisibilityAction}>
+                <input type="hidden" name="id" value={group.id} />
+                <input type="hidden" name="isPublic" value={group.isPublic ? "false" : "true"} />
+                <button
+                  type="submit"
+                  className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  title={group.isPublic ? "Make this group invite-only" : "Make this group discoverable to all members"}
+                >
+                  {group.isPublic ? "Make private 🔒" : "Make public 🌐"}
                 </button>
               </form>
             )}

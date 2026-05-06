@@ -379,6 +379,26 @@ export async function deleteGroupAction(formData: FormData): Promise<void> {
   redirect("/community/groups");
 }
 
+/**
+ * Owner-only: flip a group between public (🌐 discoverable + joinable) and
+ * private (🔒 invite-only + hidden from non-members).
+ */
+export async function setGroupVisibilityAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const isPublic = formData.get("isPublic") === "true";
+  if (!id) return;
+  const group = await prisma.group.findUnique({ where: { id }, select: { ownerId: true } });
+  if (!group || group.ownerId !== user.id) return;
+  await prisma.group.update({
+    where: { id },
+    data: { isPublic },
+  });
+  revalidatePath(`/community/groups/${id}`);
+  revalidatePath("/community/groups");
+  revalidatePath("/community");
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Invitations
 // ─────────────────────────────────────────────────────────────────────────────
