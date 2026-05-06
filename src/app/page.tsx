@@ -5,6 +5,7 @@ import { EXAM_TYPE_GROUPS } from "@/lib/exam-types";
 import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import SpecialtyFilter from "@/components/SpecialtyFilter";
+import StickyMobileCta from "@/components/StickyMobileCta";
 
 export default async function Home() {
   const locale = await getLocale();
@@ -20,7 +21,23 @@ export default async function Home() {
   ];
 
   return (
-    <div>
+    <div className="pb-20 sm:pb-0">
+      {/* PROMO STRIP — full-width, eye-catching, only when discount is on */}
+      {PROMO_DISCOUNT_PCT > 0 && (
+        <Link
+          href="/plans"
+          className="block bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 text-amber-950 transition hover:from-amber-300 hover:via-orange-300 hover:to-amber-300"
+        >
+          <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-2 text-center text-xs font-semibold sm:text-sm">
+            <span aria-hidden>🎉</span>
+            <span>
+              Limited-time {PROMO_DISCOUNT_PCT}% OFF on all plans —{" "}
+              <span className="underline underline-offset-2">claim it →</span>
+            </span>
+          </div>
+        </Link>
+      )}
+
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-zinc-200 dark:border-slate-800/60">
         {/* Light-mode gradient base */}
@@ -28,13 +45,23 @@ export default async function Home() {
         {/* Dark-mode gradient base — subtle slate tones, not heavy navy */}
         <div className="absolute inset-0 -z-20 hidden bg-slate-950 dark:block" />
         {/* Decorative glows — visible in both modes, pop more in dark */}
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(37,99,235,0.10),transparent_55%)] dark:bg-[radial-gradient(circle_at_20%_0%,rgba(56,189,248,0.18),transparent_55%)]" />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_60%,rgba(34,211,238,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_85%_60%,rgba(99,102,241,0.18),transparent_55%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(37,99,235,0.12),transparent_55%)] dark:bg-[radial-gradient(circle_at_20%_0%,rgba(56,189,248,0.20),transparent_55%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_60%,rgba(34,211,238,0.10),transparent_50%)] dark:bg-[radial-gradient(circle_at_85%_60%,rgba(99,102,241,0.20),transparent_55%)]" />
+        {/* Soft grid pattern overlay — adds texture without being noisy */}
+        <div
+          className="absolute inset-0 -z-10 opacity-[0.04] dark:opacity-[0.08]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(15,23,42,0.4) 1px, transparent 1px), linear-gradient(to right, rgba(15,23,42,0.4) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+          aria-hidden
+        />
 
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24 lg:gap-12">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24 lg:gap-12">
           {/* Left: Hero copy */}
           <div className="flex flex-col items-center text-center lg:items-start lg:text-start">
-            <div className="rounded-full p-1 transition dark:bg-white/95 dark:p-1.5 dark:shadow-[0_0_40px_rgba(56,189,248,0.25)] dark:ring-1 dark:ring-white/40">
+            <div className="rounded-full p-1 transition dark:bg-white/95 dark:p-1.5 dark:shadow-[0_0_40px_rgba(56,189,248,0.30)] dark:ring-1 dark:ring-white/40">
               <Image
                 src="/logo.webp"
                 alt="MedExam Hub"
@@ -48,12 +75,6 @@ export default async function Home() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
               {tH.badge}
             </span>
-            {PROMO_DISCOUNT_PCT > 0 && (
-              <span className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900 dark:border-amber-600/50 dark:bg-amber-950/60 dark:text-amber-200">
-                <span aria-hidden>🎉</span>
-                Limited-time {PROMO_DISCOUNT_PCT}% OFF on all plans
-              </span>
-            )}
             <h1 className="mt-4 max-w-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent dark:from-cyan-300 dark:via-sky-300 dark:to-indigo-300 sm:text-5xl lg:text-6xl">
               {tH.title}
             </h1>
@@ -63,19 +84,31 @@ export default async function Home() {
             <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/signup"
-                className="cta-pulse rounded-full bg-blue-600 px-6 py-3 text-center text-base font-medium text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/40"
+                className="cta-pulse group inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/40"
               >
                 {tH.ctaStart}
+                <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
               <Link
                 href="/plans"
-                className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
+                className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3.5 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
               >
                 {tH.ctaPlans.replace("{price}", String(PLAN_LIMITS.BASIC.priceMonthly))}
               </Link>
             </div>
+            <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-slate-400 lg:justify-start">
+              <span className="inline-flex items-center gap-1">
+                <span className="text-emerald-600 dark:text-emerald-400">✓</span> 2 free exams
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="text-emerald-600 dark:text-emerald-400">✓</span> No credit card
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="text-emerald-600 dark:text-emerald-400">✓</span> Cancel anytime
+              </span>
+            </p>
             <p className="mt-5 text-xs text-zinc-500 dark:text-slate-400">{tH.trustLine}</p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 lg:justify-start">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 lg:justify-start">
               {tHE.trustBadges.map((b) => (
                 <span
                   key={b}
@@ -127,6 +160,16 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* STATS STRIP — quick visual proof of breadth */}
+      <section className="border-b border-zinc-200 bg-white dark:border-slate-800/60 dark:bg-slate-950">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-4 py-6 sm:grid-cols-4 sm:gap-6 sm:px-6 sm:py-8">
+          <Stat value={String(totalFormats)} label="Exam formats" />
+          <Stat value="10" label="Languages" />
+          <Stat value={`${SPECIALTIES.length}+`} label="Specialties" />
+          <Stat value="2" label="Free exams to start" />
+        </div>
+      </section>
+
       {/* WHY (outcomes) */}
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="text-center">
@@ -137,9 +180,9 @@ export default async function Home() {
           {tH.features.map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl border border-zinc-200 bg-white p-6 transition hover:border-blue-300 hover:shadow-lg hover:shadow-blue-600/5 dark:border-slate-800 dark:bg-slate-900/60 dark:backdrop-blur dark:hover:border-cyan-700/60 dark:hover:shadow-cyan-500/10"
+              className="group rounded-2xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-600/10 dark:border-slate-800 dark:bg-slate-900/60 dark:backdrop-blur dark:hover:border-cyan-700/60 dark:hover:shadow-cyan-500/15"
             >
-              <div className="text-3xl" aria-hidden>{f.emoji}</div>
+              <div className="text-3xl transition-transform group-hover:scale-110" aria-hidden>{f.emoji}</div>
               <h3 className="mt-3 font-semibold">{f.title}</h3>
               <p className="mt-2 text-sm text-zinc-600 dark:text-slate-400">{f.body}</p>
             </div>
@@ -242,25 +285,54 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-4xl">{tH.finalH}</h2>
-        <p className="mx-auto mt-3 max-w-xl text-zinc-600 dark:text-slate-400">{tH.finalSub}</p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/signup"
-            className="cta-pulse rounded-full bg-blue-600 px-7 py-3.5 text-base font-medium text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:shadow-cyan-500/20"
-          >
-            {tH.finalCreate}
-          </Link>
-          <Link
-            href="/plans"
-            className="rounded-full border border-zinc-300 px-7 py-3.5 text-base font-medium hover:bg-zinc-100 dark:border-slate-700 dark:hover:bg-slate-800/50"
-          >
-            {tH.finalCompare}
-          </Link>
+      {/* FINAL CTA — full-width gradient card for max attention */}
+      <section className="px-4 py-12 sm:px-6 sm:py-16">
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600 px-6 py-12 text-center text-white shadow-2xl shadow-blue-600/20 dark:border-cyan-800/60 dark:from-blue-700 dark:via-blue-700 dark:to-cyan-700 dark:shadow-cyan-500/20 sm:px-10 sm:py-16">
+          <div
+            className="absolute inset-0 -z-10 opacity-30"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 0%, rgba(255,255,255,0.4), transparent 50%), radial-gradient(circle at 80% 100%, rgba(255,255,255,0.25), transparent 50%)",
+            }}
+            aria-hidden
+          />
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-4xl">{tH.finalH}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-blue-50">{tH.finalSub}</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-base font-semibold text-blue-700 shadow-lg shadow-blue-900/20 transition hover:-translate-y-0.5 hover:shadow-xl"
+            >
+              {tH.finalCreate}
+              <span aria-hidden>→</span>
+            </Link>
+            <Link
+              href="/plans"
+              className="rounded-full border border-white/40 bg-white/10 px-7 py-3.5 text-base font-medium text-white backdrop-blur transition hover:bg-white/20"
+            >
+              {tH.finalCompare}
+            </Link>
+          </div>
+          <p className="mt-5 text-xs text-blue-100">
+            ✓ 2 free exams · ✓ No credit card · ✓ Cancel anytime
+          </p>
         </div>
       </section>
+
+      <StickyMobileCta ctaLabel={tH.finalCreate} plansLabel={tH.finalCompare} />
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-2xl font-bold tracking-tight text-transparent dark:from-cyan-300 dark:to-sky-300 sm:text-3xl">
+        {value}
+      </div>
+      <div className="mt-0.5 text-xs font-medium text-zinc-600 dark:text-slate-400 sm:text-sm">
+        {label}
+      </div>
     </div>
   );
 }
