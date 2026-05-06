@@ -207,16 +207,33 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
 
 // ---------- Templates ----------
 
-export function welcomeEmail(name: string | null, userId: string): { subject: string; html: string } {
+export function welcomeEmail(
+  name: string | null,
+  userId: string,
+  email: string
+): { subject: string; html: string } {
   const firstName = name ? escape(name.split(" ")[0]) : null;
   const greet = firstName ? `Welcome aboard, ${firstName}! 👋` : "Welcome aboard! 👋";
-  const subject = firstName ? `Welcome to MedExam Hub, ${firstName}` : "Welcome to MedExam Hub";
+  const subject = firstName
+    ? `Welcome to MedExam Hub, ${firstName} — verify your email`
+    : "Welcome to MedExam Hub — verify your email";
   const url = appBaseUrl();
+  const verifyUrl = `${url}/api/auth/verify-email?token=${makeVerifyToken(userId)}`;
   return {
     subject,
     html: wrapHtml(`
       <h1 style="font-size:24px;margin:0 0 16px;color:#111;">${greet}</h1>
       <p style="font-size:15px;">We're so glad you joined <strong>MedExam Hub</strong>. You're now part of a growing community of doctors, residents, paramedical students, and lifelong learners preparing for their next big exam — across MENA and beyond.</p>
+
+      <div style="background:#fef9c3;border-left:3px solid #ca8a04;padding:14px 18px;margin:24px 0;border-radius:4px;">
+        <p style="margin:0 0 10px;font-size:14px;color:#713f12;">
+          <strong>One quick step first</strong> — confirm <strong>${escape(email)}</strong> is your email so we can send you exam reminders, receipts, and community updates.
+        </p>
+        <p style="margin:0;text-align:center;">
+          <a href="${verifyUrl}" style="display:inline-block;background:#ca8a04;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">Verify my email →</a>
+        </p>
+        <p style="margin:10px 0 0;font-size:11px;color:#713f12;">Link expires in 7 days. If the button doesn't work, paste this URL: <span style="word-break:break-all;">${verifyUrl}</span></p>
+      </div>
 
       <div style="background:#eff6ff;border-left:3px solid #2563eb;padding:14px 18px;margin:24px 0;border-radius:4px;">
         <p style="margin:0;font-size:14px;color:#1e3a8a;">

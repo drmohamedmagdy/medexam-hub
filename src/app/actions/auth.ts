@@ -77,25 +77,16 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     description: "Welcome bonus",
   }).catch(() => {});
 
-  // Fire-and-forget welcome email — don't block signup if email fails.
-  const welcome = welcomeEmail(user.name, user.id);
+  // Combined welcome + verify email — one message instead of two so the
+  // user's inbox isn't immediately split-screen with us. Fire-and-forget
+  // so a Resend hiccup doesn't block signup.
+  const welcome = welcomeEmail(user.name, user.id, user.email);
   void sendEmail({
     toUserId: user.id,
     toEmail: user.email,
     subject: welcome.subject,
     category: "welcome",
     html: welcome.html,
-  }).catch(() => {});
-
-  // Verification email (separate so the welcome and verify links each render
-  // fully on their own — easier to read for the user).
-  const verify = verificationEmail(user.name, user.id, user.email);
-  void sendEmail({
-    toUserId: user.id,
-    toEmail: user.email,
-    subject: verify.subject,
-    category: "verification",
-    html: verify.html,
   }).catch(() => {});
 
   await createSession(user.id);
