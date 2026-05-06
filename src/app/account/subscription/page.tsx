@@ -12,6 +12,7 @@ import {
 import { ensureReferralCode, getReferralUrl } from "@/lib/credits";
 import CancelButton from "./CancelButton";
 import ReferralCard from "./ReferralCard";
+import RedeemCreditsCard from "./RedeemCreditsCard";
 
 const PLAN_ORDER: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM"];
 
@@ -168,6 +169,10 @@ export default async function SubscriptionPage() {
       </section>
 
       <ReferralCard referralUrl={referralUrl} balance={user.creditsBalance} />
+
+      {user.creditsBalance >= 5 && (
+        <RedeemCreditsCard balance={user.creditsBalance} planLabel={planTr.label} />
+      )}
 
       {/* Credit history */}
       {creditTransactions.length > 0 && (

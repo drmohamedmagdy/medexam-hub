@@ -24,11 +24,18 @@ export const REFERRAL_COMMISSION_CREDITS: Record<Plan, number> = {
 // users from grinding referrals into infinite free service.
 export const MAX_CREDITS_DISCOUNT_FRACTION = 0.5;
 
+// Bonus quota pricing — credits spent per unit of monthly quota added.
+// 1 extra question = 5 credits, 1 extra file upload = 15 credits.
+export const CREDITS_PER_BONUS_QUESTION = 5;
+export const CREDITS_PER_BONUS_FILE = 15;
+
 export type CreditTxType =
   | "signup_bonus"
   | "referral_commission"
   | "redemption_discount"
   | "redemption_refund"
+  | "redemption_questions"
+  | "redemption_files"
   | "manual_adjust";
 
 // Codes use 26 letters + digits, omitting visually ambiguous chars
@@ -235,4 +242,58 @@ export function maxCreditsForOrder(amountCents: number, balance: number): number
   // 1 credit = 1 EGP off; cap at 50% of the order's full amount.
   const cap = Math.floor((amountCents / 100) * MAX_CREDITS_DISCOUNT_FRACTION);
   return Math.min(balance, cap);
+}
+
+/**
+ * Spends credits to grant the user extra monthly quota (questions or file
+ * uploads). Bonuses are scoped to the current `yearMonth` bucket so they
+ * naturally expire when the calendar month rolls over — same lifecycle as
+ * the plan's base quota.
+ *
+ * Throws on insufficient balance / invalid amount.
+ */
+export async function redeemForBonusQuota(args: {
+  userId: string;
+  kind: "questions" | "files";
+  amount: number;
+  yearMonth: string;
+}): Promise<void> {
+  if (args.amount <= 0) throw new Error("amount must be positive");
+  const perUnit =
+    args.kind === "questions" ? CREDITS_PER_BONUS_QUESTION : CREDITS_PER_BONUS_FILE;
+  const cost = perUnit * args.amount;
+
+  await prisma.$transaction(async (tx) => {
+    const u = await tx.user.findUnique({
+      where: { id: args.userId },
+      select: { creditsBalance: true },
+    });
+    if (!u) throw new Error("User not found");
+    if (u.creditsBalance < cost) throw new Error("Insufficient credits");
+
+    await tx.bonusGrant.create({
+      data: {
+        userId: args.userId,
+        kind: args.kind,
+        amount: args.amount,
+        creditsSpent: cost,
+        yearMonth: args.yearMonth,
+      },
+    });
+    await tx.creditTransaction.create({
+      data: {
+        userId: args.userId,
+        amount: -cost,
+        type: args.kind === "questions" ? "redemption_questions" : "redemption_files",
+        description:
+          args.kind === "questions"
+            ? `+${args.amount} questions for this month`
+            : `+${args.amount} file upload${args.amount === 1 ? "" : "s"} for this month`,
+      },
+    });
+    await tx.user.update({
+      where: { id: args.userId },
+      data: { creditsBalance: { decrement: cost } },
+    });
+  });
 }

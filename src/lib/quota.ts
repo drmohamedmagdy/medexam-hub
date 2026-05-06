@@ -11,22 +11,35 @@ export type QuotaStatus = {
   used: number;
   limit: number;
   remaining: number;
+  bonus?: number;
 };
+
+async function sumActiveBonus(userId: string, kind: "questions" | "files"): Promise<number> {
+  const ym = currentYearMonth();
+  const agg = await prisma.bonusGrant.aggregate({
+    where: { userId, kind, yearMonth: ym },
+    _sum: { amount: true },
+  });
+  return agg._sum.amount ?? 0;
+}
 
 export async function getMonthlyQuestionsUsage(
   userId: string,
   plan: Plan
 ): Promise<QuotaStatus> {
-  const limit = PLAN_LIMITS[plan].monthlyQuestions;
   const ym = currentYearMonth();
 
-  const agg = await prisma.usageLog.aggregate({
-    where: { userId, kind: KIND, yearMonth: ym },
-    _sum: { count: true },
-  });
+  const [agg, bonus] = await Promise.all([
+    prisma.usageLog.aggregate({
+      where: { userId, kind: KIND, yearMonth: ym },
+      _sum: { count: true },
+    }),
+    sumActiveBonus(userId, "questions"),
+  ]);
   const used = agg._sum.count ?? 0;
+  const limit = PLAN_LIMITS[plan].monthlyQuestions + bonus;
 
-  return { used, limit, remaining: Math.max(0, limit - used) };
+  return { used, limit, remaining: Math.max(0, limit - used), bonus };
 }
 
 export async function recordQuestionsUsed(userId: string, count: number): Promise<void> {
@@ -48,11 +61,11 @@ export const getMonthlyExamUsage = getMonthlyQuestionsUsage;
 // File-upload quota tracking. We use the FileUpload.yearMonth column directly
 // instead of a UsageLog row so we can also display the user's recent uploads.
 export async function getMonthlyFileUploads(userId: string, plan: Plan): Promise<QuotaStatus> {
-  const limit = PLAN_LIMITS[plan].fileUploadsPerMonth;
   const ym = currentYearMonth();
-  const used = await prisma.fileUpload.count({
-    where: { userId, yearMonth: ym },
-  });
-  return { used, limit, remaining: Math.max(0, limit - used) };
+  const [used, bonus] = await Promise.all([
+    prisma.fileUpload.count({ where: { userId, yearMonth: ym } }),
+    sumActiveBonus(userId, "files"),
+  ]);
+  const limit = PLAN_LIMITS[plan].fileUploadsPerMonth + bonus;
+  return { used, limit, remaining: Math.max(0, limit - used), bonus };
 }
-

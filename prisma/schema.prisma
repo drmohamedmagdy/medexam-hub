@@ -89,6 +89,7 @@ model User {
   referredBy       User?               @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
   referrals        User[]              @relation("UserReferrals")
   creditTransactions CreditTransaction[]
+  bonusGrants      BonusGrant[]
 }
 
 model CreditTransaction {
@@ -96,7 +97,8 @@ model CreditTransaction {
   userId          String
   // Positive = credits earned, negative = credits spent.
   amount          Int
-  // signup_bonus | referral_commission | redemption_discount | manual_adjust
+  // signup_bonus | referral_commission | redemption_discount | redemption_refund |
+  // redemption_questions | redemption_files | manual_adjust
   type            String
   description     String?
   // For commission: the user whose payment caused this credit award.
@@ -109,6 +111,25 @@ model CreditTransaction {
 
   @@index([userId, createdAt])
   @@index([paymentOrderId])
+}
+
+// One row per bonus quota purchase. Active for the user's current
+// `yearMonth` bucket — matches how UsageLog and FileUpload bucket
+// monthly usage, so bonuses naturally expire when the calendar month
+// rolls over.
+model BonusGrant {
+  id           String   @id @default(cuid())
+  userId       String
+  // "questions" | "files"
+  kind         String
+  amount       Int
+  creditsSpent Int
+  yearMonth    String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, yearMonth, kind])
 }
 
 model Notification {

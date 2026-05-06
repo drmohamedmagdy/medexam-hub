@@ -20,6 +20,7 @@ export default async function AdminLayout({
             <AdminLink href="/admin/payments">Payments</AdminLink>
             <AdminLink href="/admin/exams">Exams</AdminLink>
             <AdminLink href="/admin/promos">Promos</AdminLink>
+            <AdminLink href="/admin/credits">Credits</AdminLink>
             <AdminLink href="/admin/email">Emails</AdminLink>
             <AdminLink href="/admin/library">Library</AdminLink>
           </nav>
