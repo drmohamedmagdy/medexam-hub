@@ -9,6 +9,12 @@ import { prisma } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { validatePromoCode } from "@/lib/promo";
 import { createNotification } from "@/lib/notifications";
+import {
+  processReferralCommission,
+  awardCredits,
+  chargeCredits,
+  maxCreditsForOrder,
+} from "@/lib/credits";
 import { PaymentStatus, type PaymentMethod } from "@/generated/prisma/client";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +33,7 @@ const SubmitSchema = z.object({
   proofImagePathname: z.string().min(1).max(500),
   proofNote: z.string().max(500).optional(),
   promoCode: z.string().max(40).optional(),
+  creditsToUse: z.coerce.number().int().min(0).max(100000).optional(),
 });
 
 export async function submitManualPaymentAction(
@@ -42,12 +49,13 @@ export async function submitManualPaymentAction(
     proofImagePathname: String(formData.get("proofImagePathname") ?? "").trim(),
     proofNote: String(formData.get("proofNote") ?? "").trim() || undefined,
     promoCode: String(formData.get("promoCode") ?? "").trim() || undefined,
+    creditsToUse: formData.get("creditsToUse"),
   });
   if (!parsed.success) {
     return { ok: false, error: "Please upload a clear screenshot of your transaction." };
   }
 
-  const { plan, method, proofImageUrl, proofImagePathname, proofNote, promoCode } = parsed.data;
+  const { plan, method, proofImageUrl, proofImagePathname, proofNote, promoCode, creditsToUse } = parsed.data;
   const cfg = PLAN_LIMITS[plan];
   const originalCents = cfg.priceMonthly * 100;
 
@@ -63,6 +71,18 @@ export async function submitManualPaymentAction(
     amountCents = validation.finalCents;
     promoId = validation.promoId;
     promoCodeStored = validation.code;
+  }
+
+  // Validate + cap credit redemption against the post-promo amount.
+  let creditsApplied = 0;
+  if (creditsToUse && creditsToUse > 0) {
+    const userCredits = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { creditsBalance: true },
+    });
+    const allowed = maxCreditsForOrder(amountCents, userCredits?.creditsBalance ?? 0);
+    creditsApplied = Math.min(creditsToUse, allowed);
+    amountCents -= creditsApplied * 100;
   }
 
   // Block obvious spam: same user submitting more than 3 pending manual
@@ -96,9 +116,32 @@ export async function submitManualPaymentAction(
       proofNote: proofNote ?? null,
       promoCodeId: promoId,
       promoCodeUsed: promoCodeStored,
-      originalCents: promoId ? originalCents : null,
+      originalCents: promoId || creditsApplied > 0 ? originalCents : null,
+      creditsApplied,
     },
   });
+
+  // Deduct credits AFTER the order exists, so the ledger row can reference it.
+  // If admin rejects later, adminRejectPaymentAction refunds via awardCredits.
+  if (creditsApplied > 0) {
+    try {
+      await chargeCredits({
+        userId: user.id,
+        amount: creditsApplied,
+        type: "redemption_discount",
+        description: `Discount on ${plan} order — ${creditsApplied} EGP off`,
+        paymentOrderId: order.id,
+      });
+    } catch {
+      // Race lost — someone else spent the credits in another tab. Roll back
+      // by deleting the order and asking the user to retry.
+      await prisma.paymentOrder.delete({ where: { id: order.id } });
+      return {
+        ok: false,
+        error: "Couldn't lock your credits — your balance may have changed. Please try again.",
+      };
+    }
+  }
 
   if (promoId) {
     await prisma.promoRedemption.create({
@@ -173,6 +216,9 @@ export async function adminApprovePaymentAction(formData: FormData): Promise<voi
     href: "/account/subscription",
   });
 
+  // Award referral commission to the referrer (idempotent + first-paid-only).
+  await processReferralCommission(order.id);
+
   revalidatePath("/admin/payments");
   revalidatePath(`/checkout/pending/${order.id}`);
 }
@@ -196,6 +242,19 @@ export async function adminRejectPaymentAction(formData: FormData): Promise<void
       rejectionReason: reason,
     },
   });
+
+  // Refund credits the user spent at checkout — they didn't actually get
+  // anything. Awarding (positive) puts the credits back; the description
+  // makes the ledger row easy to read.
+  if (order.creditsApplied > 0) {
+    await awardCredits({
+      userId: order.userId,
+      amount: order.creditsApplied,
+      type: "redemption_refund",
+      description: `Refund — payment for ${PLAN_LIMITS[order.plan].label} was rejected`,
+      paymentOrderId: order.id,
+    });
+  }
 
   await createNotification({
     userId: order.userId,

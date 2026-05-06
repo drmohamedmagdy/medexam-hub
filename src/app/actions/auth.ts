@@ -12,11 +12,18 @@ import {
   verifyResetToken,
   welcomeEmail,
 } from "@/lib/email";
+import {
+  awardCredits,
+  ensureReferralCode,
+  findUserByReferralCode,
+  SIGNUP_BONUS_CREDITS,
+} from "@/lib/credits";
 
 const SignupSchema = z.object({
   name: z.string().min(2).max(80).trim(),
   email: z.string().email().toLowerCase().trim(),
   password: z.string().min(8).max(200),
+  referralCode: z.string().max(40).optional(),
 });
 
 const LoginSchema = z.object({
@@ -31,6 +38,7 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    referralCode: String(formData.get("referralCode") ?? "").trim() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -41,14 +49,33 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     return { error: "An account with that email already exists." };
   }
 
+  let referrerId: string | null = null;
+  if (parsed.data.referralCode) {
+    const referrer = await findUserByReferralCode(parsed.data.referralCode);
+    if (referrer) referrerId = referrer.id;
+  }
+
   const passwordHash = await hashPassword(parsed.data.password);
   const user = await prisma.user.create({
     data: {
       email: parsed.data.email,
       name: parsed.data.name,
       passwordHash,
+      referredByUserId: referrerId,
     },
   });
+
+  // Generate a unique referral code so this new user can refer others
+  // immediately. Don't block signup on this — retry on next account access if it fails.
+  void ensureReferralCode(user.id).catch(() => {});
+
+  // Welcome bonus — every new account starts with FREE plan, so 10 credits.
+  void awardCredits({
+    userId: user.id,
+    amount: SIGNUP_BONUS_CREDITS.FREE,
+    type: "signup_bonus",
+    description: "Welcome bonus",
+  }).catch(() => {});
 
   // Fire-and-forget welcome email — don't block signup if email fails.
   const welcome = welcomeEmail(user.name, user.id);

@@ -12,11 +12,18 @@ type Labels = {
   submitLoading: string;
 };
 
-export default function SignupForm({ labels }: { labels: Labels }) {
+export default function SignupForm({
+  labels,
+  referralCode,
+}: {
+  labels: Labels;
+  referralCode?: string | null;
+}) {
   const [state, action, pending] = useActionState<AuthState, FormData>(signupAction, null);
 
   return (
     <form action={action} className="mt-8 space-y-4">
+      {referralCode && <input type="hidden" name="referralCode" value={referralCode} />}
       <div>
         <label htmlFor="name" className="block text-sm font-medium">{labels.name}</label>
         <input

@@ -29,15 +29,18 @@ export default function CheckoutForm({
   plan,
   priceMonthly,
   t,
+  creditsBalance = 0,
 }: {
   plan: Plan;
   priceMonthly: number;
   t: CheckoutT;
+  creditsBalance?: number;
 }) {
   const [method, setMethod] = useState<Method>("CARD");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
+  const [creditsToUse, setCreditsToUse] = useState(0);
   // Controlled so the typed value is sent to the server even if the user
   // forgets to click "Apply" — the server validates and applies it anyway.
   const [promoInput, setPromoInput] = useState("");
@@ -59,7 +62,12 @@ export default function CheckoutForm({
     });
   }
 
-  const finalAmount = promo ? promo.finalCents / 100 : priceMonthly;
+  const promoFinalAmount = promo ? promo.finalCents / 100 : priceMonthly;
+
+  // Credits can offset at most 50% of the post-promo amount.
+  const maxCredits = Math.min(creditsBalance, Math.floor(promoFinalAmount * 0.5));
+  const cappedCredits = Math.min(creditsToUse, maxCredits);
+  const finalAmount = Math.max(0, promoFinalAmount - cappedCredits);
 
   // Send whatever the user typed, even if they forgot to click "Apply".
   // The server re-validates either way and is the source of truth on price.
@@ -215,12 +223,23 @@ export default function CheckoutForm({
         </div>
       )}
 
+      {(method === "VODAFONE_CASH" || method === "INSTAPAY") && creditsBalance > 0 && (
+        <CreditsRedeem
+          balance={creditsBalance}
+          maxCredits={maxCredits}
+          value={cappedCredits}
+          onChange={setCreditsToUse}
+          newTotal={finalAmount}
+        />
+      )}
+
       {method === "VODAFONE_CASH" && (
         <ManualForm
           plan={plan}
           method="VODAFONE_CASH"
           amount={finalAmount}
           promoCode={effectivePromoCode}
+          creditsToUse={cappedCredits}
           action={manualAction}
           state={manualState}
           pending={manualPending}
@@ -237,6 +256,7 @@ export default function CheckoutForm({
           method="INSTAPAY"
           amount={finalAmount}
           promoCode={effectivePromoCode}
+          creditsToUse={cappedCredits}
           action={manualAction}
           state={manualState}
           pending={manualPending}
@@ -281,6 +301,71 @@ function MethodOption({
       <span className="text-xs text-zinc-500">{sublabel}</span>
       <span className="sr-only">{id}</span>
     </button>
+  );
+}
+
+function CreditsRedeem({
+  balance,
+  maxCredits,
+  value,
+  onChange,
+  newTotal,
+}: {
+  balance: number;
+  maxCredits: number;
+  value: number;
+  onChange: (n: number) => void;
+  newTotal: number;
+}) {
+  const disabled = maxCredits === 0;
+  return (
+    <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+            🎁 Use credits as discount
+          </p>
+          <p className="mt-0.5 text-xs text-emerald-800 dark:text-emerald-300">
+            You have <strong>{balance.toLocaleString()}</strong> credits.
+            {maxCredits > 0
+              ? ` Up to ${maxCredits.toLocaleString()} can apply to this order (max 50% off).`
+              : " Reach a higher amount to use credits on this order."}
+          </p>
+        </div>
+        <div className="text-end">
+          <div className="font-mono text-lg font-bold text-emerald-700 dark:text-emerald-300">
+            -{value.toLocaleString()} EGP
+          </div>
+          <div className="text-xs text-zinc-500">
+            new total {newTotal.toLocaleString()} EGP
+          </div>
+        </div>
+      </div>
+      {!disabled && (
+        <div className="mt-3 flex items-center gap-3">
+          <input
+            type="range"
+            min={0}
+            max={maxCredits}
+            step={1}
+            value={value}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="flex-1 accent-emerald-600"
+          />
+          <input
+            type="number"
+            min={0}
+            max={maxCredits}
+            value={value}
+            onChange={(e) => {
+              const n = Math.max(0, Math.min(maxCredits, Number(e.target.value) || 0));
+              onChange(n);
+            }}
+            className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -348,6 +433,7 @@ function ManualForm({
   method,
   amount,
   promoCode,
+  creditsToUse,
   action,
   state,
   pending,
@@ -358,6 +444,7 @@ function ManualForm({
   method: "VODAFONE_CASH" | "INSTAPAY";
   amount: number;
   promoCode: string | null;
+  creditsToUse: number;
   action: (formData: FormData) => void;
   state: ManualPayState;
   pending: boolean;
@@ -412,6 +499,9 @@ function ManualForm({
       <input type="hidden" name="plan" value={plan} />
       <input type="hidden" name="method" value={method} />
       {promoCode && <input type="hidden" name="promoCode" value={promoCode} />}
+      {creditsToUse > 0 && (
+        <input type="hidden" name="creditsToUse" value={String(creditsToUse)} />
+      )}
       {uploaded && (
         <>
           <input type="hidden" name="proofImageUrl" value={uploaded.url} />

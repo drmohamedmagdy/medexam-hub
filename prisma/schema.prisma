@@ -58,6 +58,10 @@ model User {
   emailReminders        Boolean       @default(true)
   // Achievement progress — JSON array of unlocked achievement ids
   achievements          String?
+  // Referral / credits system
+  referralCode          String?       @unique
+  referredByUserId      String?
+  creditsBalance        Int           @default(0)
   // Last sent timestamps so the daily cron doesn't double-send within a window
   lastReminderSentAt    DateTime?
   lastReengagementAt    DateTime?
@@ -81,6 +85,30 @@ model User {
   emailLogs        EmailLog[]
   promoRedemptions PromoRedemption[]
   notifications    Notification[]
+
+  referredBy       User?               @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referrals        User[]              @relation("UserReferrals")
+  creditTransactions CreditTransaction[]
+}
+
+model CreditTransaction {
+  id              String   @id @default(cuid())
+  userId          String
+  // Positive = credits earned, negative = credits spent.
+  amount          Int
+  // signup_bonus | referral_commission | redemption_discount | manual_adjust
+  type            String
+  description     String?
+  // For commission: the user whose payment caused this credit award.
+  referredUserId  String?
+  // For redemptions: the order the credits were applied to.
+  paymentOrderId  String?
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([paymentOrderId])
 }
 
 model Notification {
@@ -272,6 +300,10 @@ model PaymentOrder {
   promoCodeId     String?
   promoCodeUsed   String?
   originalCents   Int?
+  // Credits applied to this order (in EGP, since 1 credit = 1 EGP off).
+  // Deducted from User.creditsBalance at order creation; refunded if
+  // the order is rejected/failed.
+  creditsApplied  Int           @default(0)
   createdAt       DateTime      @default(now())
   paidAt          DateTime?
 

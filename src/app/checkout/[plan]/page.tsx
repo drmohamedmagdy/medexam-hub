@@ -126,7 +126,12 @@ export default async function CheckoutPage({
             <span className="font-medium">{user.email}</span>
           </div>
 
-          <CheckoutForm plan={plan} priceMonthly={cfg.priceMonthly} t={t} />
+          <CheckoutForm
+            plan={plan}
+            priceMonthly={cfg.priceMonthly}
+            t={t}
+            creditsBalance={user.creditsBalance}
+          />
 
           <p className="mt-6 text-xs text-zinc-500">
             {termsParts[0]}

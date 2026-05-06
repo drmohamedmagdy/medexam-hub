@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { verifyCheckoutToken } from "@/lib/paymob";
 import { PaymentStatus } from "@/generated/prisma/client";
 import { PLAN_LIMITS } from "@/lib/plans";
+import { processReferralCommission } from "@/lib/credits";
 
 const CHECKOUT_COOKIE = "mxh_checkout";
 
@@ -44,6 +45,9 @@ export default async function PaymentReturnPage() {
         },
       }),
     ]);
+
+    // Best-effort referral commission — never fail the upgrade on this.
+    void processReferralCommission(order.id).catch(() => {});
   }
 
   jar.delete(CHECKOUT_COOKIE);

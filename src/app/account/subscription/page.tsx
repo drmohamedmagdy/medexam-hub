@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -8,7 +9,9 @@ import {
   cancelSubscriptionAction,
   reactivateSubscriptionAction,
 } from "@/app/actions/subscription";
+import { ensureReferralCode, getReferralUrl } from "@/lib/credits";
 import CancelButton from "./CancelButton";
+import ReferralCard from "./ReferralCard";
 
 const PLAN_ORDER: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM"];
 
@@ -18,11 +21,25 @@ export default async function SubscriptionPage() {
   const tA = t.account;
   const planTr = t.plans.perPlan[user.plan];
 
-  const payments = await prisma.paymentOrder.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
+  const [payments, creditTransactions, referralCode, headerList] = await Promise.all([
+    prisma.paymentOrder.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.creditTransaction.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    ensureReferralCode(user.id),
+    headers(),
+  ]);
+
+  // Build referral URL from the request host so dev / staging both work.
+  const host = headerList.get("host") ?? "medexamhub.org";
+  const proto = headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const referralUrl = getReferralUrl(referralCode, `${proto}://${host}`);
 
   const now = new Date();
   const expiresAt = user.planExpiresAt;
@@ -150,6 +167,41 @@ export default async function SubscriptionPage() {
         </div>
       </section>
 
+      <ReferralCard referralUrl={referralUrl} balance={user.creditsBalance} />
+
+      {/* Credit history */}
+      {creditTransactions.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold">Credit history</h2>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {creditTransactions.map((tx) => {
+                const isEarn = tx.amount > 0;
+                return (
+                  <li key={tx.id} className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="font-medium">
+                        {tx.description ?? labelForType(tx.type)}
+                      </div>
+                      <div className="mt-0.5 text-xs text-zinc-500">
+                        {fmtDate(tx.createdAt)}
+                      </div>
+                    </div>
+                    <div
+                      className={`shrink-0 font-mono font-semibold ${
+                        isEarn ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      {isEarn ? "+" : ""}{tx.amount}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {/* Upgrade options */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold">{tA.upgradeOptions}</h2>
@@ -244,4 +296,21 @@ export default async function SubscriptionPage() {
       </section>
     </div>
   );
+}
+
+function labelForType(type: string): string {
+  switch (type) {
+    case "signup_bonus":
+      return "Welcome bonus";
+    case "referral_commission":
+      return "Referral commission";
+    case "redemption_discount":
+      return "Discount applied";
+    case "redemption_refund":
+      return "Refund";
+    case "manual_adjust":
+      return "Manual adjustment";
+    default:
+      return type;
+  }
 }
