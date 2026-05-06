@@ -12,7 +12,6 @@ import {
   sendEmail,
   groupInviteEmail,
   publicGroupAnnouncementEmail,
-  publicGroupPostEmail,
 } from "@/lib/email";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,72 +101,52 @@ export async function createPostAction(
     },
   });
 
-  // If posted to a public group, fan out to all opted-in verified users
-  // (excluding the author) so they can jump in and engage. Private group
-  // posts stay silent. Public-feed posts (groupId === null) keep using
-  // the daily digest from the cron, not real-time emails — that's the
-  // less-noisy default for the open feed.
-  //
-  // 30-min per-group throttle: if this group already triggered a fan-out
-  // in the last 30 minutes, skip this one so a chatty user can't spam
-  // every member's inbox. The throttle is read by checking for any
-  // earlier post in this group with groupAnnouncedAt > now-30min.
+  // Posts in any group fan out as in-app notifications to the other
+  // members of that group (no email — only the dashboard bell). Public
+  // group creation and private group invites still trigger email; this
+  // is the lighter-weight ongoing engagement signal.
+  // Public-feed posts (groupId === null) stay covered by the daily
+  // digest; no per-post fan-out — would be too noisy.
   if (parsed.data.groupId) {
     const group = await prisma.group.findUnique({
       where: { id: parsed.data.groupId },
-      select: { id: true, name: true, isPublic: true },
+      select: { id: true, name: true },
     });
-    if (group?.isPublic) {
-      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
-      const recentlyAnnounced = await prisma.post.findFirst({
+    if (group) {
+      const otherMembers = await prisma.groupMember.findMany({
         where: {
           groupId: group.id,
-          groupAnnouncedAt: { gte: thirtyMinAgo },
-          NOT: { id: post.id },
+          userId: { not: user.id },
         },
-        select: { id: true },
+        select: { userId: true },
+        take: 1000,
       });
 
-      if (!recentlyAnnounced) {
-        const recipients = await prisma.user.findMany({
-          where: {
-            id: { not: user.id },
-            emailMarketing: true,
-          },
-          select: { id: true, email: true, name: true },
-          take: 1000,
-        });
-        console.log(`[community] post in public group "${group.name}" → fanning out to ${recipients.length} users`);
+      const authorLabel = user.name?.split(" ")[0] ?? user.email.split("@")[0];
+      const kindLabel =
+        parsed.data.kind === "QUESTION"
+          ? "asked a question"
+          : parsed.data.kind === "ARTICLE"
+            ? "posted an article"
+            : "posted an update";
+      const emoji =
+        parsed.data.kind === "QUESTION" ? "❓" : parsed.data.kind === "ARTICLE" ? "📰" : "💬";
+      const heading = parsed.data.title
+        ? parsed.data.title
+        : parsed.data.body.slice(0, 100) + (parsed.data.body.length > 100 ? "…" : "");
 
-        const origin = await siteOrigin();
-        const tpl = publicGroupPostEmail({
-          authorName: user.name?.split(" ")[0] ?? user.email.split("@")[0],
-          groupName: group.name,
-          kind: parsed.data.kind,
-          title: parsed.data.title ?? null,
-          body: parsed.data.body,
-          postUrl: `${origin}/community/post/${post.id}`,
-          groupUrl: `${origin}/community/groups/${group.id}`,
-        });
-
-        // Best-effort parallel sends — never block the post creation.
-        await Promise.allSettled(
-          recipients.map((r) =>
-            sendEmail({
-              toUserId: r.id,
-              toEmail: r.email,
-              subject: tpl.subject,
-              category: "public_group_post",
-              html: tpl.html,
-            })
-          )
-        );
-
-        await prisma.post.update({
-          where: { id: post.id },
-          data: { groupAnnouncedAt: new Date() },
-        });
-      }
+      await Promise.allSettled(
+        otherMembers.map((m) =>
+          createNotification({
+            userId: m.userId,
+            category: "system",
+            emoji,
+            title: `${authorLabel} ${kindLabel} in ${group.name}`,
+            body: heading,
+            href: `/community/post/${post.id}`,
+          })
+        )
+      );
     }
   }
 
