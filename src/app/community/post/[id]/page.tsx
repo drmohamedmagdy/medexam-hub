@@ -2,15 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLocale, getTranslations } from "@/lib/i18n-server";
 import CommentForm from "./CommentForm";
 import { deletePostAction } from "@/app/actions/community";
 
 export const metadata = { title: "Post — MedExam Hub" };
 
-const KIND_META = {
-  POST: { label: "Post", emoji: "💬", classes: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200" },
-  QUESTION: { label: "Question", emoji: "❓", classes: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200" },
-  ARTICLE: { label: "Article", emoji: "📰", classes: "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-200" },
+const KIND_STYLE = {
+  POST: { emoji: "💬", classes: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200" },
+  QUESTION: { emoji: "❓", classes: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200" },
+  ARTICLE: { emoji: "📰", classes: "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-200" },
 } as const;
 
 export default async function PostDetailPage({
@@ -19,7 +20,8 @@ export default async function PostDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await requireUser();
+  const [user, locale] = await Promise.all([requireUser(), getLocale()]);
+  const t = getTranslations(locale).community;
 
   const post = await prisma.post.findUnique({
     where: { id },
@@ -43,9 +45,24 @@ export default async function PostDetailPage({
     if (!m) redirect("/community");
   }
 
-  const meta = KIND_META[post.kind];
+  const style = KIND_STYLE[post.kind];
+  const kindLabel =
+    post.kind === "QUESTION" ? t.kindQuestion : post.kind === "ARTICLE" ? t.kindArticle : t.kindPost;
   const authorLabel = post.author.name?.trim() || post.author.email.split("@")[0];
   const canDelete = post.author.id === user.id;
+  const backLabel = post.group?.name
+    ? t.postBackToGroup.replace("{group}", post.group.name)
+    : t.postBackToCommunity;
+
+  const isQuestion = post.kind === "QUESTION";
+  const commentCount = post.comments.length;
+  const sectionHeading = isQuestion
+    ? commentCount === 1
+      ? t.postAnswersOne
+      : t.postAnswersMany.replace("{n}", commentCount.toString())
+    : commentCount === 1
+      ? t.postCommentsOne
+      : t.postCommentsMany.replace("{n}", commentCount.toString());
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
@@ -53,13 +70,13 @@ export default async function PostDetailPage({
         href={post.groupId ? `/community/groups/${post.groupId}` : "/community"}
         className="text-sm text-zinc-500 hover:text-blue-600"
       >
-        &larr; Back to {post.group?.name ?? "community"}
+        &larr; {backLabel}
       </Link>
 
       <article className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className={`rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${meta.classes}`}>
-            {meta.emoji} {meta.label}
+          <span className={`rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${style.classes}`}>
+            {style.emoji} {kindLabel}
           </span>
           {post.group && (
             <Link
@@ -77,7 +94,7 @@ export default async function PostDetailPage({
             <form action={deletePostAction} className="ml-auto">
               <input type="hidden" name="id" value={post.id} />
               <button type="submit" className="text-xs text-red-600 hover:underline">
-                Delete post
+                {t.postDeletePost}
               </button>
             </form>
           )}
@@ -115,13 +132,13 @@ export default async function PostDetailPage({
       </article>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">
-          {post.comments.length} {post.kind === "QUESTION"
-            ? (post.comments.length === 1 ? "answer" : "answers")
-            : (post.comments.length === 1 ? "comment" : "comments")}
-        </h2>
+        <h2 className="text-lg font-semibold">{sectionHeading}</h2>
 
-        <CommentForm postId={post.id} placeholder={post.kind === "QUESTION" ? "Share your answer…" : "Add a comment…"} />
+        <CommentForm
+          postId={post.id}
+          placeholder={isQuestion ? t.postAnswerPlaceholder : t.postCommentPlaceholder}
+          t={t}
+        />
 
         <ul className="mt-4 space-y-3">
           {post.comments.map((c) => {

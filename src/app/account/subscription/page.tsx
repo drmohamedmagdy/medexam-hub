@@ -20,6 +20,7 @@ export default async function SubscriptionPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
   const t = getTranslations(locale);
   const tA = t.account;
+  const tC = t.credits;
   const planTr = t.plans.perPlan[user.plan];
 
   const [payments, creditTransactions, referralCode, headerList] = await Promise.all([
@@ -168,16 +169,16 @@ export default async function SubscriptionPage() {
         </div>
       </section>
 
-      <ReferralCard referralUrl={referralUrl} balance={user.creditsBalance} />
+      <ReferralCard referralUrl={referralUrl} balance={user.creditsBalance} t={tC} />
 
       {user.creditsBalance >= 5 && (
-        <RedeemCreditsCard balance={user.creditsBalance} planLabel={planTr.label} />
+        <RedeemCreditsCard balance={user.creditsBalance} planLabel={planTr.label} t={tC} />
       )}
 
       {/* Credit history */}
       {creditTransactions.length > 0 && (
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Credit history</h2>
+          <h2 className="text-lg font-semibold">{tC.historyHeading}</h2>
           <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
             <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {creditTransactions.map((tx) => {
@@ -186,7 +187,7 @@ export default async function SubscriptionPage() {
                   <li key={tx.id} className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                     <div className="min-w-0">
                       <div className="font-medium">
-                        {tx.description ?? labelForType(tx.type)}
+                        {tx.description ?? labelForType(tx.type, tC)}
                       </div>
                       <div className="mt-0.5 text-xs text-zinc-500">
                         {fmtDate(tx.createdAt)}
@@ -303,18 +304,22 @@ export default async function SubscriptionPage() {
   );
 }
 
-function labelForType(type: string): string {
+function labelForType(type: string, tC: import("@/lib/i18n").Translations["credits"]): string {
   switch (type) {
     case "signup_bonus":
-      return "Welcome bonus";
+      return tC.txTypeSignupBonus;
     case "referral_commission":
-      return "Referral commission";
+      return tC.txTypeReferralCommission;
     case "redemption_discount":
-      return "Discount applied";
+      return tC.txTypeDiscount;
     case "redemption_refund":
-      return "Refund";
+      return tC.txTypeRefund;
+    case "redemption_questions":
+      return tC.txTypeQuestions;
+    case "redemption_files":
+      return tC.txTypeFiles;
     case "manual_adjust":
-      return "Manual adjustment";
+      return tC.txTypeManual;
     default:
       return type;
   }

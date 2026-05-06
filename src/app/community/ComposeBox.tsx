@@ -4,21 +4,20 @@ import { useActionState, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { createPostAction, type CreatePostState } from "@/app/actions/community";
+import type { Translations } from "@/lib/i18n";
 
 type Kind = "POST" | "QUESTION" | "ARTICLE";
 
-const KIND_OPTIONS: { value: Kind; label: string; emoji: string; hint: string }[] = [
-  { value: "POST", label: "Post", emoji: "💬", hint: "A quick share or thought." },
-  { value: "QUESTION", label: "Question", emoji: "❓", hint: "Ask the community." },
-  { value: "ARTICLE", label: "Article", emoji: "📰", hint: "A longer write-up." },
-];
+type CommunityT = Translations["community"];
 
 export default function ComposeBox({
   groupId,
   userName,
+  t,
 }: {
   groupId?: string;
   userName?: string;
+  t: CommunityT;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -32,6 +31,12 @@ export default function ComposeBox({
     createPostAction,
     null
   );
+
+  const KIND_OPTIONS: { value: Kind; label: string; emoji: string; hint: string }[] = [
+    { value: "POST", label: t.kindPost, emoji: "💬", hint: t.kindPostHint },
+    { value: "QUESTION", label: t.kindQuestion, emoji: "❓", hint: t.kindQuestionHint },
+    { value: "ARTICLE", label: t.kindArticle, emoji: "📰", hint: t.kindArticleHint },
+  ];
 
   if (state?.ok) {
     // Reset & refresh after a successful submission.
@@ -67,15 +72,16 @@ export default function ComposeBox({
   }
 
   if (!open) {
+    const prompt = userName
+      ? t.composePromptUser.replace("{name}", userName)
+      : t.composePromptAnonymous;
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
         className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-start text-sm text-zinc-500 transition hover:border-blue-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-cyan-700/60 dark:hover:bg-zinc-800/60"
       >
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">
-          {userName ? `${userName}, ` : ""}share an update, ask a question, or post an article…
-        </span>
+        <span className="font-medium text-zinc-700 dark:text-zinc-300">{prompt}</span>
       </button>
     );
   }
@@ -118,7 +124,7 @@ export default function ComposeBox({
           name="title"
           required
           maxLength={200}
-          placeholder={kind === "QUESTION" ? "Your question, in one line" : "Article title"}
+          placeholder={kind === "QUESTION" ? t.composeQuestionTitle : t.composeArticleTitle}
           className="mt-3 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900"
         />
       )}
@@ -130,10 +136,10 @@ export default function ComposeBox({
         maxLength={20_000}
         placeholder={
           kind === "QUESTION"
-            ? "Add context, what you've tried, what you want to know…"
+            ? t.composeQuestionBody
             : kind === "ARTICLE"
-              ? "Write your article…"
-              : "What's on your mind?"
+              ? t.composeArticleBody
+              : t.composePostBody
         }
         className="mt-3 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm leading-relaxed dark:border-zinc-700 dark:bg-zinc-900"
       />
@@ -143,13 +149,13 @@ export default function ComposeBox({
         <input
           name="linkUrl"
           type="url"
-          placeholder="🔗 Link URL (optional)"
+          placeholder={t.composeLinkUrlPlaceholder}
           className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
         <input
           name="linkLabel"
           maxLength={120}
-          placeholder="Label (optional)"
+          placeholder={t.composeLinkLabelPlaceholder}
           className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
@@ -166,7 +172,7 @@ export default function ComposeBox({
             />
             {uploading && (
               <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 text-sm font-medium text-white">
-                Uploading… {progress}%
+                {t.composeUploading.replace("{pct}", progress.toString())}
               </div>
             )}
             <button
@@ -178,12 +184,12 @@ export default function ComposeBox({
               }}
               className="mt-2 text-xs text-red-600 hover:underline"
             >
-              Remove image
+              {t.composeRemoveImage}
             </button>
           </div>
         ) : (
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/40 dark:hover:bg-zinc-800">
-            📷 Add image
+            {t.composeAddImage}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
@@ -206,14 +212,14 @@ export default function ComposeBox({
           onClick={() => setOpen(false)}
           className="rounded-md px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
         >
-          Cancel
+          {t.composeCancel}
         </button>
         <button
           type="submit"
           disabled={pending || uploading}
           className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
         >
-          {pending ? "Posting…" : "Post"}
+          {pending ? t.composePosting : t.composePost}
         </button>
       </div>
     </form>

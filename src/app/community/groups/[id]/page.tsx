@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLocale, getTranslations } from "@/lib/i18n-server";
 import PostCard from "../../PostCard";
 import ComposeBox from "../../ComposeBox";
 import {
@@ -19,7 +20,8 @@ export default async function GroupDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await requireUser();
+  const [user, locale] = await Promise.all([requireUser(), getLocale()]);
+  const t = getTranslations(locale).community;
 
   const group = await prisma.group.findUnique({
     where: { id },
@@ -39,17 +41,18 @@ export default async function GroupDetailPage({
 
   // Private groups: only members can see posts.
   if (!isMember && !group.isPublic) {
+    const ownerName = group.owner.name?.split(" ")[0] ?? group.owner.email.split("@")[0];
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 text-center sm:px-6">
-        <h1 className="text-2xl font-semibold">🔒 {group.name}</h1>
+        <h1 className="text-2xl font-semibold">{t.groupPrivateLockedTitle.replace("{name}", group.name)}</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          This is a private group. You need an invite from {group.owner.name?.split(" ")[0] ?? "the owner"} to join.
+          {t.groupPrivateLockedBody.replace("{owner}", ownerName)}
         </p>
         <Link
           href="/community/groups"
           className="mt-6 inline-block rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
         >
-          Back to groups
+          {t.groupBackToGroups}
         </Link>
       </div>
     );
@@ -65,10 +68,17 @@ export default async function GroupDetailPage({
     },
   });
 
+  const ownerLabel = group.owner.name ?? group.owner.email.split("@")[0];
+  const memberLabel =
+    group._count.members === 1
+      ? t.membersCountOne
+      : t.membersCountMany.replace("{n}", group._count.members.toString());
+  const postsLabel = t.groupsPostsCount.replace("{n}", group._count.posts.toString());
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
       <Link href="/community/groups" className="text-sm text-zinc-500 hover:text-blue-600">
-        &larr; Groups
+        {t.groupBack}
       </Link>
 
       <header className="mt-3 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
@@ -83,12 +93,7 @@ export default async function GroupDetailPage({
               </p>
             )}
             <p className="mt-2 text-xs text-zinc-500">
-              Owned by{" "}
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                {group.owner.name ?? group.owner.email.split("@")[0]}
-              </span>{" "}
-              · {group._count.members} member{group._count.members === 1 ? "" : "s"} ·{" "}
-              {group._count.posts} post{group._count.posts === 1 ? "" : "s"}
+              {t.groupOwnedBy.replace("{name}", ownerLabel)} · {memberLabel} · {postsLabel}
             </p>
           </div>
 
@@ -100,7 +105,7 @@ export default async function GroupDetailPage({
                   type="submit"
                   className="rounded-md bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-700"
                 >
-                  Join group
+                  {t.groupsJoinBtn}
                 </button>
               </form>
             )}
@@ -109,14 +114,14 @@ export default async function GroupDetailPage({
                 href={`/community/groups/${group.id}/invite`}
                 className="rounded-md border border-blue-600 px-3 py-1.5 font-medium text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
               >
-                + Invite by email
+                {t.groupInviteBtn}
               </Link>
             )}
             {isMember && !isOwner && (
               <form action={leaveGroupAction}>
                 <input type="hidden" name="id" value={group.id} />
                 <button type="submit" className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
-                  Leave
+                  {t.groupsLeaveBtn}
                 </button>
               </form>
             )}
@@ -127,9 +132,9 @@ export default async function GroupDetailPage({
                 <button
                   type="submit"
                   className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  title={group.isPublic ? "Make this group invite-only" : "Make this group discoverable to all members"}
+                  title={group.isPublic ? t.groupMakePrivateTitle : t.groupMakePublicTitle}
                 >
-                  {group.isPublic ? "Make private 🔒" : "Make public 🌐"}
+                  {group.isPublic ? t.groupMakePrivate : t.groupMakePublic}
                 </button>
               </form>
             )}
@@ -140,7 +145,7 @@ export default async function GroupDetailPage({
                   type="submit"
                   className="rounded-md border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
                 >
-                  Delete group
+                  {t.groupDeleteBtn}
                 </button>
               </form>
             )}
@@ -150,13 +155,17 @@ export default async function GroupDetailPage({
 
       {canPost && (
         <div className="mt-5">
-          <ComposeBox groupId={group.id} userName={user.name ?? user.email.split("@")[0]} />
+          <ComposeBox
+            groupId={group.id}
+            userName={user.name ?? user.email.split("@")[0]}
+            t={t}
+          />
         </div>
       )}
 
       {posts.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-10 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
-          No posts in this group yet.
+          {t.groupNoPostsYet}
         </div>
       ) : (
         <ul className="mt-6 space-y-4">
@@ -176,6 +185,7 @@ export default async function GroupDetailPage({
                   commentCount: p._count.comments,
                 }}
                 canDelete={p.author.id === user.id || isOwner}
+                t={t}
               />
             </li>
           ))}

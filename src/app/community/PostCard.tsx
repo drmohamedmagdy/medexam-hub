@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { deletePostAction } from "@/app/actions/community";
+import type { Translations } from "@/lib/i18n";
 
 type PostCardData = {
   id: string;
@@ -14,40 +15,56 @@ type PostCardData = {
   commentCount: number;
 };
 
-const KIND_META: Record<PostCardData["kind"], { label: string; classes: string; emoji: string }> = {
+type CommunityT = Translations["community"];
+
+const KIND_STYLE: Record<PostCardData["kind"], { classes: string; emoji: string }> = {
   POST: {
-    label: "Post",
     emoji: "💬",
     classes: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200",
   },
   QUESTION: {
-    label: "Question",
     emoji: "❓",
     classes: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200",
   },
   ARTICLE: {
-    label: "Article",
     emoji: "📰",
     classes: "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-200",
   },
 };
 
+function kindLabel(kind: PostCardData["kind"], t: CommunityT): string {
+  if (kind === "QUESTION") return t.kindQuestion;
+  if (kind === "ARTICLE") return t.kindArticle;
+  return t.kindPost;
+}
+
 export default function PostCard({
   post,
   canDelete,
+  t,
 }: {
   post: PostCardData;
   canDelete?: boolean;
+  t: CommunityT;
 }) {
-  const meta = KIND_META[post.kind];
+  const style = KIND_STYLE[post.kind];
   const authorLabel = post.author.name?.trim() || post.author.email.split("@")[0];
   const dateLabel = post.createdAt.toLocaleString();
+
+  const isQuestion = post.kind === "QUESTION";
+  const countLabel = isQuestion
+    ? post.commentCount === 1
+      ? t.postAnswersOne
+      : t.postAnswersMany.replace("{n}", post.commentCount.toString())
+    : post.commentCount === 1
+      ? t.postCommentsOne
+      : t.postCommentsMany.replace("{n}", post.commentCount.toString());
 
   return (
     <article className="rounded-2xl border border-zinc-200 bg-white p-5 transition hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-cyan-700/60 sm:p-6">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className={`rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${meta.classes}`}>
-          {meta.emoji} {meta.label}
+        <span className={`rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${style.classes}`}>
+          {style.emoji} {kindLabel(post.kind, t)}
         </span>
         <span className="text-zinc-500">
           <span className="font-medium text-zinc-700 dark:text-zinc-300">{authorLabel}</span> ·{" "}
@@ -59,9 +76,9 @@ export default function PostCard({
             <button
               type="submit"
               className="text-xs text-red-600 hover:underline"
-              aria-label="Delete this post"
+              aria-label={t.postDelete}
             >
-              Delete
+              {t.postDelete}
             </button>
           </form>
         )}
@@ -105,13 +122,13 @@ export default function PostCard({
           href={`/community/post/${post.id}`}
           className="font-medium hover:text-blue-600"
         >
-          💬 {post.commentCount} {post.kind === "QUESTION" ? (post.commentCount === 1 ? "answer" : "answers") : (post.commentCount === 1 ? "comment" : "comments")}
+          💬 {countLabel}
         </Link>
         <Link
           href={`/community/post/${post.id}`}
           className="ml-auto text-xs font-medium text-blue-600 hover:underline"
         >
-          Open →
+          {t.postOpen}
         </Link>
       </div>
     </article>

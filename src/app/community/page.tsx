@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLocale, getTranslations } from "@/lib/i18n-server";
 import PostCard from "./PostCard";
 import ComposeBox from "./ComposeBox";
 
 export const metadata = { title: "Community — MedExam Hub" };
 
 export default async function CommunityPage() {
-  const user = await requireUser();
+  const [user, locale] = await Promise.all([requireUser(), getLocale()]);
+  const t = getTranslations(locale).community;
 
   const [feed, myGroups, popularGroups] = await Promise.all([
     prisma.post.findMany({
@@ -52,17 +54,15 @@ export default async function CommunityPage() {
         {/* Main column */}
         <main>
           <header className="mb-5">
-            <h1 className="text-2xl font-semibold tracking-tight">Community</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Share insights, ask clinical questions, post articles. Public posts are visible to all members and surface in the daily digest email.
-            </p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
+            <p className="mt-1 text-sm text-zinc-500">{t.subtitle}</p>
           </header>
 
-          <ComposeBox userName={user.name ?? user.email.split("@")[0]} />
+          <ComposeBox userName={user.name ?? user.email.split("@")[0]} t={t} />
 
           {feed.length === 0 ? (
             <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-10 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
-              No posts yet. Start a discussion above — be the first!
+              {t.emptyFeed}
             </div>
           ) : (
             <ul className="mt-6 space-y-4">
@@ -82,6 +82,7 @@ export default async function CommunityPage() {
                       commentCount: p._count.comments,
                     }}
                     canDelete={p.author.id === user.id}
+                    t={t}
                   />
                 </li>
               ))}
@@ -93,18 +94,16 @@ export default async function CommunityPage() {
         <aside className="space-y-5 lg:sticky lg:top-20 lg:self-start">
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Your groups</h2>
+              <h2 className="text-sm font-semibold">{t.yourGroupsHeading}</h2>
               <Link
                 href="/community/groups/new"
                 className="text-xs font-medium text-blue-600 hover:underline"
               >
-                + New
+                {t.newGroupShort}
               </Link>
             </div>
             {myGroups.length === 0 ? (
-              <p className="mt-3 text-xs text-zinc-500">
-                You haven&apos;t joined any groups yet.
-              </p>
+              <p className="mt-3 text-xs text-zinc-500">{t.noGroupsYet}</p>
             ) : (
               <ul className="mt-3 space-y-1">
                 {myGroups.map((g) => (
@@ -126,32 +125,36 @@ export default async function CommunityPage() {
               href="/community/groups"
               className="mt-3 block text-center text-xs font-medium text-blue-600 hover:underline"
             >
-              See all groups →
+              {t.seeAllGroups}
             </Link>
           </div>
 
           {popularGroups.length > 0 && (
             <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-sm font-semibold">Discover</h2>
+              <h2 className="text-sm font-semibold">{t.discoverHeading}</h2>
               <ul className="mt-3 space-y-2">
-                {popularGroups.map((g) => (
-                  <li key={g.id} className="text-sm">
-                    <Link
-                      href={`/community/groups/${g.id}`}
-                      className="font-medium hover:text-blue-600"
-                    >
-                      🌐 {g.name}
-                    </Link>
-                    {g.description && (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
-                        {g.description}
-                      </p>
-                    )}
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      {g._count.members} member{g._count.members === 1 ? "" : "s"}
-                    </p>
-                  </li>
-                ))}
+                {popularGroups.map((g) => {
+                  const memberLabel =
+                    g._count.members === 1
+                      ? t.membersCountOne
+                      : t.membersCountMany.replace("{n}", g._count.members.toString());
+                  return (
+                    <li key={g.id} className="text-sm">
+                      <Link
+                        href={`/community/groups/${g.id}`}
+                        className="font-medium hover:text-blue-600"
+                      >
+                        🌐 {g.name}
+                      </Link>
+                      {g.description && (
+                        <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                          {g.description}
+                        </p>
+                      )}
+                      <p className="mt-0.5 text-xs text-zinc-500">{memberLabel}</p>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

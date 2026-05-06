@@ -50,7 +50,9 @@ export default async function CheckoutPage({
   const cfg = PLAN_LIMITS[plan];
 
   const locale = await getLocale();
-  const t = getTranslations(locale).checkout;
+  const allT = getTranslations(locale);
+  const t = allT.checkout;
+  const tCredits = allT.credits;
   const subtitle = t.subtitle.replace("{price}", formatPrice(cfg.priceMonthly));
   const promoBadge =
     PROMO_DISCOUNT_PCT > 0 && cfg.originalPriceMonthly
@@ -132,6 +134,7 @@ export default async function CheckoutPage({
             plan={plan}
             priceMonthly={cfg.priceMonthly}
             t={t}
+            tCredits={tCredits}
             creditsBalance={user.creditsBalance}
           />
 

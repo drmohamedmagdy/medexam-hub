@@ -24,16 +24,19 @@ type AppliedPromo = {
 type Method = "CARD" | "VODAFONE_CASH" | "INSTAPAY";
 
 type CheckoutT = Translations["checkout"];
+type CreditsT = Translations["credits"];
 
 export default function CheckoutForm({
   plan,
   priceMonthly,
   t,
+  tCredits,
   creditsBalance = 0,
 }: {
   plan: Plan;
   priceMonthly: number;
   t: CheckoutT;
+  tCredits: CreditsT;
   creditsBalance?: number;
 }) {
   const [method, setMethod] = useState<Method>("CARD");
@@ -230,6 +233,7 @@ export default function CheckoutForm({
           value={cappedCredits}
           onChange={setCreditsToUse}
           newTotal={finalAmount}
+          t={tCredits}
         />
       )}
 
@@ -310,34 +314,40 @@ function CreditsRedeem({
   value,
   onChange,
   newTotal,
+  t,
 }: {
   balance: number;
   maxCredits: number;
   value: number;
   onChange: (n: number) => void;
   newTotal: number;
+  t: CreditsT;
 }) {
   const disabled = maxCredits === 0;
+  // Render the {n} balance phrase with a <strong> wrap to match the original UX.
+  const availableParts = t.checkoutAvailable.split("{n}");
   return (
     <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
-            🎁 Use credits as discount
+            {t.checkoutHeading}
           </p>
           <p className="mt-0.5 text-xs text-emerald-800 dark:text-emerald-300">
-            You have <strong>{balance.toLocaleString()}</strong> credits.
+            {availableParts[0]}
+            <strong>{balance.toLocaleString()}</strong>
+            {availableParts.slice(1).join("{n}")}
             {maxCredits > 0
-              ? ` Up to ${maxCredits.toLocaleString()} can apply to this order (max 50% off).`
-              : " Reach a higher amount to use credits on this order."}
+              ? ` ${t.checkoutCapHint.replace("{max}", maxCredits.toLocaleString())}`
+              : ` ${t.checkoutLowAmountHint}`}
           </p>
         </div>
         <div className="text-end">
           <div className="font-mono text-lg font-bold text-emerald-700 dark:text-emerald-300">
-            -{value.toLocaleString()} EGP
+            {t.checkoutDiscountFmt.replace("{n}", value.toLocaleString())}
           </div>
           <div className="text-xs text-zinc-500">
-            new total {newTotal.toLocaleString()} EGP
+            {t.checkoutNewTotal.replace("{n}", newTotal.toLocaleString())}
           </div>
         </div>
       </div>

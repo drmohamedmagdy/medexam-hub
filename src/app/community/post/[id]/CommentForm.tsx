@@ -3,13 +3,18 @@
 import { useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { addCommentAction, type CommentState } from "@/app/actions/community";
+import type { Translations } from "@/lib/i18n";
+
+type CommunityT = Translations["community"];
 
 export default function CommentForm({
   postId,
   placeholder,
+  t,
 }: {
   postId: string;
   placeholder: string;
+  t: CommunityT;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -51,7 +56,7 @@ export default function CommentForm({
           disabled={pending}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
         >
-          {pending ? "Posting…" : "Post"}
+          {pending ? t.postCommentSubmitting : t.postCommentSubmit}
         </button>
       </div>
     </form>
