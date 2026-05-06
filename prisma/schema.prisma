@@ -90,6 +90,13 @@ model User {
   referrals        User[]              @relation("UserReferrals")
   creditTransactions CreditTransaction[]
   bonusGrants      BonusGrant[]
+
+  // Community
+  ownedGroups      Group[]             @relation("GroupOwner")
+  groupMemberships GroupMember[]
+  invitesSent      GroupInvite[]       @relation("InvitesSent")
+  posts            Post[]
+  comments         PostComment[]
 }
 
 model CreditTransaction {
@@ -379,4 +386,108 @@ model PromoRedemption {
 
   @@index([promoCodeId])
   @@index([userId, promoCodeId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PostKind {
+  POST
+  QUESTION
+  ARTICLE
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  ownerId     String
+  name        String
+  description String?
+  // Public groups appear in the discoverable list and any logged-in user
+  // can join. Private groups are invite-only and don't appear in the list.
+  isPublic    Boolean  @default(false)
+  inviteCode  String   @unique
+  coverUrl    String?
+  createdAt   DateTime @default(now())
+
+  owner       User     @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  invites     GroupInvite[]
+  posts       Post[]
+
+  @@index([ownerId])
+  @@index([isPublic, createdAt])
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  // "owner" | "admin" | "member" — owner is the creator, admins can also
+  // delete posts and invite. Members can post and comment.
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model GroupInvite {
+  id           String    @id @default(cuid())
+  groupId      String
+  invitedById  String
+  email        String
+  acceptedAt   DateTime?
+  acceptedBy   String?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  group        Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  invitedBy    User      @relation("InvitesSent", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([groupId])
+}
+
+model Post {
+  id            String   @id @default(cuid())
+  authorId      String
+  // null = public feed; otherwise the post belongs to that group only.
+  groupId       String?
+  kind          PostKind @default(POST)
+  // ARTICLE/QUESTION usually have a title; POST is allowed without one.
+  title         String?
+  body          String
+  imageUrl      String?
+  imagePathname String?
+  linkUrl       String?
+  linkLabel     String?
+  // Set after the daily digest email goes out so we don't re-send.
+  digestSentAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  group         Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  comments      PostComment[]
+
+  @@index([groupId, createdAt])
+  @@index([createdAt])
+  @@index([authorId, createdAt])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
 }

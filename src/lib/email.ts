@@ -11,7 +11,9 @@ export type EmailCategory =
   | "renewal_1d"
   | "expired"
   | "reengagement"
-  | "broadcast";
+  | "broadcast"
+  | "group_invite"
+  | "community_digest";
 
 const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour — short window for password reset
@@ -475,6 +477,88 @@ export function verificationEmail(
       <p style="font-size:13px;color:#666;">If you didn't create an account on MedExam Hub, you can safely ignore this email.</p>
       <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
       <p style="font-size:11px; color:#888;">MedExam Hub · For medical education only.</p>
+    `),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function groupInviteEmail(args: {
+  inviterName: string;
+  groupName: string;
+  acceptUrl: string;
+}): { subject: string; html: string } {
+  const inviter = escape(args.inviterName);
+  const group = escape(args.groupName);
+  return {
+    subject: `${inviter} invited you to join "${args.groupName}" on MedExam Hub`,
+    html: wrapHtml(`
+      <h1 style="margin:0 0 12px; font-size:22px;">You're invited to join <em>${group}</em> 👋</h1>
+      <p>${inviter} has added you to the <strong>${group}</strong> group on MedExam Hub. You'll be able to see and post in the group's discussion feed.</p>
+      <p style="margin-top:20px;">
+        <a href="${args.acceptUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Accept invite →</a>
+      </p>
+      <p style="font-size:13px;color:#666;">If you don't have an account yet, you'll be asked to sign up first — the invite still applies after you sign in.</p>
+      <p style="font-size:12px;color:#666;word-break:break-all;">${args.acceptUrl}</p>
+      <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+      <p style="font-size:11px; color:#888;">MedExam Hub · You're getting this because someone added your email to a group.</p>
+    `),
+  };
+}
+
+export function communityDigestEmail(args: {
+  firstName: string | null;
+  posts: Array<{
+    id: string;
+    title: string | null;
+    body: string;
+    kind: string;
+    authorName: string;
+  }>;
+  baseUrl: string;
+}): { subject: string; html: string } {
+  const greet = args.firstName ? `Hey ${escape(args.firstName)},` : "Hey,";
+  const items = args.posts
+    .map((p) => {
+      const url = `${args.baseUrl}/community/post/${p.id}`;
+      const tag =
+        p.kind === "QUESTION"
+          ? "<span style=\"display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;\">Question</span>"
+          : p.kind === "ARTICLE"
+            ? "<span style=\"display:inline-block;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;\">Article</span>"
+            : "<span style=\"display:inline-block;background:#dcfce7;color:#166534;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;\">Post</span>";
+      const heading = p.title ? escape(p.title) : escape(p.body.slice(0, 80) + (p.body.length > 80 ? "…" : ""));
+      const snippet = p.title ? escape(p.body.slice(0, 200) + (p.body.length > 200 ? "…" : "")) : "";
+      return `
+        <tr>
+          <td style="padding:14px 0;border-bottom:1px solid #eee;">
+            <div style="margin-bottom:6px;">${tag}</div>
+            <a href="${url}" style="color:#1e3a8a;text-decoration:none;font-weight:600;font-size:16px;">${heading}</a>
+            ${snippet ? `<p style="margin:6px 0 0;font-size:13px;color:#444;line-height:1.5;">${snippet}</p>` : ""}
+            <p style="margin:6px 0 0;font-size:12px;color:#888;">by ${escape(p.authorName)} · <a href="${url}" style="color:#2563eb;text-decoration:none;">read & reply →</a></p>
+          </td>
+        </tr>`;
+    })
+    .join("");
+
+  const subject =
+    args.posts.length === 1
+      ? `New on MedExam Hub: ${escape(args.posts[0].title ?? args.posts[0].body.slice(0, 60))}`
+      : `${args.posts.length} new community posts on MedExam Hub`;
+
+  return {
+    subject,
+    html: wrapHtml(`
+      <h1 style="margin:0 0 8px; font-size:22px;">${greet}</h1>
+      <p>Here&apos;s what&apos;s happening in the MedExam Hub community since yesterday — give them a read and share what you know.</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:18px;">${items}</table>
+      <p style="margin-top:22px;">
+        <a href="${args.baseUrl}/community" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open the community →</a>
+      </p>
+      <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+      <p style="font-size:11px; color:#888;">You can turn these emails off any time from your account settings.</p>
     `),
   };
 }

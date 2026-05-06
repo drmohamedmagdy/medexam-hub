@@ -6,6 +6,7 @@ import {
   renewalReminderEmail,
   expiredEmail,
   reengagementEmail,
+  communityDigestEmail,
 } from "@/lib/email";
 
 /**
@@ -35,7 +36,14 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
-  const counts = { renewal7d: 0, renewal1d: 0, expired: 0, reengagement: 0, errors: 0 };
+  const counts = {
+    renewal7d: 0,
+    renewal1d: 0,
+    expired: 0,
+    reengagement: 0,
+    communityDigest: 0,
+    errors: 0,
+  };
 
   // -- 7-day reminder
   const window7Start = new Date(now.getTime() + 6 * DAY_MS);
@@ -125,6 +133,69 @@ export async function GET(req: Request) {
       counts.reengagement += 1;
       await prisma.user.update({ where: { id: u.id }, data: { lastReengagementAt: now } });
     } else counts.errors += 1;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Community digest — fan out a single email per opted-in user with new
+  // public posts since their last digest. We mark each post's digestSentAt
+  // after the run so we don't re-send the same posts the next day.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const oneDayAgo = new Date(now.getTime() - DAY_MS);
+  const newPosts = await prisma.post.findMany({
+    where: {
+      groupId: null, // public feed only
+      digestSentAt: null,
+      createdAt: { gte: oneDayAgo },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 50, // safety cap
+    include: { author: { select: { name: true, email: true } } },
+  });
+
+  if (newPosts.length > 0) {
+    const recipients = await prisma.user.findMany({
+      where: { emailMarketing: true, emailVerifiedAt: { not: null } },
+      select: { id: true, email: true, name: true },
+      take: 1000,
+    });
+
+    const baseUrl = process.env.PUBLIC_BASE_URL ?? "https://medexamhub.org";
+    const digestPosts = newPosts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      body: p.body,
+      kind: p.kind,
+      authorName: p.author.name?.trim() || p.author.email.split("@")[0],
+    }));
+
+    for (const u of recipients) {
+      // Skip authors of the digest posts so people don't get a digest of
+      // their own content.
+      const ownPostIds = new Set(newPosts.filter((p) => p.author.email === u.email).map((p) => p.id));
+      const visible = digestPosts.filter((p) => !ownPostIds.has(p.id));
+      if (visible.length === 0) continue;
+
+      const tpl = communityDigestEmail({
+        firstName: u.name?.split(" ")[0] ?? null,
+        posts: visible.slice(0, 6), // cap items per email
+        baseUrl,
+      });
+      const r = await sendEmail({
+        toUserId: u.id,
+        toEmail: u.email,
+        subject: tpl.subject,
+        category: "community_digest",
+        html: tpl.html,
+      });
+      if (r.ok) counts.communityDigest += 1;
+      else counts.errors += 1;
+    }
+
+    await prisma.post.updateMany({
+      where: { id: { in: newPosts.map((p) => p.id) } },
+      data: { digestSentAt: now },
+    });
   }
 
   return NextResponse.json({ ok: true, counts });
