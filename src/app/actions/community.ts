@@ -133,11 +133,11 @@ export async function createPostAction(
           where: {
             id: { not: user.id },
             emailMarketing: true,
-            emailVerifiedAt: { not: null },
           },
           select: { id: true, email: true, name: true },
           take: 1000,
         });
+        console.log(`[community] post in public group "${group.name}" → fanning out to ${recipients.length} users`);
 
         const origin = await siteOrigin();
         const tpl = publicGroupPostEmail({
@@ -296,18 +296,20 @@ export async function createGroupAction(
     },
   });
 
-  // Public groups get announced to all opted-in, verified users so they can
-  // join. Private groups stay invite-only and never trigger this fan-out.
+  // Public groups get announced to all opted-in users so they can join.
+  // Private groups stay invite-only and never trigger this fan-out.
+  // We don't gate on emailVerifiedAt — the marketing opt-in is the
+  // authoritative consent and many users never clicked the verify link.
   if (parsed.data.isPublic) {
     const recipients = await prisma.user.findMany({
       where: {
         id: { not: user.id },
         emailMarketing: true,
-        emailVerifiedAt: { not: null },
       },
       select: { id: true, email: true, name: true },
       take: 1000,
     });
+    console.log(`[community] public group "${group.name}" → fanning out to ${recipients.length} users`);
 
     const origin = await siteOrigin();
     const tpl = publicGroupAnnouncementEmail({
