@@ -473,6 +473,9 @@ model Post {
   linkLabel     String?
   // Set after the daily digest email goes out so we don't re-send.
   digestSentAt  DateTime?
+  // Set after a public-group post triggers a real-time fan-out email so
+  // the per-group 30-min throttle can detect "already announced" posts.
+  groupAnnouncedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -483,6 +486,7 @@ model Post {
   @@index([groupId, createdAt])
   @@index([createdAt])
   @@index([authorId, createdAt])
+  @@index([groupId, groupAnnouncedAt])
 }
 
 model PostComment {
