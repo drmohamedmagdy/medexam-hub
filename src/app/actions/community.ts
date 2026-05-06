@@ -12,6 +12,7 @@ import {
   sendEmail,
   groupInviteEmail,
   publicGroupAnnouncementEmail,
+  publicGroupPostEmail,
 } from "@/lib/email";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,6 +101,53 @@ export async function createPostAction(
       linkLabel: parsed.data.linkLabel ?? null,
     },
   });
+
+  // If posted to a public group, fan out to all opted-in verified users
+  // (excluding the author) so they can jump in and engage. Private group
+  // posts stay silent. Public-feed posts (groupId === null) keep using
+  // the daily digest from the cron, not real-time emails — that's the
+  // less-noisy default for the open feed.
+  if (parsed.data.groupId) {
+    const group = await prisma.group.findUnique({
+      where: { id: parsed.data.groupId },
+      select: { id: true, name: true, isPublic: true },
+    });
+    if (group?.isPublic) {
+      const recipients = await prisma.user.findMany({
+        where: {
+          id: { not: user.id },
+          emailMarketing: true,
+          emailVerifiedAt: { not: null },
+        },
+        select: { id: true, email: true, name: true },
+        take: 1000,
+      });
+
+      const origin = await siteOrigin();
+      const tpl = publicGroupPostEmail({
+        authorName: user.name?.split(" ")[0] ?? user.email.split("@")[0],
+        groupName: group.name,
+        kind: parsed.data.kind,
+        title: parsed.data.title ?? null,
+        body: parsed.data.body,
+        postUrl: `${origin}/community/post/${post.id}`,
+        groupUrl: `${origin}/community/groups/${group.id}`,
+      });
+
+      // Best-effort parallel sends — never block the post creation.
+      await Promise.allSettled(
+        recipients.map((r) =>
+          sendEmail({
+            toUserId: r.id,
+            toEmail: r.email,
+            subject: tpl.subject,
+            category: "public_group_post",
+            html: tpl.html,
+          })
+        )
+      );
+    }
+  }
 
   revalidatePath("/community");
   if (parsed.data.groupId) revalidatePath(`/community/groups/${parsed.data.groupId}`);

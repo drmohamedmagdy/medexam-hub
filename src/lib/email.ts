@@ -14,7 +14,8 @@ export type EmailCategory =
   | "broadcast"
   | "group_invite"
   | "community_digest"
-  | "public_group_announcement";
+  | "public_group_announcement"
+  | "public_group_post";
 
 const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour — short window for password reset
@@ -534,6 +535,62 @@ export function publicGroupAnnouncementEmail(args: {
       <p style="font-size:13px;color:#666;">Don&apos;t want these announcements? You can switch off marketing emails any time from your account settings.</p>
       <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
       <p style="font-size:11px; color:#888;">MedExam Hub · You're getting this because you opted in to community updates.</p>
+    `),
+  };
+}
+
+export function publicGroupPostEmail(args: {
+  authorName: string;
+  groupName: string;
+  kind: "POST" | "QUESTION" | "ARTICLE";
+  title: string | null;
+  body: string;
+  postUrl: string;
+  groupUrl: string;
+}): { subject: string; html: string } {
+  const author = escape(args.authorName);
+  const group = escape(args.groupName);
+  const kindLabel =
+    args.kind === "QUESTION" ? "question" : args.kind === "ARTICLE" ? "article" : "post";
+  const kindBadge =
+    args.kind === "QUESTION"
+      ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;">❓ Question</span>`
+      : args.kind === "ARTICLE"
+        ? `<span style="display:inline-block;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;">📰 Article</span>`
+        : `<span style="display:inline-block;background:#dcfce7;color:#166534;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;">💬 Post</span>`;
+  const heading = args.title
+    ? escape(args.title)
+    : escape(args.body.slice(0, 100) + (args.body.length > 100 ? "…" : ""));
+  const snippet = args.title
+    ? escape(args.body.slice(0, 280) + (args.body.length > 280 ? "…" : ""))
+    : null;
+
+  const subject =
+    args.kind === "QUESTION"
+      ? `New question in ${args.groupName}: ${args.title ?? args.body.slice(0, 60)}`
+      : `New in ${args.groupName}: ${args.title ?? args.body.slice(0, 60)}`;
+
+  return {
+    subject,
+    html: wrapHtml(`
+      <div style="margin-bottom:14px;">${kindBadge}</div>
+      <h1 style="margin:0 0 8px; font-size:20px; line-height:1.35;">${heading}</h1>
+      <p style="margin:0 0 14px; font-size:13px; color:#666;">
+        by <strong>${author}</strong> in <a href="${args.groupUrl}" style="color:#2563eb;text-decoration:none;">🌐 ${group}</a>
+      </p>
+      ${
+        snippet
+          ? `<p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#333;">${snippet}</p>`
+          : ""
+      }
+      <p style="margin:18px 0;">
+        <a href="${args.postUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:600;">${
+          args.kind === "QUESTION" ? "Answer this question →" : `Read & ${kindLabel === "post" ? "reply" : "comment"} →`
+        }</a>
+      </p>
+      <p style="font-size:13px;color:#666;">Don&apos;t want updates from this group? Open the group page and choose Leave — or turn off marketing emails entirely from your account settings.</p>
+      <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+      <p style="font-size:11px; color:#888;">MedExam Hub · You&apos;re getting this because you opted in to community updates.</p>
     `),
   };
 }
