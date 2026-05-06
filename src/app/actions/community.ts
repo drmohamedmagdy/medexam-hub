@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import {
   sendEmail,
+  sendBatch,
   groupInviteEmail,
   publicGroupAnnouncementEmail,
 } from "@/lib/email";
@@ -298,18 +299,15 @@ export async function createGroupAction(
       groupUrl: `${origin}/community/groups/${group.id}`,
     });
 
-    // Parallel fan-out. Resend + EmailLog handle per-recipient errors and
-    // we don't want a single failure to block the redirect.
-    await Promise.allSettled(
-      recipients.map((r) =>
-        sendEmail({
-          toUserId: r.id,
-          toEmail: r.email,
-          subject: tpl.subject,
-          category: "public_group_announcement",
-          html: tpl.html,
-        })
-      )
+    // Rate-limit-aware batched fan-out so we don't blow past Resend's
+    // per-second cap (which would silently drop most sends).
+    const result = await sendBatch(recipients, () => ({
+      subject: tpl.subject,
+      category: "public_group_announcement",
+      html: tpl.html,
+    }));
+    console.log(
+      `[community] public group "${group.name}" fan-out: attempted=${result.attempted} sent=${result.sent} failed=${result.failed}`
     );
   }
 
@@ -425,34 +423,47 @@ export async function inviteToGroupAction(
   const origin = await siteOrigin();
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  let sent = 0;
-  for (const email of emails) {
-    const invite = await prisma.groupInvite.create({
-      data: {
-        groupId: parsed.data.groupId,
-        invitedById: user.id,
-        email,
-        expiresAt,
-      },
-    });
-    const url = `${origin}/community/groups/join/${invite.id}`;
-    const tmpl = groupInviteEmail({
+  // Create all invite rows up front so the email links resolve even if
+  // a later send fails halfway through.
+  const inviteRows = await Promise.all(
+    emails.map((email) =>
+      prisma.groupInvite.create({
+        data: {
+          groupId: parsed.data.groupId,
+          invitedById: user.id,
+          email,
+          expiresAt,
+        },
+      })
+    )
+  );
+
+  // Batch the actual sends so we don't blow past Resend's rate limit.
+  const tmplFor = (invite: { id: string }) =>
+    groupInviteEmail({
       inviterName: user.name?.split(" ")[0] ?? user.email.split("@")[0],
       groupName: member.group.name,
-      acceptUrl: url,
+      acceptUrl: `${origin}/community/groups/join/${invite.id}`,
     });
-    // Best-effort. Failed sends are logged in EmailLog.
-    void sendEmail({
-      toUserId: user.id, // we don't have the recipient's user id (may not exist yet)
-      toEmail: email,
-      subject: tmpl.subject,
-      category: "group_invite",
-      html: tmpl.html,
-    }).catch(() => {});
-    sent += 1;
-  }
 
-  return { ok: true, sent };
+  const result = await sendBatch(
+    inviteRows.map((inv) => ({ id: user.id, email: inv.email })),
+    (_r) => {
+      // Match the recipient row to its invite row by email.
+      const invite = inviteRows.find((inv) => inv.email === _r.email)!;
+      const t = tmplFor(invite);
+      return {
+        subject: t.subject,
+        category: "group_invite",
+        html: t.html,
+      };
+    }
+  );
+  console.log(
+    `[community] invites for "${member.group.name}": attempted=${result.attempted} sent=${result.sent} failed=${result.failed}`
+  );
+
+  return { ok: true, sent: result.sent };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

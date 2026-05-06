@@ -483,6 +483,49 @@ export function verificationEmail(
   };
 }
 
+/**
+ * Send the same template to many users without tripping Resend's
+ * per-second rate limit. Resend's default tier allows ~2 req/sec, paid
+ * tiers ~10 req/sec — we dispatch a small batch in parallel, wait, then
+ * dispatch the next, so deliveries stay in line and the EmailLog rows
+ * record real-world successes/failures rather than rate-limit errors.
+ *
+ * Returns counts so callers / logs can reason about reach.
+ */
+export async function sendBatch(
+  recipients: Array<{ id: string; email: string }>,
+  build: (r: { id: string; email: string }) => Omit<SendArgs, "toUserId" | "toEmail">,
+  opts: { batchSize?: number; delayMs?: number } = {}
+): Promise<{ attempted: number; sent: number; failed: number }> {
+  const batchSize = opts.batchSize ?? 8;
+  const delayMs = opts.delayMs ?? 1100;
+
+  let sent = 0;
+  let failed = 0;
+
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize);
+    const results = await Promise.allSettled(
+      batch.map((r) =>
+        sendEmail({
+          toUserId: r.id,
+          toEmail: r.email,
+          ...build(r),
+        })
+      )
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.ok) sent += 1;
+      else failed += 1;
+    }
+    if (i + batchSize < recipients.length) {
+      await new Promise((res) => setTimeout(res, delayMs));
+    }
+  }
+
+  return { attempted: recipients.length, sent, failed };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Community
 // ─────────────────────────────────────────────────────────────────────────────
