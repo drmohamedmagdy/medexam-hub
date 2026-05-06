@@ -41,8 +41,10 @@ export default async function CheckoutPage({
 
   if (!PAID_PLANS.includes(planUpper as PaidPlan)) redirect("/plans");
 
+  // Buying the SAME plan you're already on is a valid action — it extends
+  // your expiry by 30 days from your current expiry (handled in /payment/return
+  // and the manual approval flow). So we no longer block here.
   const user = await requireUser();
-  if (user.plan === planUpper) redirect("/dashboard");
 
   const plan = planUpper as PaidPlan;
   const cfg = PLAN_LIMITS[plan];
