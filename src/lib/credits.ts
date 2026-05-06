@@ -245,10 +245,10 @@ export function maxCreditsForOrder(amountCents: number, balance: number): number
 }
 
 /**
- * Spends credits to grant the user extra monthly quota (questions or file
- * uploads). Bonuses are scoped to the current `yearMonth` bucket so they
- * naturally expire when the calendar month rolls over — same lifecycle as
- * the plan's base quota.
+ * Spends credits to grant the user extra quota (questions or file uploads).
+ * The grant joins a perpetual pool that drains only when the user actually
+ * exceeds their plan's monthly quota — so credits never expire. Buy 50
+ * questions today, use them next year if you want.
  *
  * Throws on insufficient balance / invalid amount.
  */
@@ -287,8 +287,8 @@ export async function redeemForBonusQuota(args: {
         type: args.kind === "questions" ? "redemption_questions" : "redemption_files",
         description:
           args.kind === "questions"
-            ? `+${args.amount} questions for this month`
-            : `+${args.amount} file upload${args.amount === 1 ? "" : "s"} for this month`,
+            ? `+${args.amount} bonus questions`
+            : `+${args.amount} bonus file upload${args.amount === 1 ? "" : "s"}`,
       },
     });
     await tx.user.update({
@@ -296,4 +296,55 @@ export async function redeemForBonusQuota(args: {
       data: { creditsBalance: { decrement: cost } },
     });
   });
+}
+
+/**
+ * Returns the user's available bonus pool for a kind — total granted minus
+ * total consumed across all grants ever made.
+ */
+export async function getBonusBalance(
+  userId: string,
+  kind: "questions" | "files"
+): Promise<number> {
+  const grants = await prisma.bonusGrant.findMany({
+    where: { userId, kind },
+    select: { amount: true, consumed: true },
+  });
+  return grants.reduce((s, g) => s + (g.amount - g.consumed), 0);
+}
+
+/**
+ * Drains `amount` units from the user's bonus pool. FIFO — oldest grants
+ * are consumed first. Returns the actual amount drained (may be less than
+ * requested if the pool is empty).
+ */
+export async function drainBonus(
+  userId: string,
+  kind: "questions" | "files",
+  amount: number
+): Promise<number> {
+  if (amount <= 0) return 0;
+
+  const grants = await prisma.bonusGrant.findMany({
+    where: { userId, kind },
+    orderBy: { createdAt: "asc" },
+  });
+
+  let remaining = amount;
+  let drained = 0;
+
+  for (const g of grants) {
+    if (remaining <= 0) break;
+    const left = g.amount - g.consumed;
+    if (left <= 0) continue;
+    const take = Math.min(left, remaining);
+    await prisma.bonusGrant.update({
+      where: { id: g.id },
+      data: { consumed: { increment: take } },
+    });
+    remaining -= take;
+    drained += take;
+  }
+
+  return drained;
 }

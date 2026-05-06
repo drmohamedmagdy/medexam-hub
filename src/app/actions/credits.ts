@@ -51,9 +51,9 @@ export async function redeemBonusQuotaAction(
     emoji: "🎁",
     title:
       parsed.data.kind === "questions"
-        ? `+${parsed.data.amount} questions added`
-        : `+${parsed.data.amount} file upload${parsed.data.amount === 1 ? "" : "s"} added`,
-    body: "Your monthly quota has been topped up. The bonus expires when this month resets.",
+        ? `+${parsed.data.amount} bonus questions added`
+        : `+${parsed.data.amount} bonus file upload${parsed.data.amount === 1 ? "" : "s"} added`,
+    body: "Your bonus pool grew. It never expires — use it whenever your monthly plan quota runs out.",
     href: "/account/subscription",
   });
 

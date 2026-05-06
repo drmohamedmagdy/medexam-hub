@@ -165,16 +165,20 @@ export default async function AdminCreditsPage() {
                 </td>
               </tr>
               <tr>
-                <td className="px-4 py-3 font-medium">+1 extra question this month</td>
+                <td className="px-4 py-3 font-medium">+1 bonus question</td>
                 <td className="px-4 py-3 text-end font-mono">{CREDITS_PER_BONUS_QUESTION} credits</td>
                 <td className="px-4 py-3 text-xs text-zinc-500">/account/subscription</td>
-                <td className="px-4 py-3 text-xs text-zinc-500">Resets next month</td>
+                <td className="px-4 py-3 text-xs text-zinc-500">
+                  Perpetual pool — never expires; drains only when monthly plan quota is exceeded
+                </td>
               </tr>
               <tr>
-                <td className="px-4 py-3 font-medium">+1 extra file upload this month</td>
+                <td className="px-4 py-3 font-medium">+1 bonus file upload</td>
                 <td className="px-4 py-3 text-end font-mono">{CREDITS_PER_BONUS_FILE} credits</td>
                 <td className="px-4 py-3 text-xs text-zinc-500">/account/subscription</td>
-                <td className="px-4 py-3 text-xs text-zinc-500">Resets next month</td>
+                <td className="px-4 py-3 text-xs text-zinc-500">
+                  Perpetual pool — never expires
+                </td>
               </tr>
             </tbody>
           </table>

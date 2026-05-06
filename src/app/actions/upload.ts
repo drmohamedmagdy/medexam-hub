@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PLAN_LIMITS, currentYearMonth } from "@/lib/plans";
-import { getMonthlyFileUploads } from "@/lib/quota";
+import { getMonthlyFileUploads, recordFileUploaded } from "@/lib/quota";
 import {
   extractText,
   ACCEPTED_MIME_TYPES,
@@ -96,6 +96,10 @@ export async function uploadFileAction(
       yearMonth: currentYearMonth(),
     },
   });
+
+  // If this upload pushed the user past their plan's monthly file limit,
+  // drain 1 from their bonus file pool. No-op when still within plan quota.
+  await recordFileUploaded(user.id, user.plan);
 
   let summaryFailed = false;
   if (wantSummary) {

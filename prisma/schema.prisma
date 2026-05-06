@@ -120,22 +120,28 @@ model CreditTransaction {
   @@index([paymentOrderId])
 }
 
-// One row per bonus quota purchase. Active for the user's current
-// `yearMonth` bucket — matches how UsageLog and FileUpload bucket
-// monthly usage, so bonuses naturally expire when the calendar month
-// rolls over.
+// One row per bonus quota purchase. Bonus quota is a perpetual pool
+// that drains only when the user actually exceeds their plan's monthly
+// quota — so users can stockpile questions/files across months instead
+// of losing them. `yearMonth` is kept for analytics (when the grant
+// was bought) but is NOT used to filter availability.
 model BonusGrant {
   id           String   @id @default(cuid())
   userId       String
   // "questions" | "files"
   kind         String
+  // Total units this grant added.
   amount       Int
+  // Units already drained by overflow usage. The grant is fully used
+  // when `consumed == amount`; drained FIFO across grants.
+  consumed     Int      @default(0)
   creditsSpent Int
   yearMonth    String
   createdAt    DateTime @default(now())
 
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, kind])
   @@index([userId, yearMonth, kind])
 }
 

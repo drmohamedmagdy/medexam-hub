@@ -33,10 +33,11 @@ export default function RedeemCreditsCard({
     <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-900 dark:bg-amber-950/30 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">⚡ Redeem credits this month</h2>
+          <h2 className="text-lg font-semibold">⚡ Redeem credits</h2>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-            Top up your <strong>{planLabel}</strong> plan&apos;s monthly quota right now. Bonuses
-            expire when the calendar month resets.
+            Buy bonus questions or files for your <strong>{planLabel}</strong> plan. Bonuses
+            <strong> never expire</strong> — stockpile them now, use them whenever you exceed your
+            monthly plan quota.
           </p>
         </div>
         <div className="text-end text-xs text-zinc-500">
@@ -55,7 +56,7 @@ export default function RedeemCreditsCard({
       )}
       {state?.ok && (
         <p className="mt-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-          ✓ Bonus added — your monthly quota is updated.
+          ✓ Bonus added to your pool — use it any time, no expiry.
         </p>
       )}
 
