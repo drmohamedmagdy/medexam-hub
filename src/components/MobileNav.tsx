@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
+import { NAV_COLOR_MOBILE, type NavColor } from "@/lib/nav-colors";
 
-type Item = { href: string; label: string; emphasis?: "primary" | "admin" | "muted" };
+type Item = {
+  href: string;
+  label: string;
+  emphasis?: "primary" | "admin" | "muted";
+  color?: NavColor;
+};
 
 export default function MobileNav({
   items,
@@ -77,23 +83,30 @@ export default function MobileNav({
                 </svg>
               </button>
             </div>
-            <nav className="flex flex-col gap-1 p-3">
-              {items.map((it) => (
-                <Link
-                  key={it.href}
-                  href={it.href}
-                  onClick={() => setOpen(false)}
-                  className={`rounded-lg px-4 py-3 text-base font-medium transition ${
-                    it.emphasis === "primary"
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : it.emphasis === "admin"
-                        ? "text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/40"
-                        : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  {it.label}
-                </Link>
-              ))}
+            <nav className="flex flex-col gap-2 p-3">
+              {items.map((it) => {
+                let cls: string;
+                if (it.emphasis === "primary") {
+                  cls = "bg-blue-600 text-white hover:bg-blue-700 shadow-sm";
+                } else if (it.emphasis === "admin") {
+                  cls = NAV_COLOR_MOBILE.amber;
+                } else if (it.color) {
+                  cls = NAV_COLOR_MOBILE[it.color];
+                } else {
+                  cls =
+                    "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800";
+                }
+                return (
+                  <Link
+                    key={it.href}
+                    href={it.href}
+                    onClick={() => setOpen(false)}
+                    className={`rounded-lg px-4 py-3 text-base font-medium transition ${cls}`}
+                  >
+                    {it.label}
+                  </Link>
+                );
+              })}
               {signedIn && (
                 <form action={logoutAction} className="mt-1 border-t border-zinc-200 pt-2 dark:border-zinc-800">
                   <button

@@ -13,6 +13,7 @@ import { getUnreadCount } from "@/lib/notifications";
 import { isRtl } from "@/lib/i18n";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { isAdmin } from "@/lib/admin";
+import { NAV_COLOR_DESKTOP, type NavColor } from "@/lib/nav-colors";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,24 +39,31 @@ export default async function RootLayout({
     ? await getUnreadCount(user.id).catch(() => 0)
     : 0;
 
-  type NavItem = { href: string; label: string; emphasis?: "primary" | "admin" | "muted" };
+  type NavItem = {
+    href: string;
+    label: string;
+    emphasis?: "primary" | "admin" | "muted";
+    color?: NavColor;
+  };
   const mobileItems: NavItem[] = user
     ? [
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
-        { href: "/plans", label: t.nav.plans },
-        { href: "/dashboard", label: t.nav.dashboard },
-        { href: "/research", label: "Research & Stats" },
-        { href: "/community", label: "Community" },
-        { href: "/library", label: t.nav.library },
-        { href: "/exams", label: t.dashboard.recentExams },
+        { href: "/plans", label: t.nav.plans, color: "indigo" },
+        { href: "/dashboard", label: t.nav.dashboard, color: "blue" },
+        { href: "/research", label: "Research & Stats", color: "violet" },
+        { href: "/community", label: "Community", color: "rose" },
+        { href: "/library", label: t.nav.library, color: "emerald" },
+        { href: "/exams", label: t.dashboard.recentExams, color: "zinc" },
         ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
-        { href: "/account/subscription", label: t.account.manageLink },
+        { href: "/account/subscription", label: t.account.manageLink, color: "zinc" },
       ]
     : [
         { href: "/signup", label: t.nav.signup, emphasis: "primary" },
-        { href: "/login", label: t.nav.signin },
-        { href: "/plans", label: t.nav.plans },
+        { href: "/login", label: t.nav.signin, color: "blue" },
+        { href: "/plans", label: t.nav.plans, color: "indigo" },
       ];
+
+  const pill = "rounded-full px-3 py-1.5 text-xs font-medium transition";
 
   return (
     <html lang={locale} dir={dir} className={`${geistSans.variable} h-full antialiased`}>
@@ -89,28 +97,38 @@ export default async function RootLayout({
             </Link>
 
             {/* Desktop nav */}
-            <div className="hidden items-center gap-5 text-sm md:flex lg:gap-6">
+            <div className="hidden flex-wrap items-center gap-2 text-sm md:flex lg:gap-2.5">
               {user ? (
                 <>
-                  <Link href="/plans" className="hover:text-blue-600">{t.nav.plans}</Link>
-                  <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
-                  <Link href="/research" className="hover:text-blue-600">Research &amp; Stats</Link>
-                  <Link href="/community" className="hover:text-blue-600">Community</Link>
-                  <Link href="/library" className="hover:text-blue-600">{t.nav.library}</Link>
+                  <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
+                    {t.nav.plans}
+                  </Link>
+                  <Link href="/dashboard" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
+                    {t.nav.dashboard}
+                  </Link>
+                  <Link href="/research" className={`${pill} ${NAV_COLOR_DESKTOP.violet}`}>
+                    Research &amp; Stats
+                  </Link>
+                  <Link href="/community" className={`${pill} ${NAV_COLOR_DESKTOP.rose}`}>
+                    Community
+                  </Link>
+                  <Link href="/library" className={`${pill} ${NAV_COLOR_DESKTOP.emerald}`}>
+                    {t.nav.library}
+                  </Link>
                   {showAdmin && (
-                    <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">
+                    <Link href="/admin" className={`${pill} ${NAV_COLOR_DESKTOP.amber}`}>
                       Admin
                     </Link>
                   )}
                   <Link
                     href="/account/subscription"
-                    className="hover:text-blue-600"
+                    className={`${pill} ${NAV_COLOR_DESKTOP.zinc}`}
                   >
                     {t.account.manageLink}
                   </Link>
                   <Link
                     href="/exam/new"
-                    className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                    className="rounded-full bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700"
                   >
                     {t.nav.generate}
                   </Link>
@@ -118,7 +136,7 @@ export default async function RootLayout({
                   <form action={logoutAction}>
                     <button
                       type="submit"
-                      className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      className="rounded-full px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                     >
                       {t.nav.signout}
                     </button>
@@ -126,11 +144,15 @@ export default async function RootLayout({
                 </>
               ) : (
                 <>
-                  <Link href="/plans" className="hover:text-blue-600">{t.nav.plans}</Link>
-                  <Link href="/login" className="hover:text-blue-600">{t.nav.signin}</Link>
+                  <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
+                    {t.nav.plans}
+                  </Link>
+                  <Link href="/login" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
+                    {t.nav.signin}
+                  </Link>
                   <Link
                     href="/signup"
-                    className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                    className="rounded-full bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700"
                   >
                     {t.nav.signup}
                   </Link>
