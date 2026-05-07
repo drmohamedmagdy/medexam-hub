@@ -80,106 +80,111 @@ export default async function RootLayout({
         className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
       >
         <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur dark:bg-slate-900/80 dark:border-slate-800/60">
-          <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
-            <Link href="/" className="flex items-center" aria-label="MedExam Hub home">
-              <Image
-                src="/logo.webp"
-                alt="MedExam Hub"
-                width={48}
-                height={48}
-                className="h-10 w-auto sm:h-12"
-                priority
-              />
-            </Link>
+          <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+            {/* Top row: logo + wordmark on the left, action cluster on the right */}
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href="/"
+                className="flex items-center gap-2 font-semibold"
+                aria-label="MedExam Hub home"
+              >
+                <Image
+                  src="/logo.webp"
+                  alt="MedExam Hub"
+                  width={64}
+                  height={64}
+                  className="h-12 w-auto sm:h-16"
+                  priority
+                />
+                <span className="whitespace-nowrap text-base sm:text-lg">
+                  MedExam Hub
+                </span>
+              </Link>
 
-            {/* Desktop nav */}
-            <div className="hidden flex-1 flex-wrap items-center justify-end gap-2 text-sm md:flex lg:gap-2.5">
-              {user ? (
-                <>
-                  <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
-                    {t.nav.plans}
-                  </Link>
-                  <Link href="/dashboard" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
-                    {t.nav.dashboard}
-                  </Link>
-                  <Link href="/research" className={`${pill} ${NAV_COLOR_DESKTOP.violet}`}>
-                    Research &amp; Stats
-                  </Link>
-                  <Link href="/community" className={`${pill} ${NAV_COLOR_DESKTOP.rose}`}>
-                    Community
-                  </Link>
-                  <Link href="/library" className={`${pill} ${NAV_COLOR_DESKTOP.emerald}`}>
-                    {t.nav.library}
-                  </Link>
-                  {showAdmin && (
-                    <Link href="/admin" className={`${pill} ${NAV_COLOR_DESKTOP.amber}`}>
-                      Admin
-                    </Link>
-                  )}
-                  <Link
-                    href="/account/subscription"
-                    className={`${pill} ${NAV_COLOR_DESKTOP.zinc}`}
-                  >
-                    {t.account.manageLink}
-                  </Link>
-                  <Link
-                    href="/exam/new"
-                    className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-                  >
-                    {t.nav.generate}
-                  </Link>
-                  <NotificationBell unread={unreadCount} />
-                  <form action={logoutAction}>
-                    <button
-                      type="submit"
-                      className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              <div className="flex items-center gap-2">
+                {user ? (
+                  <>
+                    <Link
+                      href="/exam/new"
+                      className="hidden rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 md:inline-flex"
                     >
-                      {t.nav.signout}
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
-                    {t.nav.plans}
-                  </Link>
-                  <Link href="/login" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
-                    {t.nav.signin}
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-                  >
-                    {t.nav.signup}
-                  </Link>
-                </>
-              )}
-              <LanguageSwitcher current={locale} />
+                      {t.nav.generate}
+                    </Link>
+                    <NotificationBell unread={unreadCount} />
+                    <form action={logoutAction} className="hidden md:block">
+                      <button
+                        type="submit"
+                        className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                      >
+                        {t.nav.signout}
+                      </button>
+                    </form>
+                    <LanguageSwitcher current={locale} />
+                    <MobileNav
+                      items={mobileItems}
+                      signedIn={true}
+                      signoutLabel={t.nav.signout}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="text-sm font-semibold text-zinc-700 hover:text-blue-600 dark:text-zinc-300"
+                    >
+                      {t.nav.signin}
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 md:px-5"
+                    >
+                      {t.nav.signup}
+                    </Link>
+                    <LanguageSwitcher current={locale} />
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Mobile cluster: signed-out CTAs + language + hamburger */}
-            <div className="flex items-center gap-1 md:hidden">
-              {!user && (
-                <>
-                  <Link
-                    href="/login"
-                    className="px-2 py-1 text-xs font-medium text-zinc-700 hover:text-blue-600 dark:text-zinc-300"
-                  >
-                    {t.nav.signin}
+            {/* Bottom row: navigation pills (signed-in users, desktop only). */}
+            {user && (
+              <nav className="mt-3 hidden flex-wrap items-center gap-2 text-sm md:flex lg:gap-2.5">
+                <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
+                  {t.nav.plans}
+                </Link>
+                <Link href="/dashboard" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
+                  {t.nav.dashboard}
+                </Link>
+                <Link href="/research" className={`${pill} ${NAV_COLOR_DESKTOP.violet}`}>
+                  Research &amp; Stats
+                </Link>
+                <Link href="/community" className={`${pill} ${NAV_COLOR_DESKTOP.rose}`}>
+                  Community
+                </Link>
+                <Link href="/library" className={`${pill} ${NAV_COLOR_DESKTOP.emerald}`}>
+                  {t.nav.library}
+                </Link>
+                {showAdmin && (
+                  <Link href="/admin" className={`${pill} ${NAV_COLOR_DESKTOP.amber}`}>
+                    Admin
                   </Link>
-                  <Link
-                    href="/signup"
-                    className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700"
-                  >
-                    {t.nav.signup}
-                  </Link>
-                </>
-              )}
-              {user && <NotificationBell unread={unreadCount} />}
-              <LanguageSwitcher current={locale} />
-              <MobileNav items={mobileItems} signedIn={!!user} signoutLabel={t.nav.signout} />
-            </div>
-          </nav>
+                )}
+                <Link
+                  href="/account/subscription"
+                  className={`${pill} ${NAV_COLOR_DESKTOP.zinc}`}
+                >
+                  {t.account.manageLink}
+                </Link>
+              </nav>
+            )}
+            {!user && (
+              <nav className="mt-3 hidden items-center gap-2 text-sm md:flex">
+                <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
+                  {t.nav.plans}
+                </Link>
+              </nav>
+            )}
+          </div>
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-zinc-200 pb-24 dark:border-slate-800/60 sm:pb-8">
