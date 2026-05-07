@@ -82,16 +82,14 @@ export default async function RootLayout({
         <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur dark:bg-slate-900/80 dark:border-slate-800/60">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
             <Link href="/" className="flex items-center gap-3 font-semibold">
-              <span className="inline-flex items-center justify-center rounded-full p-0.5 dark:bg-white/95 dark:ring-1 dark:ring-white/40">
-                <Image
-                  src="/logo.webp"
-                  alt="MedExam Hub"
-                  width={56}
-                  height={56}
-                  className="h-11 w-11 rounded-full sm:h-14 sm:w-14"
-                  priority
-                />
-              </span>
+              <Image
+                src="/logo.webp"
+                alt="MedExam Hub"
+                width={56}
+                height={56}
+                className="h-11 w-auto sm:h-14"
+                priority
+              />
               <span className="whitespace-nowrap text-base leading-tight sm:text-lg">
                 MedExam Hub
               </span>
