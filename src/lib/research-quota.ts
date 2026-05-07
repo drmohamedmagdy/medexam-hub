@@ -109,6 +109,11 @@ export async function recordStatsAnalysisRun(userId: string, plan: Plan): Promis
 // without creating orphan rows or burning tokens.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Tagged error prefixes. Client code can branch on these to render an
+// inline "Buy more / upgrade" CTA instead of a plain red error.
+export const QUOTA_RESEARCH_PREFIX = "[QUOTA_RESEARCH] ";
+export const QUOTA_STATS_PREFIX = "[QUOTA_STATS] ";
+
 export async function preflightCreateResearchProject(
   userId: string,
   plan: Plan
@@ -116,9 +121,9 @@ export async function preflightCreateResearchProject(
   if (plan !== "RESEARCHER") return null; // Premium has no project quota
   const status = await getMonthlyResearchProjects(userId, plan);
   if (status.remaining < 1) {
-    return `You've used all ${status.planLimit} research projects this month on the Researcher plan${
-      status.bonus > 0 ? `, and your bonus pool is empty` : ""
-    }. Buy more in the Credits page or wait for next month.`;
+    return `${QUOTA_RESEARCH_PREFIX}You've used all ${status.planLimit} research projects this month on the Researcher plan${
+      status.bonus > 0 ? `, and your top-up pool is empty` : ""
+    }.`;
   }
   return null;
 }
@@ -130,9 +135,9 @@ export async function preflightStatsAnalysis(
   if (plan !== "RESEARCHER") return null; // Premium has no stats quota
   const status = await getMonthlyStatsAnalyses(userId, plan);
   if (status.remaining < 1) {
-    return `You've used all ${status.planLimit} statistical analyses this month on the Researcher plan${
-      status.bonus > 0 ? `, and your bonus pool is empty` : ""
-    }. Buy more in the Credits page or wait for next month.`;
+    return `${QUOTA_STATS_PREFIX}You've used all ${status.planLimit} statistical analyses this month on the Researcher plan${
+      status.bonus > 0 ? `, and your top-up pool is empty` : ""
+    }.`;
   }
   return null;
 }

@@ -18,7 +18,8 @@ export const RESEARCHER_MONTHLY_STATS_ANALYSES = 25;
 // Top-up costs (credits per extra unit) for users who hit their monthly cap
 // and want to keep going without changing plans. Bonus pools are perpetual —
 // they never expire, drain FIFO when monthly usage exceeds the plan's cap.
-export const CREDITS_PER_BONUS_RESEARCH_PROJECT = 100;
+// 1 credit = 1 EGP, so an extra research project = 500 EGP.
+export const CREDITS_PER_BONUS_RESEARCH_PROJECT = 500;
 export const CREDITS_PER_BONUS_STATS_ANALYSIS = 10;
 
 /**

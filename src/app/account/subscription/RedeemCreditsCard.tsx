@@ -21,8 +21,8 @@ const FILE_BUNDLES = [
 ] as const;
 
 const RESEARCH_PROJECT_BUNDLES = [
-  { amount: 1, cost: 100 },
-  { amount: 3, cost: 300 },
+  { amount: 1, cost: 500 },
+  { amount: 3, cost: 1500 },
 ] as const;
 
 const STATS_ANALYSIS_BUNDLES = [
@@ -122,13 +122,15 @@ export default function RedeemCreditsCard({
         </div>
       </div>
 
-      <div className="mt-5">
+      <div id="topups" className="mt-5 scroll-mt-20">
         <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
           🧠 Research projects
-          <span className="ml-1 text-xs text-zinc-500">100 credits per extra project</span>
+          <span className="ml-1 text-xs text-zinc-500">500 credits per extra project</span>
         </h3>
         <p className="mt-1 text-xs text-zinc-500">
           For Researcher-plan users who&apos;ve used their monthly 5 projects.
+          1 credit ≈ 1 EGP — earn credits via referrals or use any leftover
+          balance from past plan purchases.
         </p>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {RESEARCH_PROJECT_BUNDLES.map((b) => (

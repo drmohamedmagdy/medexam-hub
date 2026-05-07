@@ -30,7 +30,10 @@ export const MAX_CREDITS_DISCOUNT_FRACTION = 0.5;
 // Top-ups are perpetual: they never expire, drain only on overflow.
 export const CREDITS_PER_BONUS_QUESTION = 5;
 export const CREDITS_PER_BONUS_FILE = 15;
-export const CREDITS_PER_BONUS_RESEARCH_PROJECT = 100;
+// Researcher plan top-ups. Pricing reflects the real Claude-token cost
+// of generating a full project's sections + the value of the dedicated
+// service: 1 EGP = 1 credit, so a single extra project costs 500 EGP.
+export const CREDITS_PER_BONUS_RESEARCH_PROJECT = 500;
 export const CREDITS_PER_BONUS_STATS_ANALYSIS = 10;
 
 export type CreditTxType =

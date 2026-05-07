@@ -1,10 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import {
   createResearchProjectAction,
   type CreateResearchState,
 } from "@/app/actions/research";
+
+const UPGRADE_REQUIRED_PREFIX = "[UPGRADE_REQUIRED] ";
+const QUOTA_RESEARCH_PREFIX = "[QUOTA_RESEARCH] ";
+
+const RESEARCH_PROJECT_TOPUP_EGP = 500;
 
 type Kind = "PROTOCOL" | "THESIS" | "MANUSCRIPT" | "SYSTEMATIC_REVIEW";
 
@@ -89,6 +95,60 @@ function hintsFor(kind: Kind): FieldHints {
         },
       };
   }
+}
+
+function ErrorOrCTA({ error }: { error: string }) {
+  if (error.startsWith(UPGRADE_REQUIRED_PREFIX)) {
+    return (
+      <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm dark:border-violet-800 dark:bg-violet-950/40">
+        <p className="font-semibold text-violet-900 dark:text-violet-200">
+          ✨ Researcher plan required
+        </p>
+        <p className="mt-1 text-violet-900 dark:text-violet-300">
+          {error.slice(UPGRADE_REQUIRED_PREFIX.length)}
+        </p>
+        <Link
+          href="/plans"
+          className="mt-3 inline-block rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
+        >
+          Upgrade to Researcher →
+        </Link>
+      </div>
+    );
+  }
+  if (error.startsWith(QUOTA_RESEARCH_PREFIX)) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/40">
+        <p className="font-semibold text-amber-900 dark:text-amber-200">
+          📊 Monthly project quota reached
+        </p>
+        <p className="mt-1 text-amber-900 dark:text-amber-300">
+          {error.slice(QUOTA_RESEARCH_PREFIX.length)} You can buy a top-up to
+          continue right now — <strong>{RESEARCH_PROJECT_TOPUP_EGP} EGP</strong>{" "}
+          per extra project — or wait until next month.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href="/account/subscription#topups"
+            className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+          >
+            Buy {RESEARCH_PROJECT_TOPUP_EGP}-credit top-up →
+          </Link>
+          <Link
+            href="/plans"
+            className="rounded-md border border-amber-300 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-950/60"
+          >
+            See plans
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+      {error}
+    </p>
+  );
 }
 
 export default function NewProjectForm() {
@@ -251,11 +311,7 @@ export default function NewProjectForm() {
         regenerate sections to use the new context.
       </p>
 
-      {state?.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {state.error}
-        </p>
-      )}
+      {state?.error && <ErrorOrCTA error={state.error} />}
 
       <button
         type="submit"
