@@ -7,15 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateSection } from "@/lib/research-generator";
 import { sectionsFor } from "@/lib/research-templates";
-import { ResearchKind, type Plan } from "@/generated/prisma/client";
-
-// Phase 1: gated to Pro and Premium so Free / Basic users see an upgrade
-// prompt rather than running heavy compute on the cheap tiers.
-const RESEARCH_PLANS: Plan[] = ["PRO", "PREMIUM"];
-
-function canUseResearch(plan: Plan): boolean {
-  return RESEARCH_PLANS.includes(plan);
-}
+import { canUseResearch } from "@/lib/research-access";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Create project
@@ -212,4 +204,3 @@ export async function deleteResearchProjectAction(formData: FormData): Promise<v
   redirect("/research");
 }
 
-export { ResearchKind, RESEARCH_PLANS, canUseResearch };

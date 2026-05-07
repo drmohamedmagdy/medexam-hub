@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { canUseResearch } from "@/app/actions/research";
+import { canUseResearch } from "@/lib/research-access";
 
 export const metadata = { title: "Research Assistant — MedExam Hub" };
 

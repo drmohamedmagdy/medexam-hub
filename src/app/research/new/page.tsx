@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { canUseResearch } from "@/app/actions/research";
+import { canUseResearch } from "@/lib/research-access";
 import NewProjectForm from "./NewProjectForm";
 
 export const metadata = { title: "New research project — MedExam Hub" };
