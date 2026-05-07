@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -8,6 +9,11 @@ import {
   type GenerateSectionState,
 } from "@/app/actions/research";
 import { renderPrismaSvg, safeParsePrismaFlow } from "@/lib/prisma-flow";
+
+// Mirror of UPGRADE_REQUIRED_PREFIX in research-access.ts. Hardcoded here
+// so this client component doesn't pull research-access's server-only
+// transitive imports (db, credits) into the browser bundle.
+const UPGRADE_REQUIRED_PREFIX = "[UPGRADE_REQUIRED] ";
 
 type SectionData = {
   id: string;
@@ -140,11 +146,23 @@ function SectionCard({
 
       {(open || isPrisma) && (
         <div className="px-5 py-4">
-          {error && (
+          {error && error.startsWith(UPGRADE_REQUIRED_PREFIX) ? (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+              <span>
+                {error.slice(UPGRADE_REQUIRED_PREFIX.length)}
+              </span>
+              <Link
+                href="/plans"
+                className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700"
+              >
+                Upgrade to Researcher →
+              </Link>
+            </div>
+          ) : error ? (
             <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
               {error}
             </p>
-          )}
+          ) : null}
           {isPrisma && prismaData ? (
             <div
               className="overflow-x-auto rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800/40"

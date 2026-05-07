@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateSection } from "@/lib/research-generator";
 import { sectionsFor } from "@/lib/research-templates";
-import { canUseResearch } from "@/lib/research-access";
+import { canUseResearch, upgradeRequiredError } from "@/lib/research-access";
 import {
   chargeForResearchSection,
   preflightResearchSectionCharge,
@@ -48,8 +48,7 @@ export async function createResearchProjectAction(
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
     return {
-      error:
-        "The Research Assistant is available on the Researcher plan (unlimited) or Premium (pay-per-section in credits).",
+      error: upgradeRequiredError(),
     };
   }
 
@@ -135,8 +134,7 @@ export async function generateSectionAction(
   if (!canUseResearch(user.plan)) {
     return {
       ok: false,
-      error:
-        "Available on the Researcher plan (unlimited) or Premium (pay-per-section in credits).",
+      error: upgradeRequiredError(),
     };
   }
 
@@ -400,8 +398,7 @@ export async function attachResearchFileAction(
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
     return {
-      error:
-        "Available on the Researcher plan or Premium (pay-per-section in credits).",
+      error: upgradeRequiredError(),
     };
   }
 

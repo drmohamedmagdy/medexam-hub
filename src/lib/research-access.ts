@@ -34,21 +34,18 @@ export function researchAccessHint(plan: Plan): {
       message: "Researcher plan: unlimited section generation.",
     };
   }
-  if (payPerUseResearch(plan)) {
-    return {
-      hasAccess: true,
-      unlimited: false,
-      payPerUse: true,
-      perSectionCredits: RESEARCH_SECTION_CREDITS,
-      message: `Premium pay-per-use: ${RESEARCH_SECTION_CREDITS} credits per section.`,
-    };
-  }
   return {
     hasAccess: false,
     unlimited: false,
     payPerUse: false,
     perSectionCredits: RESEARCH_SECTION_CREDITS,
     message:
-      "Research is on the Researcher plan (unlimited) or Premium (pay-per-section in credits).",
+      "Research & Statistics is a dedicated service — upgrade to the Researcher plan to generate sections and run analyses.",
   };
+}
+
+export const UPGRADE_REQUIRED_PREFIX = "[UPGRADE_REQUIRED] ";
+
+export function upgradeRequiredError(): string {
+  return `${UPGRADE_REQUIRED_PREFIX}Upgrade to the Researcher plan to use this feature.`;
 }

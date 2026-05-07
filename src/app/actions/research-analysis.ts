@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { canUseResearch } from "@/lib/research-access";
+import { canUseResearch, upgradeRequiredError } from "@/lib/research-access";
 import {
   preflightStatsAnalysis,
   recordStatsAnalysisRun,
@@ -40,11 +40,7 @@ export async function addAnalysisAction(
 ): Promise<AnalysisState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return {
-      ok: false,
-      error:
-        "Available on the Researcher plan or Premium (statistical analyses are free; section generation costs credits on Premium).",
-    };
+    return { ok: false, error: upgradeRequiredError() };
   }
 
   const projectId = String(formData.get("projectId") ?? "");

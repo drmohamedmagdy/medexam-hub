@@ -23,23 +23,27 @@ export const CREDITS_PER_BONUS_STATS_ANALYSIS = 10;
 
 /**
  * Plans that get unlimited research access (within their monthly inclusions
- * + bonus pool). Currently only RESEARCHER. Premium uses the per-section
- * credit-pay path instead.
+ * + bonus pool). Currently only RESEARCHER — research & statistics is sold
+ * as a dedicated service, separate from the exam-prep plans.
  */
 export const UNLIMITED_RESEARCH_PLANS: Plan[] = ["RESEARCHER"];
 
 /**
- * Plans that have access at all (unlimited or pay-per-section). Premium gets
- * pay-per-section access; Researcher gets monthly inclusions + bonus top-ups.
+ * Plans that have access at all. Free / Basic / Pro / Premium can BROWSE
+ * the research and statistics UI but every action (generate section, run
+ * analysis, upload, export) returns an upgrade prompt. Only Researcher
+ * users can actually use the AI generation + statistical analyses.
  */
-export const RESEARCH_ACCESS_PLANS: Plan[] = ["PREMIUM", "RESEARCHER"];
+export const RESEARCH_ACCESS_PLANS: Plan[] = ["RESEARCHER"];
 
 export function hasUnlimitedResearch(plan: Plan): boolean {
   return UNLIMITED_RESEARCH_PLANS.includes(plan);
 }
 
-export function payPerUseResearch(plan: Plan): boolean {
-  return plan === "PREMIUM";
+export function payPerUseResearch(_plan: Plan): boolean {
+  // Pay-per-section was removed: only the Researcher plan can generate
+  // sections. This stub is kept so legacy callers still compile.
+  return false;
 }
 
 export function canUseResearch(plan: Plan): boolean {

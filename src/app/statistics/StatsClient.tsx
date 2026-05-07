@@ -227,11 +227,7 @@ function AddAnalysisForm({ cols }: { cols: ColumnSummary }) {
         <AnalysisFormFields kind={kind} setKind={setKind} cols={cols} />
       </div>
 
-      {state?.error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
-          {state.error}
-        </p>
-      )}
+      {state?.error && <ErrorOrUpgrade error={state.error} />}
 
       <button
         type="submit"
@@ -241,6 +237,28 @@ function AddAnalysisForm({ cols }: { cols: ColumnSummary }) {
         {pending ? "Computing…" : "Run analysis"}
       </button>
     </form>
+  );
+}
+
+function ErrorOrUpgrade({ error }: { error: string }) {
+  const UPGRADE = "[UPGRADE_REQUIRED] ";
+  if (error.startsWith(UPGRADE)) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+        <span>{error.slice(UPGRADE.length)}</span>
+        <a
+          href="/plans"
+          className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700"
+        >
+          Upgrade to Researcher →
+        </a>
+      </div>
+    );
+  }
+  return (
+    <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+      {error}
+    </p>
   );
 }
 

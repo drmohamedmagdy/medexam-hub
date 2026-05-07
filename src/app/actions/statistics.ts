@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { requireUser } from "@/lib/auth";
-import { canUseResearch } from "@/lib/research-access";
+import { canUseResearch, upgradeRequiredError } from "@/lib/research-access";
 import {
   preflightStatsAnalysis,
   recordStatsAnalysisRun,
@@ -43,10 +43,7 @@ export async function replaceStatsFileAction(
 ): Promise<StatsState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return {
-      error:
-        "Statistics is part of the Research suite — available on the Researcher plan or Premium.",
-    };
+    return { error: upgradeRequiredError() };
   }
 
   const parsed = ReplaceSchema.safeParse({
@@ -138,10 +135,7 @@ export async function addStatsAnalysisAction(
 ): Promise<StatsAnalysisState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return {
-      ok: false,
-      error: "Statistics requires the Researcher plan or Premium.",
-    };
+    return { ok: false, error: upgradeRequiredError() };
   }
   const kind = String(formData.get("kind") ?? "");
   if (!isAnalysisKind(kind)) {
