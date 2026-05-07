@@ -125,6 +125,7 @@ export async function generateSectionAction(
     include: {
       sections: { orderBy: { orderIndex: "asc" } },
       files: { orderBy: { createdAt: "asc" } },
+      analyses: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!project || project.userId !== user.id) {
@@ -146,6 +147,17 @@ export async function generateSectionAction(
     text: f.extractedText,
   }));
 
+  // Pass computed stats analyses as a structured context block — that way
+  // the AI's Results section uses the user's REAL numbers instead of made
+  // up illustrative ones.
+  const computedAnalyses = project.analyses
+    .filter((a) => a.resultJson)
+    .map((a) => ({
+      kind: a.kind,
+      title: a.title,
+      resultJson: a.resultJson!,
+    }));
+
   let content: string;
   try {
     content = await generateSection({
@@ -162,6 +174,7 @@ export async function generateSectionAction(
       notes: project.notes,
       priorSections,
       attachedFiles,
+      computedAnalyses,
     });
   } catch (e) {
     return {

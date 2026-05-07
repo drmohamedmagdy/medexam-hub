@@ -15,6 +15,7 @@ export async function GET(
     where: { id },
     include: {
       sections: { orderBy: { orderIndex: "asc" } },
+      analyses: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!project || project.userId !== user.id) {
@@ -52,6 +53,13 @@ export async function GET(
         content: s.content,
         metadataJson: s.metadataJson,
       })),
+    analyses: project.analyses.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      title: a.title,
+      resultJson: a.resultJson,
+      resultSvg: a.resultSvg,
+    })),
   });
 
   const safeName = project.title.replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80) || "research";

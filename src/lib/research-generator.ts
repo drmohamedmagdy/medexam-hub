@@ -28,6 +28,10 @@ export type GenerateSectionInput = {
   // Data files attached to the project (extracted text), e.g. CSVs, draft
   // protocols, lecture PDFs. Truncated by the caller.
   attachedFiles?: AttachedFile[];
+  // Pre-computed stats results for this project (descriptives, t-tests,
+  // correlations, histograms). Passed as structured JSON the model can
+  // pull real numbers from instead of fabricating illustrative ones.
+  computedAnalyses?: Array<{ kind: string; title: string; resultJson: string }>;
 };
 
 const ANTHROPIC_MODEL_DEFAULT = "claude-sonnet-4-6";
@@ -92,6 +96,20 @@ export async function generateSection(input: GenerateSectionInput): Promise<stri
           .join("\n\n")
       : "";
 
+  const analysisContext =
+    input.computedAnalyses && input.computedAnalyses.length > 0
+      ? "\n\nComputed statistical analyses on the user's actual data (use these EXACT numbers — they are authoritative; do not fabricate alternative values):\n" +
+        input.computedAnalyses
+          .slice(0, 10)
+          .map(
+            (a) =>
+              `### ${a.title} (kind: ${a.kind})\n${a.resultJson.slice(0, 2000)}${
+                a.resultJson.length > 2000 ? "\n…[truncated]" : ""
+              }`
+          )
+          .join("\n\n")
+      : "";
+
   // The PRISMA section needs JSON-only output, so its system prompt is tighter.
   const isDiagram = def.style === "diagram";
 
@@ -114,6 +132,7 @@ export async function generateSection(input: GenerateSectionInput): Promise<stri
     isDiagram ? "" : `Aim for ~${def.approxWords} words.`,
     priorContext,
     fileContext,
+    analysisContext,
   ]
     .filter((s) => s !== "")
     .join("\n");

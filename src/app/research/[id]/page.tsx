@@ -7,9 +7,11 @@ import {
   deleteResearchFileAction,
 } from "@/app/actions/research";
 import { kindLabel as kindLabelFor, kindEmoji as kindEmojiFor } from "@/lib/research-templates";
+import { parseCsv } from "@/lib/stats-engine";
 import SectionsEditor from "./SectionsEditor";
 import AttachFileButton from "./AttachFileButton";
 import ProjectSettings from "./ProjectSettings";
+import StatsPanel from "./StatsPanel";
 
 export const metadata = { title: "Research project — MedExam Hub" };
 
@@ -26,9 +28,33 @@ export default async function ResearchProjectPage({
     include: {
       sections: { orderBy: { orderIndex: "asc" } },
       files: { orderBy: { createdAt: "asc" } },
+      analyses: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!project || project.userId !== user.id) redirect("/research");
+
+  // Parse each attached file's CSV (best-effort) so the Stats panel can
+  // populate column pickers without re-fetching.
+  const filesForPicker = project.files.map((f) => {
+    try {
+      const csv = parseCsv(f.extractedText);
+      return {
+        id: f.id,
+        filename: f.filename,
+        columns: csv.columns,
+        numericColumns: csv.numericColumns,
+        categoricalColumns: csv.categoricalColumns,
+      };
+    } catch {
+      return {
+        id: f.id,
+        filename: f.filename,
+        columns: [],
+        numericColumns: [],
+        categoricalColumns: [],
+      };
+    }
+  });
 
   const completed = project.sections.filter(
     (s) => s.content.trim().length > 0 || (s.metadataJson && s.metadataJson.length > 0)
@@ -210,6 +236,20 @@ export default async function ResearchProjectPage({
           </p>
         )}
       </section>
+
+      <StatsPanel
+        projectId={project.id}
+        files={filesForPicker.filter((f) => f.numericColumns.length > 0)}
+        analyses={project.analyses.map((a) => ({
+          id: a.id,
+          kind: a.kind,
+          title: a.title,
+          configJson: a.configJson,
+          resultJson: a.resultJson,
+          resultSvg: a.resultSvg,
+          computedAt: a.computedAt?.toISOString() ?? null,
+        }))}
+      />
 
       <SectionsEditor
         projectId={project.id}

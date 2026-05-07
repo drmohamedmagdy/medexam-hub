@@ -2,12 +2,34 @@ import {
   AlignmentType,
   Document,
   HeadingLevel,
+  ImageRun,
   Packer,
   PageBreak,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  WidthType,
 } from "docx";
 import { renderPrismaTextSummary, safeParsePrismaFlow } from "@/lib/prisma-flow";
+import { svgToPng } from "@/lib/stats-charts";
+import { fmt, fmtP } from "@/lib/stats-engine";
+import type {
+  CorrelationCell,
+  DescriptiveRow,
+  GroupMeansRow,
+  HistogramBins,
+  TTestResult,
+} from "@/lib/stats-engine";
+
+export type AnalysisExport = {
+  id: string;
+  kind: string;
+  title: string;
+  resultJson: string | null;
+  resultSvg: string | null;
+};
 
 export type ResearchExport = {
   title: string;
@@ -19,6 +41,7 @@ export type ResearchExport = {
   language: string;
   citationStyle: string;
   sections: Array<{ title: string; content: string; metadataJson?: string | null }>;
+  analyses?: AnalysisExport[];
 };
 
 /**
@@ -161,6 +184,34 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
     }
   }
 
+  // Append a Statistical Analysis appendix with computed numbers and PNG
+  // charts so the Word file is self-contained — no need to paste anything
+  // in manually.
+  const analysisChildren: (Paragraph | Table)[] = [];
+  const populated = (p.analyses ?? []).filter((a) => a.resultJson);
+  if (populated.length > 0) {
+    analysisChildren.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 600, after: 200 },
+        children: [
+          new TextRun({ text: "Statistical Analysis Appendix", bold: true, size: 32 }),
+        ],
+      })
+    );
+    for (const a of populated) {
+      analysisChildren.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 320, after: 140 },
+          children: [new TextRun({ text: a.title, bold: true, size: 26 })],
+        })
+      );
+      const blocks = await analysisBlocksForDocx(a);
+      for (const b of blocks) analysisChildren.push(b);
+    }
+  }
+
   const doc = new Document({
     creator: p.authorName ?? "MedExam Hub",
     title: p.title,
@@ -183,10 +234,199 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
     sections: [
       {
         properties: {},
-        children: [...cover, ...body],
+        children: [...cover, ...body, ...analysisChildren],
       },
     ],
   });
 
   return Buffer.from(await Packer.toBuffer(doc));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analysis → DOCX block(s). Each kind produces either a styled table, a
+// rasterised PNG of the SVG chart, or both.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function analysisBlocksForDocx(a: AnalysisExport): Promise<(Paragraph | Table)[]> {
+  const out: (Paragraph | Table)[] = [];
+  let parsed: unknown = null;
+  try {
+    parsed = a.resultJson ? JSON.parse(a.resultJson) : null;
+  } catch {
+    parsed = null;
+  }
+  if (!parsed) {
+    out.push(textPara("(No computed result.)"));
+    return out;
+  }
+
+  if (a.kind === "descriptives") {
+    out.push(descriptivesTable(parsed as DescriptiveRow[]));
+  } else if (a.kind === "compare_means") {
+    const r = parsed as { tTest: TTestResult; groupMeans: GroupMeansRow[] };
+    out.push(groupMeansTable(r.groupMeans));
+    out.push(...tTestBlock(r.tTest));
+    if (a.resultSvg) {
+      const png = await rasteriseChart(a.resultSvg);
+      if (png) out.push(imageParagraph(png));
+    }
+  } else if (a.kind === "correlation") {
+    out.push(correlationTable(parsed as { columns: string[]; cells: CorrelationCell[] }));
+  } else if (a.kind === "histogram") {
+    const h = parsed as HistogramBins;
+    out.push(
+      textPara(
+        `n = ${h.n} · mean = ${fmt(h.mean)} · range [${fmt(h.min)}, ${fmt(h.max)}]`
+      )
+    );
+    if (a.resultSvg) {
+      const png = await rasteriseChart(a.resultSvg);
+      if (png) out.push(imageParagraph(png));
+    }
+  }
+  return out;
+}
+
+async function rasteriseChart(svg: string): Promise<Buffer | null> {
+  try {
+    return await svgToPng(svg, 900);
+  } catch {
+    return null;
+  }
+}
+
+function imageParagraph(png: Buffer): Paragraph {
+  return new Paragraph({
+    spacing: { before: 160, after: 200 },
+    children: [
+      new ImageRun({
+        // docx requires "type" plus dimensions for raster images.
+        type: "png",
+        data: new Uint8Array(png),
+        transformation: { width: 540, height: 300 },
+      }),
+    ],
+  });
+}
+
+function textPara(text: string, opts?: { bold?: boolean }): Paragraph {
+  return new Paragraph({
+    spacing: { after: 140 },
+    children: [new TextRun({ text, size: 22, bold: opts?.bold })],
+  });
+}
+
+function headerCell(text: string): TableCell {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        children: [new TextRun({ text, bold: true, size: 20 })],
+      }),
+    ],
+  });
+}
+
+function bodyCell(text: string, opts?: { mono?: boolean }): TableCell {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text,
+            size: 20,
+            font: opts?.mono ? "Courier New" : undefined,
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+function descriptivesTable(rows: DescriptiveRow[]): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: ["Variable", "n", "Mean", "Median", "SD", "Min", "Max", "Q1", "Q3"].map(
+          headerCell
+        ),
+      }),
+      ...rows.map(
+        (r) =>
+          new TableRow({
+            children: [
+              bodyCell(r.column),
+              bodyCell(String(r.n), { mono: true }),
+              bodyCell(fmt(r.mean), { mono: true }),
+              bodyCell(fmt(r.median), { mono: true }),
+              bodyCell(fmt(r.sd), { mono: true }),
+              bodyCell(fmt(r.min), { mono: true }),
+              bodyCell(fmt(r.max), { mono: true }),
+              bodyCell(fmt(r.q1), { mono: true }),
+              bodyCell(fmt(r.q3), { mono: true }),
+            ],
+          })
+      ),
+    ],
+  });
+}
+
+function groupMeansTable(rows: GroupMeansRow[]): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: ["Group", "n", "Mean", "SD"].map(headerCell),
+      }),
+      ...rows.map(
+        (r) =>
+          new TableRow({
+            children: [
+              bodyCell(r.group),
+              bodyCell(String(r.n), { mono: true }),
+              bodyCell(fmt(r.mean), { mono: true }),
+              bodyCell(fmt(r.sd), { mono: true }),
+            ],
+          })
+      ),
+    ],
+  });
+}
+
+function tTestBlock(t: TTestResult): Paragraph[] {
+  return [
+    textPara(
+      `Welch's t-test: t = ${fmt(t.t, 3)}, df = ${fmt(t.df, 1)}, mean diff = ${fmt(
+        t.meanDifference
+      )}, p = ${fmtP(t.pValue)}`,
+      { bold: true }
+    ),
+  ];
+}
+
+function correlationTable(matrix: { columns: string[]; cells: CorrelationCell[] }): Table {
+  const lookup = (rowCol: string, colCol: string) =>
+    matrix.cells.find((c) => c.rowColumn === rowCol && c.colColumn === colCol);
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: ["", ...matrix.columns].map(headerCell),
+      }),
+      ...matrix.columns.map(
+        (rowCol) =>
+          new TableRow({
+            children: [
+              bodyCell(rowCol),
+              ...matrix.columns.map((colCol) => {
+                const c = lookup(rowCol, colCol);
+                return bodyCell(rowCol === colCol ? "—" : c ? fmt(c.r, 2) : "—", {
+                  mono: true,
+                });
+              }),
+            ],
+          })
+      ),
+    ],
+  });
 }

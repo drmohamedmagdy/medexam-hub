@@ -533,9 +533,10 @@ model ResearchProject {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   sections ResearchSection[]
   files    ResearchFile[]
+  analyses ResearchAnalysis[]
 
   @@index([userId, createdAt])
 }
@@ -571,6 +572,37 @@ model ResearchSection {
   @@index([projectId])
 }
 
+// One row per saved statistical analysis on a project. The user picks
+// a kind (descriptives, group comparison, correlation, histogram) and
+// the columns to use; the server runs the computation against the
+// chosen file's CSV text and stores the result. Charts get rendered
+// to SVG and stored alongside the JSON so the editor can show them
+// without recomputing.
+model ResearchAnalysis {
+  id         String   @id @default(cuid())
+  projectId  String
+  // Optional — null if the analysis came from raw user input rather
+  // than an attached CSV.
+  fileId     String?
+  // "descriptives" | "compare_means" | "correlation" | "histogram"
+  kind       String
+  title      String
+  // Params: which columns, etc. Matches the kind-specific shape.
+  configJson String
+  // Computed numeric result (descriptive rows, t-test stats, etc.)
+  resultJson String?
+  // Rendered chart, if any.
+  resultSvg  String?
+  computedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project    ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file       ResearchFile?   @relation(fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+}
+
 // Data files (CSV / Excel-as-text / Word / PDF) attached to a research
 // project. The extracted text is fed into AI prompts so the generated
 // sections (especially Statistical Analysis Plan and Results) can talk
@@ -589,7 +621,8 @@ model ResearchFile {
   filePathname  String?
   createdAt     DateTime @default(now())
 
-  project       ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project       ResearchProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analyses      ResearchAnalysis[]
 
   @@index([projectId])
 }
