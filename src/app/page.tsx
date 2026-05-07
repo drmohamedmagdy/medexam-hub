@@ -65,9 +65,9 @@ export default async function Home() {
               <Image
                 src="/logo.webp"
                 alt="MedExam Hub"
-                width={120}
-                height={120}
-                className="h-20 w-20 rounded-full sm:h-24 sm:w-24"
+                width={192}
+                height={192}
+                className="h-32 w-32 rounded-full sm:h-40 sm:w-40 lg:h-48 lg:w-48"
                 priority
               />
             </div>
