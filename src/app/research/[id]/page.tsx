@@ -34,6 +34,7 @@ export default async function ResearchProjectPage({
     (s) => s.content.trim().length > 0 || (s.metadataJson && s.metadataJson.length > 0)
   ).length;
   const total = project.sections.length;
+  const allComplete = total > 0 && completed === total;
   const kLabel = kindLabelFor(project.kind);
   const kEmoji = kindEmojiFor(project.kind);
 
@@ -66,19 +67,40 @@ export default async function ResearchProjectPage({
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
-            <Link
-              href={`/research/${project.id}/export`}
-              className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-            >
-              📄 Download .docx
-            </Link>
-            <Link
-              href={`/research/${project.id}/print`}
-              target="_blank"
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              🖨 Print / PDF
-            </Link>
+            {allComplete ? (
+              <>
+                <Link
+                  href={`/research/${project.id}/export`}
+                  className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+                >
+                  📄 Download .docx
+                </Link>
+                <Link
+                  href={`/research/${project.id}/print`}
+                  target="_blank"
+                  className="rounded-md border border-zinc-300 px-4 py-2 font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  🖨 Print / PDF
+                </Link>
+              </>
+            ) : (
+              <>
+                <span
+                  aria-disabled
+                  title={`Generate all ${total} sections first (${total - completed} left)`}
+                  className="cursor-not-allowed rounded-md bg-zinc-200 px-4 py-2 font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500"
+                >
+                  📄 Download .docx
+                </span>
+                <span
+                  aria-disabled
+                  title={`Generate all ${total} sections first (${total - completed} left)`}
+                  className="cursor-not-allowed rounded-md border border-zinc-300 px-4 py-2 font-medium text-zinc-400 dark:border-zinc-700 dark:text-zinc-500"
+                >
+                  🖨 Print / PDF
+                </span>
+              </>
+            )}
             <ProjectSettings
               project={{
                 id: project.id,
@@ -117,10 +139,21 @@ export default async function ResearchProjectPage({
           </div>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-zinc-200 dark:bg-zinc-800">
             <div
-              className="h-full bg-blue-600 transition-all"
+              className={`h-full transition-all ${
+                allComplete ? "bg-emerald-600" : "bg-blue-600"
+              }`}
               style={{ width: `${total === 0 ? 0 : (completed / total) * 100}%` }}
             />
           </div>
+          {allComplete ? (
+            <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
+              ✓ All sections complete — your manuscript is ready to download.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+              ⏳ Generate the remaining {total - completed} section{total - completed === 1 ? "" : "s"} below — downloads unlock when all sections are written.
+            </p>
+          )}
         </div>
       </header>
 

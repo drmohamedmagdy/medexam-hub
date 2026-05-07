@@ -21,6 +21,21 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
+  // Server-side gate that mirrors the disabled button on the project page —
+  // a curl / direct GET shouldn't bypass the "all sections written" rule
+  // because half-finished exports waste user trust.
+  const incomplete = project.sections.filter(
+    (s) => s.content.trim().length === 0 && (!s.metadataJson || s.metadataJson.length === 0)
+  );
+  if (incomplete.length > 0) {
+    return new NextResponse(
+      `Cannot export yet — ${incomplete.length} of ${project.sections.length} sections are still empty: ${incomplete
+        .map((s) => s.title)
+        .join(", ")}`,
+      { status: 400 }
+    );
+  }
+
   const buf = await renderResearchDocx({
     title: project.title,
     kindLabel: kindLabelFor(project.kind),

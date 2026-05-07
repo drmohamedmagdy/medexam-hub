@@ -21,9 +21,13 @@ export default async function PrintPage({
   });
   if (!project || project.userId !== user.id) redirect("/research");
 
+  // Bounce back to the editor if not every section has been written yet.
   const populatedSections = project.sections.filter(
     (s) => s.content.trim().length > 0 || (s.metadataJson && s.metadataJson.length > 0)
   );
+  if (populatedSections.length < project.sections.length) {
+    redirect(`/research/${project.id}?incomplete=1`);
+  }
   const kindLabel = kindLabelFor(project.kind);
   const authorName = user.name ?? user.email.split("@")[0];
 
