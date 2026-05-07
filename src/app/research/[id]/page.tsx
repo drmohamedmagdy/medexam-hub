@@ -9,6 +9,7 @@ import {
 import { kindLabel as kindLabelFor, kindEmoji as kindEmojiFor } from "@/lib/research-templates";
 import SectionsEditor from "./SectionsEditor";
 import AttachFileButton from "./AttachFileButton";
+import ProjectSettings from "./ProjectSettings";
 
 export const metadata = { title: "Research project — MedExam Hub" };
 
@@ -78,6 +79,21 @@ export default async function ResearchProjectPage({
             >
               🖨 Print / PDF
             </Link>
+            <ProjectSettings
+              project={{
+                id: project.id,
+                kind: project.kind,
+                title: project.title,
+                specialty: project.specialty,
+                studyType: project.studyType,
+                sampleSize: project.sampleSize,
+                population: project.population,
+                university: project.university,
+                language: project.language,
+                citationStyle: project.citationStyle,
+                notes: project.notes,
+              }}
+            />
             <form action={deleteResearchProjectAction}>
               <input type="hidden" name="id" value={project.id} />
               <button

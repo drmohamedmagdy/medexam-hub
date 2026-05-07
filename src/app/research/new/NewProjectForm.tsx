@@ -8,12 +8,96 @@ import {
 
 type Kind = "PROTOCOL" | "THESIS" | "MANUSCRIPT" | "SYSTEMATIC_REVIEW";
 
+type FieldHints = {
+  studyType: { label: string; placeholder: string };
+  sampleSize: { label: string; placeholder: string; help: string };
+  population: { label: string; placeholder: string };
+};
+
+function hintsFor(kind: Kind): FieldHints {
+  switch (kind) {
+    case "SYSTEMATIC_REVIEW":
+      return {
+        studyType: {
+          label: "Review type",
+          placeholder: "e.g. Systematic review, scoping review, meta-analysis",
+        },
+        sampleSize: {
+          label: "Estimated number of included studies",
+          placeholder: "e.g. 25",
+          help: "Optional. Leave blank if you don't know yet — Methods and Results will adapt.",
+        },
+        population: {
+          label: "Population / setting (P of PICO)",
+          placeholder:
+            "e.g. Adults with type 2 diabetes presenting with foot ulcers in any clinical setting",
+        },
+      };
+    case "MANUSCRIPT":
+      return {
+        studyType: {
+          label: "Study design",
+          placeholder:
+            "e.g. RCT, prospective cohort, cross-sectional, case-control, in vitro experiment, animal model",
+        },
+        sampleSize: {
+          label: "Sample size / number of specimens",
+          placeholder: "e.g. 120 patients, or 60 cell-line replicates",
+          help: "Optional. Use whichever unit fits your study (patients, animals, samples, etc.).",
+        },
+        population: {
+          label: "Sample description",
+          placeholder:
+            "e.g. Adults aged 40–70 with chronic ulcers, or HUVEC cells exposed to high glucose",
+        },
+      };
+    case "THESIS":
+      return {
+        studyType: {
+          label: "Study design",
+          placeholder:
+            "e.g. RCT, observational, qualitative, narrative review, lab experiment",
+        },
+        sampleSize: {
+          label: "Sample size / scope",
+          placeholder: "e.g. 100 participants, or 12 in-depth interviews",
+          help: "Optional. Whatever unit makes sense for your thesis.",
+        },
+        population: {
+          label: "Sample description",
+          placeholder:
+            "e.g. Postgraduate students at Cairo University, or rats fed a high-fat diet",
+        },
+      };
+    case "PROTOCOL":
+    default:
+      return {
+        studyType: {
+          label: "Study design",
+          placeholder:
+            "e.g. RCT, cohort, case-control, cross-sectional, lab experiment, qualitative",
+        },
+        sampleSize: {
+          label: "Sample size / scope",
+          placeholder: "e.g. 120, or 30 specimens",
+          help: "Optional — used in the Methodology and Sample Size Justification sections.",
+        },
+        population: {
+          label: "Target population / sample",
+          placeholder:
+            "e.g. Adults aged 40–70 with type 2 diabetes; or zebrafish embryos at 3 dpf",
+        },
+      };
+  }
+}
+
 export default function NewProjectForm() {
   const [kind, setKind] = useState<Kind>("PROTOCOL");
   const [state, action, pending] = useActionState<CreateResearchState, FormData>(
     createResearchProjectAction,
     null
   );
+  const hints = hintsFor(kind);
 
   return (
     <form action={action} className="mt-6 space-y-4">
@@ -66,34 +150,34 @@ export default function NewProjectForm() {
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Specialty">
+        <Field label="Specialty / field">
           <input
             name="specialty"
             type="text"
             maxLength={120}
-            placeholder="e.g. Endocrinology, Cardiology"
+            placeholder="e.g. Endocrinology, Public Health, Molecular Biology"
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </Field>
-        <Field label="Study type">
+        <Field label={hints.studyType.label}>
           <input
             name="studyType"
             type="text"
             maxLength={120}
-            placeholder="e.g. RCT, cross-sectional, case-control"
+            placeholder={hints.studyType.placeholder}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </Field>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Sample size">
+        <Field label={hints.sampleSize.label} hint={hints.sampleSize.help}>
           <input
             name="sampleSize"
             type="number"
-            min={1}
+            min={0}
             max={1_000_000}
-            placeholder="e.g. 120"
+            placeholder={hints.sampleSize.placeholder}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </Field>
@@ -108,12 +192,12 @@ export default function NewProjectForm() {
         </Field>
       </div>
 
-      <Field label="Target population">
+      <Field label={hints.population.label}>
         <input
           name="population"
           type="text"
           maxLength={500}
-          placeholder="e.g. Adults aged 40–70 with type 2 diabetes and Wagner grade II ulcers"
+          placeholder={hints.population.placeholder}
           className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </Field>
@@ -148,15 +232,24 @@ export default function NewProjectForm() {
         </Field>
       </div>
 
-      <Field label="Notes for the AI (optional)">
+      <Field
+        label="Notes for the AI (optional)"
+        hint="Anything specific you want included — funding source, intervention details, primary endpoint, lab equipment, exclusion criteria details, etc."
+      >
         <textarea
           name="notes"
           rows={3}
           maxLength={2000}
-          placeholder="Anything specific you want included — funding source, intervention details, primary endpoint, etc."
+          placeholder="Free-form. The AI uses this on every section it generates."
           className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </Field>
+
+      <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+        💡 You can edit any of these settings later from the project page —
+        sample size, design, language, citation style, even the title — and
+        regenerate sections to use the new context.
+      </p>
 
       {state?.error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -212,10 +305,12 @@ function Field({
   label,
   children,
   required,
+  hint,
 }: {
   label: string;
   children: React.ReactNode;
   required?: boolean;
+  hint?: string;
 }) {
   return (
     <label className="block text-sm">
@@ -223,6 +318,7 @@ function Field({
         {label} {required && <span className="text-red-600">*</span>}
       </span>
       {children}
+      {hint && <span className="mt-1 block text-xs text-zinc-500">{hint}</span>}
     </label>
   );
 }

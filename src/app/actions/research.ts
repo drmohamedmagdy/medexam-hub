@@ -22,7 +22,10 @@ const CreateSchema = z.object({
   title: z.string().min(3).max(200),
   specialty: z.string().max(120).optional(),
   studyType: z.string().max(120).optional(),
-  sampleSize: z.coerce.number().int().min(1).max(1_000_000).optional(),
+  // 0 means "not specified" — number inputs that the user blanks out come
+  // through as 0, and many study types (qualitative, lab, SR) genuinely
+  // don't have a numeric sample size.
+  sampleSize: z.coerce.number().int().min(0).max(1_000_000).optional(),
   population: z.string().max(500).optional(),
   university: z.string().max(200).optional(),
   language: z.string().max(60).default("English"),
@@ -62,7 +65,9 @@ export async function createResearchProjectAction(
       title: parsed.data.title,
       specialty: parsed.data.specialty ?? null,
       studyType: parsed.data.studyType ?? null,
-      sampleSize: parsed.data.sampleSize ?? null,
+      // Treat 0 as "unspecified" — our form sends 0 when the user blanks
+      // the field, but for SR / lab / qualitative work the value is N/A.
+      sampleSize: parsed.data.sampleSize && parsed.data.sampleSize > 0 ? parsed.data.sampleSize : null,
       population: parsed.data.population ?? null,
       university: parsed.data.university ?? null,
       language: parsed.data.language,
@@ -240,6 +245,79 @@ export async function deleteResearchProjectAction(formData: FormData): Promise<v
   await prisma.researchProject.delete({ where: { id } });
   revalidatePath("/research");
   redirect("/research");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Update project metadata — title, specialty, sample size, language, etc.
+// Lets the user adjust assumptions and regenerate sections with the new
+// context (especially handy when the project's actually a lab study or
+// systematic review and the original RCT-flavored defaults don't fit).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type UpdateResearchState = { ok?: boolean; error?: string } | null;
+
+const UpdateSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(3).max(200),
+  specialty: z.string().max(120).optional(),
+  studyType: z.string().max(120).optional(),
+  sampleSize: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  population: z.string().max(500).optional(),
+  university: z.string().max(200).optional(),
+  language: z.string().max(60).default("English"),
+  citationStyle: z.enum(["vancouver", "apa", "mla"]).default("vancouver"),
+  notes: z.string().max(2000).optional(),
+});
+
+export async function updateResearchProjectAction(
+  _prev: UpdateResearchState,
+  formData: FormData
+): Promise<UpdateResearchState> {
+  const user = await requireUser();
+  const parsed = UpdateSchema.safeParse({
+    id: formData.get("id"),
+    title: String(formData.get("title") ?? "").trim(),
+    specialty: String(formData.get("specialty") ?? "").trim() || undefined,
+    studyType: String(formData.get("studyType") ?? "").trim() || undefined,
+    sampleSize: formData.get("sampleSize"),
+    population: String(formData.get("population") ?? "").trim() || undefined,
+    university: String(formData.get("university") ?? "").trim() || undefined,
+    language: String(formData.get("language") ?? "English").trim() || "English",
+    citationStyle: formData.get("citationStyle"),
+    notes: String(formData.get("notes") ?? "").trim() || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const existing = await prisma.researchProject.findUnique({
+    where: { id: parsed.data.id },
+    select: { userId: true },
+  });
+  if (!existing || existing.userId !== user.id) {
+    return { error: "Project not found." };
+  }
+
+  await prisma.researchProject.update({
+    where: { id: parsed.data.id },
+    data: {
+      title: parsed.data.title,
+      specialty: parsed.data.specialty ?? null,
+      studyType: parsed.data.studyType ?? null,
+      sampleSize:
+        parsed.data.sampleSize && parsed.data.sampleSize > 0
+          ? parsed.data.sampleSize
+          : null,
+      population: parsed.data.population ?? null,
+      university: parsed.data.university ?? null,
+      language: parsed.data.language,
+      citationStyle: parsed.data.citationStyle,
+      notes: parsed.data.notes ?? null,
+    },
+  });
+
+  revalidatePath(`/research/${parsed.data.id}`);
+  return { ok: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
