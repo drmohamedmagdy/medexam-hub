@@ -12,7 +12,7 @@ import type { Plan } from "@/generated/prisma/client";
 
 export const metadata = { title: "Admin — Credits" };
 
-const PLANS: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM"];
+const PLANS: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER"];
 
 export default async function AdminCreditsPage() {
   const [

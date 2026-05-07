@@ -26,8 +26,8 @@ export default async function AdminEmailPage() {
         Compose and send to a user segment. {totalOptIn} of {totalAll} users have marketing opt-in.
       </p>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {(["FREE", "BASIC", "PRO", "PREMIUM"] as const).map((plan) => {
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {(["FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER"] as const).map((plan) => {
           const c = counts.find((x) => x.plan === plan);
           return (
             <div

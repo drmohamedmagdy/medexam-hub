@@ -24,8 +24,8 @@ export default async function AdminUsersPage({
       { name: { contains: q, mode: "insensitive" } },
     ];
   }
-  if (planFilter && ["FREE", "BASIC", "PRO", "PREMIUM"].includes(planFilter)) {
-    where.plan = planFilter as "FREE" | "BASIC" | "PRO" | "PREMIUM";
+  if (planFilter && ["FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER"].includes(planFilter)) {
+    where.plan = planFilter as "FREE" | "BASIC" | "PRO" | "PREMIUM" | "RESEARCHER";
   }
 
   const users = await prisma.user.findMany({
@@ -68,6 +68,7 @@ export default async function AdminUsersPage({
           <option value="BASIC">Basic</option>
           <option value="PRO">Pro</option>
           <option value="PREMIUM">Premium</option>
+          <option value="RESEARCHER">Researcher</option>
         </select>
         <button
           type="submit"

@@ -28,7 +28,8 @@ export default function BroadcastForm() {
           <option value="BASIC">Basic plan users</option>
           <option value="PRO">Pro plan users</option>
           <option value="PREMIUM">Premium plan users</option>
-          <option value="PAID">All paid users (Basic / Pro / Premium)</option>
+          <option value="RESEARCHER">Researcher plan users</option>
+          <option value="PAID">All paid users (Basic / Pro / Premium / Researcher)</option>
           <option value="INACTIVE">Inactive 30+ days</option>
         </select>
         <p className="mt-1 text-xs text-zinc-500">

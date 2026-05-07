@@ -91,8 +91,8 @@ export default async function AdminOverview() {
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Plan distribution</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {(["FREE", "BASIC", "PRO", "PREMIUM"] as Plan[]).map((p) => (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {(["FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER"] as Plan[]).map((p) => (
             <div
               key={p}
               className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"

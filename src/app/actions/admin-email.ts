@@ -8,7 +8,7 @@ import { sendEmail } from "@/lib/email";
 import { PLAN_LIMITS } from "@/lib/plans";
 import type { Plan } from "@/generated/prisma/client";
 
-const SEGMENTS = ["ALL_OPTIN", "FREE", "BASIC", "PRO", "PREMIUM", "PAID", "INACTIVE"] as const;
+const SEGMENTS = ["ALL_OPTIN", "FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER", "PAID", "INACTIVE"] as const;
 type Segment = (typeof SEGMENTS)[number];
 
 const Schema = z.object({
@@ -96,6 +96,8 @@ async function buildWhere(segment: Segment): Promise<WhereFilter> {
       return { ...base, plan: "PRO" as Plan };
     case "PREMIUM":
       return { ...base, plan: "PREMIUM" as Plan };
+    case "RESEARCHER":
+      return { ...base, plan: "RESEARCHER" as Plan };
     case "PAID":
       return { ...base, plan: { not: "FREE" as Plan } };
     case "INACTIVE": {
