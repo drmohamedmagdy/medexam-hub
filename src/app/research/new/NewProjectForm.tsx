@@ -129,10 +129,16 @@ function ErrorOrCTA({ error }: { error: string }) {
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
-            href="/account/subscription#topups"
-            className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+            href="/checkout/topup/research-project"
+            className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-700"
           >
-            Buy {RESEARCH_PROJECT_TOPUP_EGP}-credit top-up →
+            Pay {RESEARCH_PROJECT_TOPUP_EGP} EGP for +1 project →
+          </Link>
+          <Link
+            href="/account/subscription#topups"
+            className="rounded-md border border-amber-300 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-950/60"
+          >
+            Use credit balance
           </Link>
           <Link
             href="/plans"

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plans";
+import { topupByKind } from "@/lib/topups";
 
 export const metadata = { title: "Payment under review" };
 
@@ -19,7 +20,8 @@ export default async function PendingPaymentPage({
   // Card / Paymob orders go through /payment/return — don't surface them here.
   if (order.paymentMethod === "CARD") redirect("/payment/return");
 
-  const cfg = PLAN_LIMITS[order.plan];
+  const topup = order.topupKind ? topupByKind(order.topupKind) : null;
+  const productLabel = topup ? topup.label : `${PLAN_LIMITS[order.plan].label} plan`;
   const amount = (order.amountCents / 100).toLocaleString();
   const methodLabel =
     order.paymentMethod === "VODAFONE_CASH" ? "Vodafone Cash" : "Instapay";
@@ -31,18 +33,29 @@ export default async function PendingPaymentPage({
           <span className="text-3xl">✓</span>
         </div>
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-          You&apos;re on the {cfg.label} plan
+          {topup ? "Top-up confirmed" : `You're on the ${PLAN_LIMITS[order.plan].label} plan`}
         </h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Your {methodLabel} payment was verified. Plan active for 30 days.
+          {topup
+            ? `${topup.label} added to your account. Use it whenever — top-ups never expire.`
+            : `Your ${methodLabel} payment was verified. Plan active for 30 days.`}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/exam/new"
-            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Generate an exam
-          </Link>
+          {topup ? (
+            <Link
+              href="/research/new"
+              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Create a research project
+            </Link>
+          ) : (
+            <Link
+              href="/exam/new"
+              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Generate an exam
+            </Link>
+          )}
           <Link
             href="/account/subscription"
             className="rounded-md border border-zinc-300 px-5 py-2 text-sm dark:border-zinc-700"
@@ -90,12 +103,14 @@ export default async function PendingPaymentPage({
       </div>
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">Payment under review</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Thanks! We&apos;ve received your {methodLabel} submission for the {cfg.label} plan.
-        We&apos;ll verify the transaction and activate your plan, usually within 24 hours.
+        Thanks! We&apos;ve received your {methodLabel} submission for {productLabel}.
+        We&apos;ll verify the transaction and{" "}
+        {topup ? "add the top-up to your account" : "activate your plan"}, usually
+        within 24 hours.
       </p>
 
       <dl className="mx-auto mt-8 max-w-sm space-y-2 rounded-2xl border border-zinc-200 bg-white p-5 text-start text-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <Row label="Plan" value={cfg.label} />
+        <Row label={topup ? "Product" : "Plan"} value={productLabel} />
         <Row label="Amount" value={`${amount} EGP`} />
         <Row label="Method" value={methodLabel} />
         <Row label="Submitted" value={order.createdAt.toLocaleString()} />

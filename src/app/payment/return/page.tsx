@@ -24,6 +24,12 @@ export default async function PaymentReturnPage() {
   if (!order || order.userId !== user.id) return <ErrorBox reason="order-not-found" />;
 
   if (order.status !== PaymentStatus.PAID) {
+    // Top-up orders aren't auto-applied here — Paymob card payments for
+    // top-ups aren't sold yet (only manual flow), and even if they were,
+    // the bonus grant should happen via the admin/manual approval path.
+    if (order.topupKind) {
+      return <ErrorBox reason="topup-needs-manual" />;
+    }
     const now = new Date();
     const isRenewalSamePlan = user.plan === order.plan && user.planExpiresAt && user.planExpiresAt > now;
     const baseDate = isRenewalSamePlan ? user.planExpiresAt! : now;
@@ -88,6 +94,7 @@ function ErrorBox({ reason }: { reason: string }) {
     "missing-token": "We couldn't find your checkout session. If you completed a payment, please contact support and we'll activate your account manually.",
     "invalid-or-expired": "Your checkout session expired. If you already paid, please reply to your Paymob receipt email and we'll activate your plan within 24 hours.",
     "order-not-found": "We couldn't match this checkout to your account. Please contact support.",
+    "topup-needs-manual": "Card top-ups aren't auto-activated yet — please contact support and we'll add it manually.",
   };
   return (
     <div className="mx-auto max-w-xl px-6 py-16 text-center">

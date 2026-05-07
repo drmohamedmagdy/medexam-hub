@@ -346,6 +346,13 @@ model PaymentOrder {
   // Deducted from User.creditsBalance at order creation; refunded if
   // the order is rejected/failed.
   creditsApplied  Int           @default(0)
+  // When non-null, this is a one-off top-up purchase, not a plan upgrade.
+  // Approved top-ups grant bonus units (research_projects / stats_analyses)
+  // without touching the user's plan / expiry. Values:
+  //   "RESEARCH_PROJECT" — adds topupAmount to research_projects pool
+  //   "STATS_ANALYSIS"   — adds topupAmount to stats_analyses pool
+  topupKind       String?
+  topupAmount     Int           @default(1)
   createdAt       DateTime      @default(now())
   paidAt          DateTime?
 

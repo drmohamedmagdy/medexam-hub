@@ -15,6 +15,7 @@ import {
   chargeCredits,
   maxCreditsForOrder,
 } from "@/lib/credits";
+import { topupByKind } from "@/lib/topups";
 import { PaymentStatus, type PaymentMethod } from "@/generated/prisma/client";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,6 +35,9 @@ const SubmitSchema = z.object({
   proofNote: z.string().max(500).optional(),
   promoCode: z.string().max(40).optional(),
   creditsToUse: z.coerce.number().int().min(0).max(100000).optional(),
+  // When set, this is a one-off top-up (not a plan upgrade). The promo
+  // and credits paths are skipped — top-ups are sold at a fixed price.
+  topupKind: z.enum(["RESEARCH_PROJECT", "STATS_ANALYSIS"]).optional(),
 });
 
 export async function submitManualPaymentAction(
@@ -50,20 +54,32 @@ export async function submitManualPaymentAction(
     proofNote: String(formData.get("proofNote") ?? "").trim() || undefined,
     promoCode: String(formData.get("promoCode") ?? "").trim() || undefined,
     creditsToUse: formData.get("creditsToUse"),
+    topupKind: String(formData.get("topupKind") ?? "").trim() || undefined,
   });
   if (!parsed.success) {
     return { ok: false, error: "Please upload a clear screenshot of your transaction." };
   }
 
-  const { plan, method, proofImageUrl, proofImagePathname, proofNote, promoCode, creditsToUse } = parsed.data;
-  const cfg = PLAN_LIMITS[plan];
-  const originalCents = cfg.priceMonthly * 100;
+  const {
+    plan,
+    method,
+    proofImageUrl,
+    proofImagePathname,
+    proofNote,
+    promoCode,
+    creditsToUse,
+    topupKind,
+  } = parsed.data;
+  const topup = topupKind ? topupByKind(topupKind) : null;
 
+  // Pricing: top-ups have a fixed price; plan purchases use the plan's price
+  // (with optional promo + credits applied).
+  const originalCents = topup ? topup.priceEgp * 100 : PLAN_LIMITS[plan].priceMonthly * 100;
   let amountCents = originalCents;
   let promoId: string | null = null;
   let promoCodeStored: string | null = null;
 
-  if (promoCode) {
+  if (!topup && promoCode) {
     const validation = await validatePromoCode({ code: promoCode, plan, userId: user.id });
     if (!validation.ok) {
       return { ok: false, error: validation.message };
@@ -73,9 +89,10 @@ export async function submitManualPaymentAction(
     promoCodeStored = validation.code;
   }
 
-  // Validate + cap credit redemption against the post-promo amount.
+  // Validate + cap credit redemption against the post-promo amount. Top-ups
+  // skip this — they're already a low-friction cash purchase.
   let creditsApplied = 0;
-  if (creditsToUse && creditsToUse > 0) {
+  if (!topup && creditsToUse && creditsToUse > 0) {
     const userCredits = await prisma.user.findUnique({
       where: { id: user.id },
       select: { creditsBalance: true },
@@ -118,6 +135,8 @@ export async function submitManualPaymentAction(
       promoCodeUsed: promoCodeStored,
       originalCents: promoId || creditsApplied > 0 ? originalCents : null,
       creditsApplied,
+      topupKind: topup ? topup.kind : null,
+      topupAmount: topup ? topup.amount : 1,
     },
   });
 
@@ -179,6 +198,52 @@ export async function adminApprovePaymentAction(formData: FormData): Promise<voi
   if (order.status === PaymentStatus.PAID) return;
 
   const now = new Date();
+
+  // Top-up flow: grant the bonus pool, leave the plan / expiry alone.
+  if (order.topupKind) {
+    const product = topupByKind(order.topupKind);
+    if (!product) {
+      // Unknown topupKind — refuse to approve to avoid silent grants.
+      return;
+    }
+    const grantAmount = order.topupAmount ?? product.amount;
+    await prisma.$transaction([
+      prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: {
+          status: PaymentStatus.PAID,
+          paidAt: now,
+          reviewedAt: now,
+          reviewedBy: admin.id,
+          rejectionReason: null,
+        },
+      }),
+      prisma.bonusGrant.create({
+        data: {
+          userId: order.userId,
+          kind: product.bonusKind,
+          amount: grantAmount,
+          creditsSpent: 0,
+          yearMonth: yearMonthOf(now),
+        },
+      }),
+    ]);
+
+    await createNotification({
+      userId: order.userId,
+      category: "system",
+      emoji: "🎁",
+      title: `Top-up confirmed — ${product.label}`,
+      body: `Your ${methodLabel(order.paymentMethod)} payment of ${(order.amountCents / 100).toLocaleString()} EGP has been verified. You can use it now — the top-up never expires.`,
+      href: "/research",
+    });
+
+    revalidatePath("/admin/payments");
+    revalidatePath(`/checkout/pending/${order.id}`);
+    return;
+  }
+
+  // Plan purchase / renewal flow.
   const isRenewalSamePlan =
     order.user.plan === order.plan && order.user.planExpiresAt && order.user.planExpiresAt > now;
   const baseDate = isRenewalSamePlan ? order.user.planExpiresAt! : now;
@@ -221,6 +286,12 @@ export async function adminApprovePaymentAction(formData: FormData): Promise<voi
 
   revalidatePath("/admin/payments");
   revalidatePath(`/checkout/pending/${order.id}`);
+}
+
+function yearMonthOf(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
 }
 
 export async function adminRejectPaymentAction(formData: FormData): Promise<void> {
