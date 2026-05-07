@@ -7,15 +7,11 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { extractText, MAX_FILE_BYTES } from "@/lib/file-upload";
 import {
+  dispatchAnalysis,
+  isAnalysisKind,
   parseCsv,
-  descriptivesFor,
-  tTestBetween,
-  correlationMatrix,
-  histogramFor,
-  groupMeansFor,
-  type ParsedCsv,
-} from "@/lib/stats-engine";
-import { renderHistogramSvg, renderGroupMeansSvg } from "@/lib/stats-charts";
+  parseDispatchInput,
+} from "@/lib/stats-dispatch";
 
 export type StatsState = { ok?: boolean; error?: string } | null;
 export type StatsAnalysisState =
@@ -27,10 +23,6 @@ async function getOrCreateWorkspace(userId: string) {
   if (existing) return existing;
   return prisma.statsWorkspace.create({ data: { userId } });
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Replace the workspace's file (deletes prior file blob + analyses)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const ReplaceSchema = z.object({
   fileUrl: z.string().url(),
@@ -71,11 +63,7 @@ export async function replaceStatsFileAction(
   let extractedText = "";
   let charCount = 0;
   try {
-    const result = await extractText(
-      buffer,
-      parsed.data.mimeType,
-      parsed.data.filename
-    );
+    const result = await extractText(buffer, parsed.data.mimeType, parsed.data.filename);
     extractedText = result.text;
     charCount = result.charCount;
   } catch (e) {
@@ -88,8 +76,6 @@ export async function replaceStatsFileAction(
 
   const ws = await getOrCreateWorkspace(user.id);
 
-  // Delete the previously-stored blob (best effort) and clear all analyses,
-  // since the columns most likely changed.
   if (ws.filePathname) {
     void del(ws.filePathname).catch(() => {});
   }
@@ -135,39 +121,14 @@ export async function clearStatsFileAction(): Promise<void> {
   revalidatePath("/statistics");
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Add an analysis to the workspace (mirrors the project version, but
-// targets StatsWorkspace + StatsAnalysis instead of ResearchProject /
-// ResearchAnalysis).
-// ─────────────────────────────────────────────────────────────────────────────
-
-const AddSchema = z.object({
-  kind: z.enum(["descriptives", "compare_means", "correlation", "histogram"]),
-  title: z.string().max(200).optional(),
-  outcomeColumn: z.string().max(200).optional(),
-  groupColumn: z.string().max(200).optional(),
-  histogramColumn: z.string().max(200).optional(),
-  histogramBins: z.coerce.number().int().min(3).max(50).optional(),
-  columns: z.string().max(2000).optional(),
-});
-
 export async function addStatsAnalysisAction(
   _prev: StatsAnalysisState,
   formData: FormData
 ): Promise<StatsAnalysisState> {
   const user = await requireUser();
-
-  const parsed = AddSchema.safeParse({
-    kind: formData.get("kind"),
-    title: String(formData.get("title") ?? "").trim() || undefined,
-    outcomeColumn: String(formData.get("outcomeColumn") ?? "").trim() || undefined,
-    groupColumn: String(formData.get("groupColumn") ?? "").trim() || undefined,
-    histogramColumn: String(formData.get("histogramColumn") ?? "").trim() || undefined,
-    histogramBins: formData.get("histogramBins"),
-    columns: String(formData.get("columns") ?? "").trim() || undefined,
-  });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  const kind = String(formData.get("kind") ?? "");
+  if (!isAnalysisKind(kind)) {
+    return { ok: false, error: "Unsupported analysis kind." };
   }
 
   const ws = await prisma.statsWorkspace.findUnique({ where: { userId: user.id } });
@@ -175,96 +136,26 @@ export async function addStatsAnalysisAction(
     return { ok: false, error: "Upload a CSV first." };
   }
 
-  const csv: ParsedCsv = parseCsv(ws.extractedText);
+  const csv = parseCsv(ws.extractedText);
   if (csv.columns.length === 0) {
     return { ok: false, error: "Couldn't parse this file as a CSV." };
   }
 
-  let resultJson: unknown;
-  let resultSvg: string | null = null;
-  let title: string;
-
   try {
-    const config: Record<string, unknown> = {
-      filename: ws.filename ?? null,
-    };
-
-    switch (parsed.data.kind) {
-      case "descriptives": {
-        const cols = parsed.data.columns
-          ? parsed.data.columns.split(",").map((c) => c.trim()).filter(Boolean)
-          : csv.numericColumns;
-        if (cols.length === 0) {
-          return { ok: false, error: "No numeric columns detected." };
-        }
-        config.columns = cols;
-        resultJson = descriptivesFor(csv, cols);
-        title = parsed.data.title ?? `Descriptive statistics`;
-        break;
-      }
-      case "compare_means": {
-        if (!parsed.data.outcomeColumn || !parsed.data.groupColumn) {
-          return { ok: false, error: "Pick an outcome column and a grouping column." };
-        }
-        config.outcomeColumn = parsed.data.outcomeColumn;
-        config.groupColumn = parsed.data.groupColumn;
-        const tt = tTestBetween(csv, parsed.data.outcomeColumn, parsed.data.groupColumn);
-        const groupMeans = groupMeansFor(
-          csv,
-          parsed.data.outcomeColumn,
-          parsed.data.groupColumn
-        );
-        resultJson = { tTest: tt, groupMeans };
-        resultSvg = renderGroupMeansSvg(groupMeans, {
-          outcome: parsed.data.outcomeColumn,
-          group: parsed.data.groupColumn,
-        });
-        title =
-          parsed.data.title ??
-          `${parsed.data.outcomeColumn} by ${parsed.data.groupColumn} (t-test)`;
-        break;
-      }
-      case "correlation": {
-        const cols = parsed.data.columns
-          ? parsed.data.columns.split(",").map((c) => c.trim()).filter(Boolean)
-          : csv.numericColumns;
-        if (cols.length < 2) {
-          return { ok: false, error: "Pick at least two numeric columns." };
-        }
-        config.columns = cols;
-        resultJson = correlationMatrix(csv, cols);
-        title = parsed.data.title ?? `Correlation matrix`;
-        break;
-      }
-      case "histogram": {
-        if (!parsed.data.histogramColumn) {
-          return { ok: false, error: "Pick a column." };
-        }
-        const numBins = parsed.data.histogramBins ?? 12;
-        config.column = parsed.data.histogramColumn;
-        config.bins = numBins;
-        const hist = histogramFor(csv, parsed.data.histogramColumn, numBins);
-        resultJson = hist;
-        resultSvg = renderHistogramSvg(hist);
-        title = parsed.data.title ?? `Distribution of ${parsed.data.histogramColumn}`;
-        break;
-      }
-      default:
-        return { ok: false, error: "Unsupported analysis kind." };
-    }
-
+    const input = parseDispatchInput(formData);
+    const out = dispatchAnalysis(csv, input);
+    const config: Record<string, unknown> = { ...out.config, filename: ws.filename ?? null };
     const created = await prisma.statsAnalysis.create({
       data: {
         workspaceId: ws.id,
-        kind: parsed.data.kind,
-        title,
+        kind: input.kind,
+        title: out.title,
         configJson: JSON.stringify(config),
-        resultJson: JSON.stringify(resultJson),
-        resultSvg,
+        resultJson: JSON.stringify(out.resultJson),
+        resultSvg: out.resultSvg,
         computedAt: new Date(),
       },
     });
-
     revalidatePath("/statistics");
     return { ok: true, analysisId: created.id };
   } catch (e) {

@@ -16,11 +16,24 @@ import { renderPrismaTextSummary, safeParsePrismaFlow } from "@/lib/prisma-flow"
 import { svgToPng } from "@/lib/stats-charts";
 import { fmt, fmtP } from "@/lib/stats-engine";
 import type {
+  AnovaResult,
+  BoxplotResult,
+  ChiSquareResult,
   CorrelationCell,
   DescriptiveRow,
   GroupMeansRow,
   HistogramBins,
+  KaplanMeierResult,
+  KruskalWallisResult,
+  LinearRegressionResult,
+  LogisticRegressionResult,
+  MannWhitneyResult,
+  NormalityResult,
+  PairedTResult,
+  RocResult,
+  ScatterResult,
   TTestResult,
+  WilcoxonResult,
 } from "@/lib/stats-engine";
 
 export type AnalysisExport = {
@@ -44,12 +57,6 @@ export type ResearchExport = {
   analyses?: AnalysisExport[];
 };
 
-/**
- * Render a research project to a Word .docx Buffer. Plain-prose paragraphs,
- * with simple bullet detection so lines starting with "- ", "* ", "• " or
- * "1.", "2.", … become list items. The cover page has the title, the user's
- * name, university, and a generated-by stamp.
- */
 export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
   const cover: Paragraph[] = [
     new Paragraph({
@@ -67,9 +74,7 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 200, after: 600 },
-      children: [
-        new TextRun({ text: p.title, bold: true, size: 44 }),
-      ],
+      children: [new TextRun({ text: p.title, bold: true, size: 44 })],
     }),
     p.authorName
       ? new Paragraph({
@@ -123,10 +128,6 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
       })
     );
 
-    // PRISMA flow + any future diagram sections: render the structured
-    // summary as text. Embedding SVG-rendered images directly is in
-    // scope for Phase 3 — for V2 the user will see a clean numbered
-    // list they can paste a screenshot next to.
     const prismaData = section.metadataJson
       ? safeParsePrismaFlow(section.metadataJson)
       : null;
@@ -163,7 +164,6 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
         );
         continue;
       }
-      // Sub-heading detection: a short line ending with ":" gets bolded.
       if (trimmed.length < 80 && trimmed.endsWith(":")) {
         body.push(
           new Paragraph({
@@ -184,9 +184,6 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
     }
   }
 
-  // Append a Statistical Analysis appendix with computed numbers and PNG
-  // charts so the Word file is self-contained — no need to paste anything
-  // in manually.
   const analysisChildren: (Paragraph | Table)[] = [];
   const populated = (p.analyses ?? []).filter((a) => a.resultJson);
   if (populated.length > 0) {
@@ -243,8 +240,7 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Analysis → DOCX block(s). Each kind produces either a styled table, a
-// rasterised PNG of the SVG chart, or both.
+// Analysis → DOCX block(s).
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function analysisBlocksForDocx(a: AnalysisExport): Promise<(Paragraph | Table)[]> {
@@ -260,29 +256,118 @@ async function analysisBlocksForDocx(a: AnalysisExport): Promise<(Paragraph | Ta
     return out;
   }
 
-  if (a.kind === "descriptives") {
-    out.push(descriptivesTable(parsed as DescriptiveRow[]));
-  } else if (a.kind === "compare_means") {
-    const r = parsed as { tTest: TTestResult; groupMeans: GroupMeansRow[] };
-    out.push(groupMeansTable(r.groupMeans));
-    out.push(...tTestBlock(r.tTest));
+  const appendChart = async () => {
     if (a.resultSvg) {
       const png = await rasteriseChart(a.resultSvg);
       if (png) out.push(imageParagraph(png));
     }
-  } else if (a.kind === "correlation") {
-    out.push(correlationTable(parsed as { columns: string[]; cells: CorrelationCell[] }));
-  } else if (a.kind === "histogram") {
-    const h = parsed as HistogramBins;
-    out.push(
-      textPara(
-        `n = ${h.n} · mean = ${fmt(h.mean)} · range [${fmt(h.min)}, ${fmt(h.max)}]`
-      )
-    );
-    if (a.resultSvg) {
-      const png = await rasteriseChart(a.resultSvg);
-      if (png) out.push(imageParagraph(png));
+  };
+
+  switch (a.kind) {
+    case "descriptives":
+      out.push(descriptivesTable(parsed as DescriptiveRow[]));
+      break;
+    case "compare_means": {
+      const r = parsed as { tTest: TTestResult; groupMeans: GroupMeansRow[] };
+      out.push(groupMeansTable(r.groupMeans));
+      out.push(...tTestBlock(r.tTest));
+      await appendChart();
+      break;
     }
+    case "paired_t":
+      out.push(...pairedTBlock(parsed as PairedTResult));
+      break;
+    case "mann_whitney": {
+      const r = parsed as { mannWhitney: MannWhitneyResult; groupMeans: GroupMeansRow[] };
+      out.push(groupMeansTable(r.groupMeans));
+      out.push(...mannWhitneyBlock(r.mannWhitney));
+      await appendChart();
+      break;
+    }
+    case "wilcoxon":
+      out.push(...wilcoxonBlock(parsed as WilcoxonResult));
+      break;
+    case "anova": {
+      const r = parsed as { anova: AnovaResult; groupMeans: GroupMeansRow[] };
+      out.push(groupMeansTable(r.groupMeans));
+      out.push(anovaTable(r.anova));
+      out.push(...anovaSummary(r.anova));
+      await appendChart();
+      break;
+    }
+    case "kruskal_wallis": {
+      const r = parsed as { kruskalWallis: KruskalWallisResult; groupMeans: GroupMeansRow[] };
+      out.push(groupMeansTable(r.groupMeans));
+      out.push(...kruskalBlock(r.kruskalWallis));
+      await appendChart();
+      break;
+    }
+    case "chi_square":
+      out.push(...chiSquareBlock(parsed as ChiSquareResult));
+      break;
+    case "correlation":
+      out.push(
+        correlationTable(parsed as { columns: string[]; cells: CorrelationCell[] })
+      );
+      break;
+    case "linear_regression": {
+      const lr = parsed as LinearRegressionResult;
+      out.push(...linearRegBlock(lr));
+      await appendChart();
+      break;
+    }
+    case "logistic_regression": {
+      const lr = parsed as LogisticRegressionResult;
+      out.push(...logisticBlock(lr));
+      await appendChart();
+      break;
+    }
+    case "kaplan_meier": {
+      const km = parsed as KaplanMeierResult;
+      out.push(...kaplanMeierBlock(km));
+      await appendChart();
+      break;
+    }
+    case "roc": {
+      const r = parsed as RocResult;
+      out.push(...rocBlock(r));
+      await appendChart();
+      break;
+    }
+    case "normality":
+      out.push(...normalityBlock(parsed as NormalityResult));
+      break;
+    case "histogram": {
+      const h = parsed as HistogramBins;
+      out.push(
+        textPara(
+          `n = ${h.n} · mean = ${fmt(h.mean)} · range [${fmt(h.min)}, ${fmt(h.max)}]`
+        )
+      );
+      await appendChart();
+      break;
+    }
+    case "boxplot": {
+      const b = parsed as BoxplotResult;
+      out.push(boxplotTable(b));
+      await appendChart();
+      break;
+    }
+    case "scatter": {
+      const s = parsed as ScatterResult;
+      out.push(
+        textPara(
+          `n = ${s.n} · r = ${fmt(s.r, 3)} · R² = ${fmt(s.r2, 3)} · slope = ${fmt(
+            s.slope,
+            3
+          )} · intercept = ${fmt(s.intercept, 3)}`
+        )
+      );
+      await appendChart();
+      break;
+    }
+    default:
+      out.push(textPara(`(Unknown analysis kind: ${a.kind})`));
   }
   return out;
 }
@@ -300,7 +385,6 @@ function imageParagraph(png: Buffer): Paragraph {
     spacing: { before: 160, after: 200 },
     children: [
       new ImageRun({
-        // docx requires "type" plus dimensions for raster images.
         type: "png",
         data: new Uint8Array(png),
         transformation: { width: 540, height: 300 },
@@ -319,9 +403,7 @@ function textPara(text: string, opts?: { bold?: boolean }): Paragraph {
 function headerCell(text: string): TableCell {
   return new TableCell({
     children: [
-      new Paragraph({
-        children: [new TextRun({ text, bold: true, size: 20 })],
-      }),
+      new Paragraph({ children: [new TextRun({ text, bold: true, size: 20 })] }),
     ],
   });
 }
@@ -375,9 +457,7 @@ function groupMeansTable(rows: GroupMeansRow[]): Table {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
-      new TableRow({
-        children: ["Group", "n", "Mean", "SD"].map(headerCell),
-      }),
+      new TableRow({ children: ["Group", "n", "Mean", "SD"].map(headerCell) }),
       ...rows.map(
         (r) =>
           new TableRow({
@@ -404,15 +484,125 @@ function tTestBlock(t: TTestResult): Paragraph[] {
   ];
 }
 
+function pairedTBlock(t: PairedTResult): Paragraph[] {
+  return [
+    textPara(`Paired t-test: ${t.col1} vs ${t.col2} (n = ${t.n})`),
+    textPara(
+      `mean diff = ${fmt(t.meanDiff)}, SD = ${fmt(t.sdDiff)}, t = ${fmt(t.t, 3)}, df = ${t.df}, p = ${fmtP(t.pValue)}`,
+      { bold: true }
+    ),
+  ];
+}
+
+function mannWhitneyBlock(mw: MannWhitneyResult): Paragraph[] {
+  return [
+    textPara(
+      `Mann–Whitney U: U = ${fmt(mw.u, 1)}, Z = ${fmt(mw.z, 3)}, p = ${fmtP(mw.pValue)}`,
+      { bold: true }
+    ),
+    textPara(
+      `${mw.group1.name}: mean rank ${fmt(mw.group1.meanRank, 2)} (n=${mw.group1.n}); ${mw.group2.name}: mean rank ${fmt(mw.group2.meanRank, 2)} (n=${mw.group2.n})`
+    ),
+  ];
+}
+
+function wilcoxonBlock(w: WilcoxonResult): Paragraph[] {
+  return [
+    textPara(`Wilcoxon signed-rank: ${w.col1} vs ${w.col2} (n = ${w.n} non-zero diffs)`),
+    textPara(
+      `W+ = ${fmt(w.wPositive, 1)}, W− = ${fmt(w.wNegative, 1)}, Z = ${fmt(w.z, 3)}, p = ${fmtP(w.pValue)}`,
+      { bold: true }
+    ),
+  ];
+}
+
+function anovaTable(a: AnovaResult): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: ["Source", "SS", "df", "MS", "F"].map(headerCell),
+      }),
+      new TableRow({
+        children: [
+          bodyCell("Between"),
+          bodyCell(fmt(a.ssBetween), { mono: true }),
+          bodyCell(String(a.dfBetween), { mono: true }),
+          bodyCell(fmt(a.msBetween), { mono: true }),
+          bodyCell(fmt(a.f, 3), { mono: true }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          bodyCell("Within"),
+          bodyCell(fmt(a.ssWithin), { mono: true }),
+          bodyCell(String(a.dfWithin), { mono: true }),
+          bodyCell(fmt(a.msWithin), { mono: true }),
+          bodyCell("—", { mono: true }),
+        ],
+      }),
+    ],
+  });
+}
+
+function anovaSummary(a: AnovaResult): Paragraph[] {
+  return [
+    textPara(
+      `One-way ANOVA: F(${a.dfBetween}, ${a.dfWithin}) = ${fmt(a.f, 3)}, p = ${fmtP(a.pValue)}`,
+      { bold: true }
+    ),
+  ];
+}
+
+function kruskalBlock(k: KruskalWallisResult): Paragraph[] {
+  return [
+    textPara(
+      `Kruskal–Wallis: H = ${fmt(k.h, 3)}, df = ${k.df}, p = ${fmtP(k.pValue)}`,
+      { bold: true }
+    ),
+  ];
+}
+
+function chiSquareBlock(c: ChiSquareResult): (Paragraph | Table)[] {
+  const rows: TableRow[] = [
+    new TableRow({
+      children: ["", ...c.colLevels].map(headerCell),
+    }),
+    ...c.rowLevels.map(
+      (rl, i) =>
+        new TableRow({
+          children: [
+            bodyCell(rl),
+            ...c.colLevels.map((_, j) =>
+              bodyCell(`${c.observed[i][j]} (${fmt(c.expected[i][j], 1)})`, {
+                mono: true,
+              })
+            ),
+          ],
+        })
+    ),
+  ];
+  const out: (Paragraph | Table)[] = [
+    textPara(`Cross-tabulation of ${c.rowVar} × ${c.colVar} (observed (expected)):`),
+    new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows }),
+    textPara(
+      `χ² = ${fmt(c.chi2, 3)}, df = ${c.df}, p = ${fmtP(c.pValue)}${
+        typeof c.fisherP === "number" ? `; Fisher's exact p = ${fmtP(c.fisherP)}` : ""
+      }`,
+      { bold: true }
+    ),
+  ];
+  if (c.warning) out.push(textPara(c.warning));
+  return out;
+}
+
 function correlationTable(matrix: { columns: string[]; cells: CorrelationCell[] }): Table {
   const lookup = (rowCol: string, colCol: string) =>
     matrix.cells.find((c) => c.rowColumn === rowCol && c.colColumn === colCol);
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
-      new TableRow({
-        children: ["", ...matrix.columns].map(headerCell),
-      }),
+      new TableRow({ children: ["", ...matrix.columns].map(headerCell) }),
       ...matrix.columns.map(
         (rowCol) =>
           new TableRow({
@@ -424,6 +614,127 @@ function correlationTable(matrix: { columns: string[]; cells: CorrelationCell[] 
                   mono: true,
                 });
               }),
+            ],
+          })
+      ),
+    ],
+  });
+}
+
+function linearRegBlock(lr: LinearRegressionResult): Paragraph[] {
+  return [
+    textPara(
+      `Linear regression: ${lr.outcome} = ${fmt(lr.intercept, 3)} + ${fmt(lr.slope, 3)} × ${lr.predictor} (n = ${lr.n})`
+    ),
+    textPara(
+      `slope = ${fmt(lr.slope, 4)} (SE ${fmt(lr.seSlope, 4)}), t = ${fmt(lr.tSlope, 3)}, p = ${fmtP(lr.pValue)}; r = ${fmt(lr.r, 3)}, R² = ${fmt(lr.r2, 3)}`,
+      { bold: true }
+    ),
+  ];
+}
+
+function logisticBlock(lr: LogisticRegressionResult): Paragraph[] {
+  return [
+    textPara(
+      `Logistic regression: ${lr.outcome} (positive = "${lr.positiveValue}") ~ ${lr.predictor} (n = ${lr.n})`
+    ),
+    textPara(
+      `slope (log-odds) = ${fmt(lr.slope, 4)}, OR = ${fmt(lr.oddsRatio, 3)} (95% CI ${fmt(lr.oddsRatioCi[0], 3)}–${fmt(lr.oddsRatioCi[1], 3)}), Z = ${fmt(lr.z, 3)}, p = ${fmtP(lr.pValue)}`,
+      { bold: true }
+    ),
+    ...(lr.converged ? [] : [textPara("(Did not fully converge)")]),
+  ];
+}
+
+function kaplanMeierBlock(km: KaplanMeierResult): (Paragraph | Table)[] {
+  const out: (Paragraph | Table)[] = [];
+  out.push(
+    textPara(
+      `Kaplan–Meier survival on ${km.timeColumn}, event = "${km.positiveEventValue}" in ${km.eventColumn}.`
+    )
+  );
+  out.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: ["Group", "n", "Events", "Median survival"].map(headerCell),
+        }),
+        ...km.groups.map(
+          (g) =>
+            new TableRow({
+              children: [
+                bodyCell(g.name),
+                bodyCell(String(g.n), { mono: true }),
+                bodyCell(String(g.events), { mono: true }),
+                bodyCell(g.medianSurvival !== null ? fmt(g.medianSurvival) : "Not reached", {
+                  mono: true,
+                }),
+              ],
+            })
+        ),
+      ],
+    })
+  );
+  if (km.logRank) {
+    out.push(
+      textPara(
+        `Log-rank test: χ²(${km.logRank.df}) = ${fmt(km.logRank.chi2, 3)}, p = ${fmtP(km.logRank.pValue)}`,
+        { bold: true }
+      )
+    );
+  }
+  return out;
+}
+
+function rocBlock(r: RocResult): Paragraph[] {
+  return [
+    textPara(
+      `ROC analysis: ${r.outcome} (positive = "${r.positiveValue}") vs ${r.predictor}. n = ${r.n} (${r.positives} positive, ${r.negatives} negative).`
+    ),
+    textPara(`AUC = ${fmt(r.auc, 3)}`, { bold: true }),
+    textPara(
+      `Optimal threshold (Youden's J) = ${fmt(r.optimal.threshold, 3)}: sensitivity = ${fmt(r.optimal.sens, 3)}, specificity = ${fmt(r.optimal.spec, 3)}, PPV = ${fmt(r.optimal.ppv, 3)}, NPV = ${fmt(r.optimal.npv, 3)}.`
+    ),
+  ];
+}
+
+function normalityBlock(n: NormalityResult): Paragraph[] {
+  return [
+    textPara(`Jarque–Bera normality test on ${n.column} (n = ${n.n}).`),
+    textPara(
+      `mean = ${fmt(n.mean)}, SD = ${fmt(n.sd)}, skewness = ${fmt(n.skewness, 3)}, kurtosis = ${fmt(n.kurtosis, 3)}, JB = ${fmt(n.jb, 3)}, p = ${fmtP(n.pValue)}`,
+      { bold: true }
+    ),
+    textPara(
+      n.conclusion === "consistent_with_normal"
+        ? "Conclusion: data are consistent with a normal distribution."
+        : "Conclusion: data deviate significantly from normality. Consider non-parametric tests."
+    ),
+  ];
+}
+
+function boxplotTable(b: BoxplotResult): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: ["Group", "n", "Min", "Q1", "Median", "Q3", "Max", "Outliers"].map(
+          headerCell
+        ),
+      }),
+      ...b.groups.map(
+        (g) =>
+          new TableRow({
+            children: [
+              bodyCell(g.name),
+              bodyCell(String(g.n), { mono: true }),
+              bodyCell(fmt(g.min), { mono: true }),
+              bodyCell(fmt(g.q1), { mono: true }),
+              bodyCell(fmt(g.median), { mono: true }),
+              bodyCell(fmt(g.q3), { mono: true }),
+              bodyCell(fmt(g.max), { mono: true }),
+              bodyCell(String(g.outliers.length), { mono: true }),
             ],
           })
       ),

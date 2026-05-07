@@ -38,12 +38,24 @@ export default async function ResearchProjectPage({
   const filesForPicker = project.files.map((f) => {
     try {
       const csv = parseCsv(f.extractedText);
+      const binaryValues: Record<string, string[]> = {};
+      for (const col of csv.binaryColumns) {
+        const idx = csv.columns.indexOf(col);
+        const set = new Set<string>();
+        for (const r of csv.rows) {
+          const v = (r[idx] ?? "").trim();
+          if (v) set.add(v);
+        }
+        binaryValues[col] = Array.from(set).sort();
+      }
       return {
         id: f.id,
         filename: f.filename,
         columns: csv.columns,
         numericColumns: csv.numericColumns,
         categoricalColumns: csv.categoricalColumns,
+        binaryColumns: csv.binaryColumns,
+        binaryValues,
       };
     } catch {
       return {
@@ -52,6 +64,8 @@ export default async function ResearchProjectPage({
         columns: [],
         numericColumns: [],
         categoricalColumns: [],
+        binaryColumns: [],
+        binaryValues: {} as Record<string, string[]>,
       };
     }
   });
@@ -239,7 +253,7 @@ export default async function ResearchProjectPage({
 
       <StatsPanel
         projectId={project.id}
-        files={filesForPicker.filter((f) => f.numericColumns.length > 0)}
+        files={filesForPicker.filter((f) => f.columns.length > 0)}
         analyses={project.analyses.map((a) => ({
           id: a.id,
           kind: a.kind,

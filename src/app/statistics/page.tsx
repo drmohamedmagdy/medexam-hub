@@ -24,12 +24,24 @@ export default async function StatisticsPage() {
   let columns: string[] = [];
   let numericColumns: string[] = [];
   let categoricalColumns: string[] = [];
+  let binaryColumns: string[] = [];
+  let binaryValues: Record<string, string[]> = {};
   if (workspace.extractedText) {
     try {
       const csv = parseCsv(workspace.extractedText);
       columns = csv.columns;
       numericColumns = csv.numericColumns;
       categoricalColumns = csv.categoricalColumns;
+      binaryColumns = csv.binaryColumns;
+      for (const col of csv.binaryColumns) {
+        const idx = csv.columns.indexOf(col);
+        const set = new Set<string>();
+        for (const r of csv.rows) {
+          const v = (r[idx] ?? "").trim();
+          if (v) set.add(v);
+        }
+        binaryValues[col] = Array.from(set).sort();
+      }
     } catch {
       // Leave columns empty — UI will show a parse warning.
     }
@@ -66,6 +78,8 @@ export default async function StatisticsPage() {
         columns={columns}
         numericColumns={numericColumns}
         categoricalColumns={categoricalColumns}
+        binaryColumns={binaryColumns}
+        binaryValues={binaryValues}
         analyses={workspace.analyses.map((a) => ({
           id: a.id,
           kind: a.kind,
