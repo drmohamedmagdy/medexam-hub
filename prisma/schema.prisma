@@ -642,6 +642,9 @@ model ResearchFile {
 model StatsWorkspace {
   id            String   @id @default(cuid())
   userId        String   @unique
+  // Legacy single-file fields — kept nullable for back-compat after the
+  // multi-file migration. New code reads `files` instead. A future
+  // migration can drop these once we're sure the backfill stuck.
   filename      String?
   mimeType      String?
   sizeBytes     Int?
@@ -654,13 +657,36 @@ model StatsWorkspace {
   updatedAt     DateTime @updatedAt
 
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files         StatsFile[]
   analyses      StatsAnalysis[]
+}
+
+model StatsFile {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  charCount     Int
+  extractedText String
+  fileUrl       String?
+  filePathname  String?
+  uploadedAt    DateTime @default(now())
+
+  workspace     StatsWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  analyses      StatsAnalysis[]
+
+  @@index([workspaceId])
 }
 
 model StatsAnalysis {
   id           String   @id @default(cuid())
   workspaceId  String
-  // "descriptives" | "compare_means" | "correlation" | "histogram"
+  // Optional: which uploaded file this analysis was computed from. SetNull
+  // on file delete so removing one file doesn't wipe analyses that
+  // reference it (the result rows survive as orphaned records).
+  fileId       String?
+  // "descriptives" | "compare_means" | "correlation" | "histogram" | …
   kind         String
   title        String
   configJson   String
@@ -671,6 +697,8 @@ model StatsAnalysis {
   updatedAt    DateTime @updatedAt
 
   workspace    StatsWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  file         StatsFile?     @relation(fields: [fileId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, createdAt])
+  @@index([fileId])
 }

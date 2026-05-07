@@ -13,24 +13,29 @@ export default async function StatisticsPage() {
 
   let workspace = await prisma.statsWorkspace.findUnique({
     where: { userId: user.id },
-    include: { analyses: { orderBy: { createdAt: "asc" } } },
+    include: {
+      files: { orderBy: { uploadedAt: "asc" } },
+      analyses: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!workspace) {
     workspace = await prisma.statsWorkspace.create({
       data: { userId: user.id },
-      include: { analyses: { orderBy: { createdAt: "asc" } } },
+      include: {
+        files: { orderBy: { uploadedAt: "asc" } },
+        analyses: { orderBy: { createdAt: "asc" } },
+      },
     });
   }
 
-  // Pre-parse columns for the on-screen pickers.
-  let columns: string[] = [];
-  let numericColumns: string[] = [];
-  let categoricalColumns: string[] = [];
-  let binaryColumns: string[] = [];
-  let binaryValues: Record<string, string[]> = {};
-  if (workspace.extractedText) {
+  const filesForPicker = workspace.files.map((f) => {
+    let columns: string[] = [];
+    let numericColumns: string[] = [];
+    let categoricalColumns: string[] = [];
+    let binaryColumns: string[] = [];
+    const binaryValues: Record<string, string[]> = {};
     try {
-      const csv = parseCsv(workspace.extractedText);
+      const csv = parseCsv(f.extractedText);
       columns = csv.columns;
       numericColumns = csv.numericColumns;
       categoricalColumns = csv.categoricalColumns;
@@ -47,7 +52,19 @@ export default async function StatisticsPage() {
     } catch {
       // Leave columns empty — UI will show a parse warning.
     }
-  }
+    return {
+      id: f.id,
+      filename: f.filename,
+      sizeBytes: f.sizeBytes,
+      charCount: f.charCount,
+      uploadedAt: f.uploadedAt.toISOString(),
+      columns,
+      numericColumns,
+      categoricalColumns,
+      binaryColumns,
+      binaryValues,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
@@ -58,13 +75,12 @@ export default async function StatisticsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">📊 Statistics</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Standalone tool: upload a CSV (or anything we can extract text from),
-            run descriptive stats, group comparisons, correlations, and
-            histograms. Download the report as a Word document. No research
-            project required.
+            Standalone tool: upload one or more CSV / Excel files, run as many of
+            the 17 statistical tests as you need, and download the report as a
+            Word document. No research project required.
           </p>
         </div>
-        {allowed && workspace.fileUrl && workspace.analyses.length > 0 && (
+        {allowed && filesForPicker.length > 0 && workspace.analyses.length > 0 && (
           <Link
             href="/statistics/export"
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -93,19 +109,11 @@ export default async function StatisticsPage() {
       )}
 
       <StatsClient
-        hasFile={Boolean(workspace.extractedText)}
-        filename={workspace.filename}
-        sizeBytes={workspace.sizeBytes}
-        charCount={workspace.charCount}
-        uploadedAt={workspace.uploadedAt?.toISOString() ?? null}
-        columns={columns}
-        numericColumns={numericColumns}
-        categoricalColumns={categoricalColumns}
-        binaryColumns={binaryColumns}
-        binaryValues={binaryValues}
+        files={filesForPicker}
         analyses={workspace.analyses.map((a) => ({
           id: a.id,
           kind: a.kind,
+          fileId: a.fileId,
           title: a.title,
           configJson: a.configJson,
           resultJson: a.resultJson,

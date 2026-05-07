@@ -18,7 +18,7 @@ import {
   parseDispatchInput,
 } from "@/lib/stats-dispatch";
 
-export type StatsState = { ok?: boolean; error?: string } | null;
+export type StatsState = { ok?: boolean; error?: string; fileId?: string } | null;
 export type StatsAnalysisState =
   | { ok?: boolean; error?: string; analysisId?: string }
   | null;
@@ -29,7 +29,12 @@ async function getOrCreateWorkspace(userId: string) {
   return prisma.statsWorkspace.create({ data: { userId } });
 }
 
-const ReplaceSchema = z.object({
+// ─────────────────────────────────────────────────────────────────────────────
+// Add a file to the workspace. The workspace can hold any number of files —
+// each analysis is then tagged with which file it ran on.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const AttachSchema = z.object({
   fileUrl: z.string().url(),
   filePathname: z.string().min(1).max(500),
   filename: z.string().min(1).max(300),
@@ -37,7 +42,7 @@ const ReplaceSchema = z.object({
   sizeBytes: z.coerce.number().int().min(1).max(MAX_FILE_BYTES),
 });
 
-export async function replaceStatsFileAction(
+export async function addStatsFileAction(
   _prev: StatsState,
   formData: FormData
 ): Promise<StatsState> {
@@ -46,7 +51,7 @@ export async function replaceStatsFileAction(
     return { error: upgradeRequiredError() };
   }
 
-  const parsed = ReplaceSchema.safeParse({
+  const parsed = AttachSchema.safeParse({
     fileUrl: formData.get("fileUrl"),
     filePathname: formData.get("filePathname"),
     filename: formData.get("filename"),
@@ -84,14 +89,9 @@ export async function replaceStatsFileAction(
 
   const ws = await getOrCreateWorkspace(user.id);
 
-  if (ws.filePathname) {
-    void del(ws.filePathname).catch(() => {});
-  }
-  await prisma.statsAnalysis.deleteMany({ where: { workspaceId: ws.id } });
-
-  await prisma.statsWorkspace.update({
-    where: { id: ws.id },
+  const created = await prisma.statsFile.create({
     data: {
+      workspaceId: ws.id,
       filename: parsed.data.filename,
       mimeType: parsed.data.mimeType,
       sizeBytes: parsed.data.sizeBytes,
@@ -99,35 +99,59 @@ export async function replaceStatsFileAction(
       extractedText,
       fileUrl: parsed.data.fileUrl,
       filePathname: parsed.data.filePathname,
-      uploadedAt: new Date(),
     },
   });
 
   revalidatePath("/statistics");
-  return { ok: true };
+  return { ok: true, fileId: created.id };
 }
 
-export async function clearStatsFileAction(): Promise<void> {
+// ─────────────────────────────────────────────────────────────────────────────
+// Remove a single file. Analyses that referenced it have their fileId set to
+// NULL by the schema-level ON DELETE SET NULL, so result rows survive.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function removeStatsFileAction(formData: FormData): Promise<void> {
   const user = await requireUser();
-  const ws = await prisma.statsWorkspace.findUnique({ where: { userId: user.id } });
-  if (!ws) return;
-  if (ws.filePathname) void del(ws.filePathname).catch(() => {});
-  await prisma.statsAnalysis.deleteMany({ where: { workspaceId: ws.id } });
-  await prisma.statsWorkspace.update({
-    where: { id: ws.id },
-    data: {
-      filename: null,
-      mimeType: null,
-      sizeBytes: null,
-      charCount: null,
-      extractedText: null,
-      fileUrl: null,
-      filePathname: null,
-      uploadedAt: null,
-    },
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const file = await prisma.statsFile.findUnique({
+    where: { id },
+    include: { workspace: { select: { userId: true } } },
   });
+  if (!file || file.workspace.userId !== user.id) return;
+  if (file.filePathname) {
+    void del(file.filePathname).catch(() => {});
+  }
+  await prisma.statsFile.delete({ where: { id } });
   revalidatePath("/statistics");
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wipe everything in the workspace — files + analyses. Keeps the workspace
+// row itself so the user's bonus pool history (if any) stays linked.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function clearStatsWorkspaceAction(): Promise<void> {
+  const user = await requireUser();
+  const ws = await prisma.statsWorkspace.findUnique({
+    where: { userId: user.id },
+    include: { files: { select: { id: true, filePathname: true } } },
+  });
+  if (!ws) return;
+  for (const f of ws.files) {
+    if (f.filePathname) void del(f.filePathname).catch(() => {});
+  }
+  await prisma.$transaction([
+    prisma.statsAnalysis.deleteMany({ where: { workspaceId: ws.id } }),
+    prisma.statsFile.deleteMany({ where: { workspaceId: ws.id } }),
+  ]);
+  revalidatePath("/statistics");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Run a new analysis on one of the workspace's files.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function addStatsAnalysisAction(
   _prev: StatsAnalysisState,
@@ -142,28 +166,39 @@ export async function addStatsAnalysisAction(
     return { ok: false, error: "Unsupported analysis kind." };
   }
 
-  const ws = await prisma.statsWorkspace.findUnique({ where: { userId: user.id } });
-  if (!ws || !ws.extractedText) {
-    return { ok: false, error: "Upload a CSV first." };
+  const fileId = String(formData.get("fileId") ?? "");
+  if (!fileId) {
+    return { ok: false, error: "Pick a data file to run this analysis on." };
   }
 
-  const csv = parseCsv(ws.extractedText);
+  const file = await prisma.statsFile.findUnique({
+    where: { id: fileId },
+    include: { workspace: { select: { id: true, userId: true } } },
+  });
+  if (!file || file.workspace.userId !== user.id) {
+    return { ok: false, error: "File not found." };
+  }
+
+  const csv = parseCsv(file.extractedText);
   if (csv.columns.length === 0) {
     return { ok: false, error: "Couldn't parse this file as a CSV." };
   }
 
-  // Researcher plan: enforce monthly stats analyses quota. Premium has no
-  // quota for stats (free, local computation).
   const quotaError = await preflightStatsAnalysis(user.id, user.plan);
   if (quotaError) return { ok: false, error: quotaError };
 
   try {
     const input = parseDispatchInput(formData);
     const out = dispatchAnalysis(csv, input);
-    const config: Record<string, unknown> = { ...out.config, filename: ws.filename ?? null };
+    const config: Record<string, unknown> = {
+      ...out.config,
+      fileId,
+      filename: file.filename,
+    };
     const created = await prisma.statsAnalysis.create({
       data: {
-        workspaceId: ws.id,
+        workspaceId: file.workspace.id,
+        fileId,
         kind: input.kind,
         title: out.title,
         configJson: JSON.stringify(config),

@@ -13,7 +13,10 @@ export async function GET() {
 
   const ws = await prisma.statsWorkspace.findUnique({
     where: { userId: user.id },
-    include: { analyses: { orderBy: { createdAt: "asc" } } },
+    include: {
+      files: { select: { filename: true } },
+      analyses: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!ws || ws.analyses.length === 0) {
     return new NextResponse("No analyses to export. Run at least one first.", {
@@ -21,7 +24,13 @@ export async function GET() {
     });
   }
 
-  const titleLine = ws.filename ? `Statistics report — ${ws.filename}` : "Statistics report";
+  const filenames = ws.files.map((f) => f.filename);
+  const titleLine =
+    filenames.length === 1
+      ? `Statistics report — ${filenames[0]}`
+      : filenames.length > 1
+        ? `Statistics report — ${filenames.length} data files`
+        : "Statistics report";
 
   const buf = await renderResearchDocx({
     title: titleLine,
@@ -43,7 +52,7 @@ export async function GET() {
   });
 
   const safeName =
-    (ws.filename ?? "statistics-report").replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80) ||
+    (filenames[0] ?? "statistics-report").replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80) ||
     "statistics-report";
   return new NextResponse(new Uint8Array(buf), {
     status: 200,
