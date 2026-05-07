@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { kindLabel as kindLabelFor } from "@/lib/research-templates";
+import { renderPrismaSvg, safeParsePrismaFlow } from "@/lib/prisma-flow";
 import PrintTrigger from "./PrintTrigger";
 
 export const metadata = { title: "Print research project" };
@@ -19,8 +21,10 @@ export default async function PrintPage({
   });
   if (!project || project.userId !== user.id) redirect("/research");
 
-  const populatedSections = project.sections.filter((s) => s.content.trim().length > 0);
-  const kindLabel = project.kind === "PROTOCOL" ? "Research Protocol" : "Thesis";
+  const populatedSections = project.sections.filter(
+    (s) => s.content.trim().length > 0 || (s.metadataJson && s.metadataJson.length > 0)
+  );
+  const kindLabel = kindLabelFor(project.kind);
   const authorName = user.name ?? user.email.split("@")[0];
 
   return (
@@ -47,16 +51,26 @@ export default async function PrintPage({
       <div className="mt-16 break-after-page" />
 
       <div className="space-y-10 print:space-y-8">
-        {populatedSections.map((s) => (
-          <section key={s.id} className="break-inside-avoid">
-            <h2 className="text-xl font-bold tracking-tight border-b border-zinc-300 pb-2 mb-4 print:text-lg">
-              {s.title}
-            </h2>
-            <div className="prose prose-zinc max-w-none whitespace-pre-wrap text-sm leading-relaxed">
-              {s.content}
-            </div>
-          </section>
-        ))}
+        {populatedSections.map((s) => {
+          const prismaData = s.metadataJson ? safeParsePrismaFlow(s.metadataJson) : null;
+          return (
+            <section key={s.id} className="break-inside-avoid">
+              <h2 className="text-xl font-bold tracking-tight border-b border-zinc-300 pb-2 mb-4 print:text-lg">
+                {s.title}
+              </h2>
+              {prismaData ? (
+                <div
+                  className="overflow-x-auto"
+                  dangerouslySetInnerHTML={{ __html: renderPrismaSvg(prismaData) }}
+                />
+              ) : (
+                <div className="prose prose-zinc max-w-none whitespace-pre-wrap text-sm leading-relaxed">
+                  {s.content}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
     </div>
   );

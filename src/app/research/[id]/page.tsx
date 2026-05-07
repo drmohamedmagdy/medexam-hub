@@ -2,8 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { deleteResearchProjectAction } from "@/app/actions/research";
+import {
+  deleteResearchProjectAction,
+  deleteResearchFileAction,
+} from "@/app/actions/research";
+import { kindLabel as kindLabelFor, kindEmoji as kindEmojiFor } from "@/lib/research-templates";
 import SectionsEditor from "./SectionsEditor";
+import AttachFileButton from "./AttachFileButton";
 
 export const metadata = { title: "Research project — MedExam Hub" };
 
@@ -19,14 +24,17 @@ export default async function ResearchProjectPage({
     where: { id },
     include: {
       sections: { orderBy: { orderIndex: "asc" } },
+      files: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!project || project.userId !== user.id) redirect("/research");
 
-  const completed = project.sections.filter((s) => s.content.trim().length > 0).length;
+  const completed = project.sections.filter(
+    (s) => s.content.trim().length > 0 || (s.metadataJson && s.metadataJson.length > 0)
+  ).length;
   const total = project.sections.length;
-  const kindLabel = project.kind === "PROTOCOL" ? "Research protocol" : "Thesis";
-  const kindEmoji = project.kind === "PROTOCOL" ? "📋" : "📚";
+  const kLabel = kindLabelFor(project.kind);
+  const kEmoji = kindEmojiFor(project.kind);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
@@ -38,7 +46,7 @@ export default async function ResearchProjectPage({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-cyan-400">
-              {kindEmoji} {kindLabel}
+              {kEmoji} {kLabel}
             </div>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">{project.title}</h1>
             <p className="mt-2 text-xs text-zinc-500">
@@ -100,12 +108,67 @@ export default async function ResearchProjectPage({
         </div>
       </header>
 
+      <section className="mt-5 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">📎 Data files</h2>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Attach CSV / Excel / PDF / Word files. Their text is fed into AI section
+              generation so Methods, Results, and Statistical Analysis can reference
+              your actual data.
+            </p>
+          </div>
+          <AttachFileButton projectId={project.id} />
+        </div>
+        {project.files.length > 0 ? (
+          <ul className="mt-4 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-700">
+            {project.files.map((f) => (
+              <li
+                key={f.id}
+                className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+              >
+                <div className="min-w-0">
+                  <a
+                    href={f.fileUrl ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate font-medium hover:text-blue-600"
+                  >
+                    {f.filename}
+                  </a>
+                  <div className="text-xs text-zinc-500">
+                    {(f.sizeBytes / 1024).toFixed(0)} KB ·{" "}
+                    {f.charCount.toLocaleString()} chars extracted
+                  </div>
+                </div>
+                <form action={deleteResearchFileAction}>
+                  <input type="hidden" name="id" value={f.id} />
+                  <button
+                    type="submit"
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-500 dark:bg-zinc-800/50">
+            No files attached yet. AI sections will be generated from project metadata
+            only — attach a CSV with your data so the Statistical Analysis and Results
+            sections can quote real numbers.
+          </p>
+        )}
+      </section>
+
       <SectionsEditor
         projectId={project.id}
         sections={project.sections.map((s) => ({
           id: s.id,
           title: s.title,
           content: s.content,
+          metadataJson: s.metadataJson,
           orderIndex: s.orderIndex,
           generatedAt: s.generatedAt?.toISOString() ?? null,
         }))}

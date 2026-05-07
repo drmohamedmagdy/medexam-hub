@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canUseResearch } from "@/lib/research-access";
+import { kindLabel, kindEmoji } from "@/lib/research-templates";
 
 export const metadata = { title: "Research Assistant — MedExam Hub" };
 
@@ -70,8 +71,8 @@ export default async function ResearchListPage() {
             const completed = p.sections.filter((s) => s.content.trim().length > 0).length;
             const total = p._count.sections;
             const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
-            const kindEmoji = p.kind === "PROTOCOL" ? "📋" : "📚";
-            const kindLabel = p.kind === "PROTOCOL" ? "Research protocol" : "Thesis";
+            const kEmoji = kindEmoji(p.kind);
+            const kLabel = kindLabel(p.kind);
             return (
               <li
                 key={p.id}
@@ -79,7 +80,7 @@ export default async function ResearchListPage() {
               >
                 <Link href={`/research/${p.id}`} className="block">
                   <div className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-cyan-400">
-                    {kindEmoji} {kindLabel}
+                    {kEmoji} {kLabel}
                   </div>
                   <h3 className="mt-1 line-clamp-2 text-base font-semibold">{p.title}</h3>
                   <p className="mt-1 text-xs text-zinc-500">

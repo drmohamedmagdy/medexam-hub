@@ -7,6 +7,7 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
+import { renderPrismaTextSummary, safeParsePrismaFlow } from "@/lib/prisma-flow";
 
 export type ResearchExport = {
   title: string;
@@ -17,7 +18,7 @@ export type ResearchExport = {
   studyType: string | null;
   language: string;
   citationStyle: string;
-  sections: Array<{ title: string; content: string }>;
+  sections: Array<{ title: string; content: string; metadataJson?: string | null }>;
 };
 
 /**
@@ -99,7 +100,19 @@ export async function renderResearchDocx(p: ResearchExport): Promise<Buffer> {
       })
     );
 
-    for (const line of section.content.split(/\r?\n/)) {
+    // PRISMA flow + any future diagram sections: render the structured
+    // summary as text. Embedding SVG-rendered images directly is in
+    // scope for Phase 3 — for V2 the user will see a clean numbered
+    // list they can paste a screenshot next to.
+    const prismaData = section.metadataJson
+      ? safeParsePrismaFlow(section.metadataJson)
+      : null;
+    const effectiveText = prismaData
+      ? renderPrismaTextSummary(prismaData) +
+        "\n\n[A visual PRISMA flow diagram is shown in the on-screen editor — paste a screenshot here.]"
+      : section.content;
+
+    for (const line of effectiveText.split(/\r?\n/)) {
       const trimmed = line.trim();
       if (trimmed.length === 0) {
         body.push(new Paragraph({}));

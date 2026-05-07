@@ -512,6 +512,8 @@ model PostComment {
 enum ResearchKind {
   PROTOCOL
   THESIS
+  MANUSCRIPT
+  SYSTEMATIC_REVIEW
 }
 
 model ResearchProject {
@@ -533,6 +535,7 @@ model ResearchProject {
 
   user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   sections ResearchSection[]
+  files    ResearchFile[]
 
   @@index([userId, createdAt])
 }
@@ -540,19 +543,53 @@ model ResearchProject {
 model ResearchSection {
   id          String    @id @default(cuid())
   projectId   String
-  // "introduction" | "lit_review" | "aim" | "questions" | "methodology"
-  // | "inclusion_exclusion" | "ethics" | "stats_plan" | "references"
-  // | "patients_methods" | "results" | "discussion" | "conclusion"
-  kind        String
-  title       String
-  content     String
-  orderIndex  Int
-  generatedAt DateTime?
-  updatedAt   DateTime  @updatedAt
+  // Section kind. Free-form because each ResearchKind has its own set:
+  //   PROTOCOL: introduction, lit_review, aim, questions, methodology,
+  //             inclusion_exclusion, ethics, stats_plan, references
+  //   THESIS:   introduction, lit_review, patients_methods, results,
+  //             discussion, conclusion, references
+  //   MANUSCRIPT: title_page, abstract, keywords, introduction,
+  //               materials_methods, results, discussion, conclusion,
+  //               references, acknowledgments, conflicts_funding
+  //   SYSTEMATIC_REVIEW: abstract_pico, introduction, sr_methods,
+  //                      prisma_flow, sr_results, discussion, conclusion,
+  //                      references
+  kind         String
+  title        String
+  content      String
+  // For sections that carry structured data (e.g. PRISMA flow numbers).
+  // JSON string. Null for normal prose sections.
+  metadataJson String?
+  orderIndex   Int
+  generatedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
 
   project     ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, orderIndex])
   @@unique([projectId, kind])
+  @@index([projectId])
+}
+
+// Data files (CSV / Excel-as-text / Word / PDF) attached to a research
+// project. The extracted text is fed into AI prompts so the generated
+// sections (especially Statistical Analysis Plan and Results) can talk
+// about the actual data.
+model ResearchFile {
+  id            String   @id @default(cuid())
+  projectId     String
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  charCount     Int
+  extractedText String
+  // Optional public URL on Vercel Blob — kept so the user can re-download
+  // their original file. Pathname is used for delete.
+  fileUrl       String?
+  filePathname  String?
+  createdAt     DateTime @default(now())
+
+  project       ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId])
 }

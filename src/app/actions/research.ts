@@ -3,11 +3,13 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { del } from "@vercel/blob";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateSection } from "@/lib/research-generator";
 import { sectionsFor } from "@/lib/research-templates";
 import { canUseResearch } from "@/lib/research-access";
+import { extractText, MAX_FILE_BYTES } from "@/lib/file-upload";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Create project
@@ -16,7 +18,7 @@ import { canUseResearch } from "@/lib/research-access";
 export type CreateResearchState = { ok?: boolean; error?: string; projectId?: string } | null;
 
 const CreateSchema = z.object({
-  kind: z.enum(["PROTOCOL", "THESIS"]),
+  kind: z.enum(["PROTOCOL", "THESIS", "MANUSCRIPT", "SYSTEMATIC_REVIEW"]),
   title: z.string().min(3).max(200),
   specialty: z.string().max(120).optional(),
   studyType: z.string().max(120).optional(),
@@ -115,7 +117,10 @@ export async function generateSectionAction(
 
   const project = await prisma.researchProject.findUnique({
     where: { id: projectId },
-    include: { sections: { orderBy: { orderIndex: "asc" } } },
+    include: {
+      sections: { orderBy: { orderIndex: "asc" } },
+      files: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!project || project.userId !== user.id) {
     return { ok: false, error: "Project not found." };
@@ -129,6 +134,12 @@ export async function generateSectionAction(
   const priorSections = project.sections
     .filter((s) => s.orderIndex < section.orderIndex && s.content.trim().length > 0)
     .map((s) => ({ title: s.title, content: s.content }));
+
+  const attachedFiles = project.files.map((f) => ({
+    filename: f.filename,
+    charCount: f.charCount,
+    text: f.extractedText,
+  }));
 
   let content: string;
   try {
@@ -145,6 +156,7 @@ export async function generateSectionAction(
       citationStyle: project.citationStyle,
       notes: project.notes,
       priorSections,
+      attachedFiles,
     });
   } catch (e) {
     return {
@@ -153,9 +165,35 @@ export async function generateSectionAction(
     };
   }
 
+  // Diagram sections (currently just the PRISMA flow) emit JSON; persist
+  // it in metadataJson so the editor can render the visual without needing
+  // to re-parse on every read. The content field holds a human-readable
+  // textual fallback.
+  const sectionsForKind = sectionsFor(project.kind);
+  const def = sectionsForKind.find((s) => s.kind === section.kind);
+  const isDiagram = def?.style === "diagram";
+  let metadataJson: string | null = null;
+  let storedContent = content;
+  if (isDiagram) {
+    try {
+      const parsed = JSON.parse(content);
+      metadataJson = JSON.stringify(parsed);
+      storedContent = "";
+    } catch {
+      // Model didn't return clean JSON — keep raw output so the user can
+      // see what came back, but don't crash the editor. They can regenerate.
+      metadataJson = null;
+      storedContent = content;
+    }
+  }
+
   await prisma.researchSection.update({
     where: { id: sectionId },
-    data: { content, generatedAt: new Date() },
+    data: {
+      content: storedContent,
+      metadataJson,
+      generatedAt: new Date(),
+    },
   });
 
   revalidatePath(`/research/${projectId}`);
@@ -202,5 +240,117 @@ export async function deleteResearchProjectAction(formData: FormData): Promise<v
   await prisma.researchProject.delete({ where: { id } });
   revalidatePath("/research");
   redirect("/research");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Attach a data file to a project — saves its extracted text so future
+// section generations can reason about the user's actual data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AttachFileState = { ok?: boolean; error?: string } | null;
+
+const AttachSchema = z.object({
+  projectId: z.string().min(1),
+  fileUrl: z.string().url(),
+  filePathname: z.string().min(1).max(500),
+  filename: z.string().min(1).max(300),
+  mimeType: z.string().min(1).max(200),
+  sizeBytes: z.coerce.number().int().min(1).max(MAX_FILE_BYTES),
+});
+
+export async function attachResearchFileAction(
+  _prev: AttachFileState,
+  formData: FormData
+): Promise<AttachFileState> {
+  const user = await requireUser();
+  if (!canUseResearch(user.plan)) {
+    return { error: "Available on Pro and Premium plans." };
+  }
+
+  const parsed = AttachSchema.safeParse({
+    projectId: formData.get("projectId"),
+    fileUrl: formData.get("fileUrl"),
+    filePathname: formData.get("filePathname"),
+    filename: formData.get("filename"),
+    mimeType: formData.get("mimeType"),
+    sizeBytes: formData.get("sizeBytes"),
+  });
+  if (!parsed.success) return { error: "Invalid upload metadata." };
+
+  const project = await prisma.researchProject.findUnique({
+    where: { id: parsed.data.projectId },
+    select: { userId: true },
+  });
+  if (!project || project.userId !== user.id) {
+    return { error: "Project not found." };
+  }
+
+  // Fetch the just-uploaded blob and run it through the same text extractor
+  // we use for /exam/new file uploads (PDF, DOCX, TXT, MD, CSV).
+  let buffer: Buffer;
+  try {
+    const res = await fetch(parsed.data.fileUrl);
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    buffer = Buffer.from(await res.arrayBuffer());
+  } catch (e) {
+    return {
+      error: `Couldn't read the uploaded file: ${
+        e instanceof Error ? e.message : "unknown"
+      }`,
+    };
+  }
+
+  let extractedText = "";
+  let charCount = 0;
+  try {
+    const result = await extractText(
+      buffer,
+      parsed.data.mimeType,
+      parsed.data.filename
+    );
+    extractedText = result.text;
+    charCount = result.charCount;
+  } catch (e) {
+    return {
+      error: `Couldn't extract text from this file: ${
+        e instanceof Error ? e.message : "unsupported format"
+      }`,
+    };
+  }
+
+  await prisma.researchFile.create({
+    data: {
+      projectId: parsed.data.projectId,
+      filename: parsed.data.filename,
+      mimeType: parsed.data.mimeType,
+      sizeBytes: parsed.data.sizeBytes,
+      charCount,
+      extractedText,
+      fileUrl: parsed.data.fileUrl,
+      filePathname: parsed.data.filePathname,
+    },
+  });
+
+  revalidatePath(`/research/${parsed.data.projectId}`);
+  return { ok: true };
+}
+
+export async function deleteResearchFileAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const file = await prisma.researchFile.findUnique({
+    where: { id },
+    include: { project: { select: { userId: true } } },
+  });
+  if (!file || file.project.userId !== user.id) return;
+
+  // Best-effort blob delete — don't block on it.
+  if (file.filePathname) {
+    void del(file.filePathname).catch(() => {});
+  }
+
+  await prisma.researchFile.delete({ where: { id } });
+  revalidatePath(`/research/${file.projectId}`);
 }
 

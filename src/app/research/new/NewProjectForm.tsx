@@ -6,7 +6,7 @@ import {
   type CreateResearchState,
 } from "@/app/actions/research";
 
-type Kind = "PROTOCOL" | "THESIS";
+type Kind = "PROTOCOL" | "THESIS" | "MANUSCRIPT" | "SYSTEMATIC_REVIEW";
 
 export default function NewProjectForm() {
   const [kind, setKind] = useState<Kind>("PROTOCOL");
@@ -27,14 +27,28 @@ export default function NewProjectForm() {
             onSelect={() => setKind("PROTOCOL")}
             emoji="📋"
             label="Research protocol"
-            sub="Master's / PhD protocol — 9 sections, ~3000 words. For ethics submission."
+            sub="Master's / PhD protocol — 9 sections, for ethics submission."
           />
           <KindOption
             checked={kind === "THESIS"}
             onSelect={() => setKind("THESIS")}
             emoji="📚"
             label="Full thesis"
-            sub="6 chapters + references — Introduction, Lit Review, Methods, Results, Discussion, Conclusion."
+            sub="6 chapters + references — Intro, Lit Review, Methods, Results, Discussion."
+          />
+          <KindOption
+            checked={kind === "MANUSCRIPT"}
+            onSelect={() => setKind("MANUSCRIPT")}
+            emoji="📄"
+            label="Journal manuscript"
+            sub="IMRaD paper for submission — title page, structured abstract, methods, results, discussion."
+          />
+          <KindOption
+            checked={kind === "SYSTEMATIC_REVIEW"}
+            onSelect={() => setKind("SYSTEMATIC_REVIEW")}
+            emoji="🔬"
+            label="Systematic review / meta-analysis"
+            sub="PRISMA-aligned — PICO abstract, search strategy, PRISMA flow diagram, narrative + meta-analysis."
           />
         </div>
       </fieldset>

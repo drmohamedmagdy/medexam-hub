@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { renderResearchDocx } from "@/lib/research-docx";
+import { kindLabel as kindLabelFor } from "@/lib/research-templates";
 
 export async function GET(
   _req: Request,
@@ -22,7 +23,7 @@ export async function GET(
 
   const buf = await renderResearchDocx({
     title: project.title,
-    kindLabel: project.kind === "PROTOCOL" ? "Research Protocol" : "Thesis",
+    kindLabel: kindLabelFor(project.kind),
     authorName: user.name ?? null,
     university: project.university,
     specialty: project.specialty,
@@ -30,8 +31,12 @@ export async function GET(
     language: project.language,
     citationStyle: project.citationStyle,
     sections: project.sections
-      .filter((s) => s.content.trim().length > 0)
-      .map((s) => ({ title: s.title, content: s.content })),
+      .filter((s) => s.content.trim().length > 0 || (s.metadataJson && s.metadataJson.length > 0))
+      .map((s) => ({
+        title: s.title,
+        content: s.content,
+        metadataJson: s.metadataJson,
+      })),
   });
 
   const safeName = project.title.replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80) || "research";

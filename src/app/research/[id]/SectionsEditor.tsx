@@ -7,11 +7,13 @@ import {
   saveSectionAction,
   type GenerateSectionState,
 } from "@/app/actions/research";
+import { renderPrismaSvg, safeParsePrismaFlow } from "@/lib/prisma-flow";
 
 type SectionData = {
   id: string;
   title: string;
   content: string;
+  metadataJson: string | null;
   orderIndex: number;
   generatedAt: string | null;
 };
@@ -57,14 +59,19 @@ function SectionCard({
   onContentChange: (content: string) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(section.content.trim().length === 0);
+  const prismaData = section.metadataJson ? safeParsePrismaFlow(section.metadataJson) : null;
+  const isPrisma = prismaData !== null;
+
+  const [open, setOpen] = useState(
+    section.content.trim().length === 0 && !isPrisma
+  );
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState(section.content);
   const [savePending, startSave] = useTransition();
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
-  const isEmpty = content.trim().length === 0;
+  const isEmpty = content.trim().length === 0 && !isPrisma;
 
   async function generate() {
     setGenerating(true);
@@ -131,32 +138,41 @@ function SectionCard({
         </div>
       </header>
 
-      {open && (
+      {(open || isPrisma) && (
         <div className="px-5 py-4">
           {error && (
             <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
               {error}
             </p>
           )}
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={save}
-            rows={Math.max(8, Math.min(30, content.split("\n").length + 2))}
-            placeholder={`Click "Generate" above to draft this section, or write it yourself.`}
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-serif text-sm leading-relaxed dark:border-zinc-700 dark:bg-zinc-800/50"
-          />
+          {isPrisma && prismaData ? (
+            <div
+              className="overflow-x-auto rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800/40"
+              dangerouslySetInnerHTML={{ __html: renderPrismaSvg(prismaData) }}
+            />
+          ) : (
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onBlur={save}
+              rows={Math.max(8, Math.min(30, content.split("\n").length + 2))}
+              placeholder={`Click "Generate" above to draft this section, or write it yourself.`}
+              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-serif text-sm leading-relaxed dark:border-zinc-700 dark:bg-zinc-800/50"
+            />
+          )}
           <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
             <span>
-              {savePending
-                ? "Saving…"
-                : savedAt
-                  ? `Saved ${savedAt.toLocaleTimeString()}`
-                  : section.generatedAt
-                    ? `Last generated ${new Date(section.generatedAt).toLocaleString()}`
-                    : "Edits auto-save when you click outside the box."}
+              {isPrisma
+                ? "Diagram regenerates from numbers — click Regenerate to get a new flow."
+                : savePending
+                  ? "Saving…"
+                  : savedAt
+                    ? `Saved ${savedAt.toLocaleTimeString()}`
+                    : section.generatedAt
+                      ? `Last generated ${new Date(section.generatedAt).toLocaleString()}`
+                      : "Edits auto-save when you click outside the box."}
             </span>
-            <span>{content.length.toLocaleString()} chars</span>
+            {!isPrisma && <span>{content.length.toLocaleString()} chars</span>}
           </div>
         </div>
       )}
