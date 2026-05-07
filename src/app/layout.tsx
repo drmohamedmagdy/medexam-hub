@@ -80,7 +80,7 @@ export default async function RootLayout({
         className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
       >
         <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur dark:bg-slate-900/80 dark:border-slate-800/60">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+          <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
             <Link href="/" className="flex items-center" aria-label="MedExam Hub home">
               <Image
                 src="/logo.webp"
@@ -93,7 +93,7 @@ export default async function RootLayout({
             </Link>
 
             {/* Desktop nav */}
-            <div className="hidden flex-wrap items-center gap-2 text-sm md:flex lg:gap-2.5">
+            <div className="hidden flex-1 flex-wrap items-center justify-end gap-2 text-sm md:flex lg:gap-2.5">
               {user ? (
                 <>
                   <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
