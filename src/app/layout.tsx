@@ -103,6 +103,12 @@ export default async function RootLayout({
                     </Link>
                   )}
                   <Link
+                    href="/account/subscription"
+                    className="hover:text-blue-600"
+                  >
+                    {t.account.manageLink}
+                  </Link>
+                  <Link
                     href="/exam/new"
                     className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
                   >
