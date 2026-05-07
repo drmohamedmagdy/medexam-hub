@@ -100,6 +100,10 @@ model User {
 
   // Research Assistant
   researchProjects ResearchProject[]
+
+  // Standalone Statistics tool — separate from the research feature so
+  // users who only need to crunch a CSV don't have to spin up a project.
+  statsWorkspace   StatsWorkspace?
 }
 
 model CreditTransaction {
@@ -625,4 +629,47 @@ model ResearchFile {
   analyses      ResearchAnalysis[]
 
   @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Standalone Statistics tool
+//   One workspace per user, holds a single CSV at a time + a list of
+//   analyses run against it. Replacing the CSV deletes all existing
+//   analyses (column shapes change). Independent of the research feature.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model StatsWorkspace {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  filename      String?
+  mimeType      String?
+  sizeBytes     Int?
+  charCount     Int?
+  extractedText String?
+  fileUrl       String?
+  filePathname  String?
+  uploadedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analyses      StatsAnalysis[]
+}
+
+model StatsAnalysis {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  // "descriptives" | "compare_means" | "correlation" | "histogram"
+  kind         String
+  title        String
+  configJson   String
+  resultJson   String?
+  resultSvg    String?
+  computedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace    StatsWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
 }
