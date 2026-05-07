@@ -8,7 +8,7 @@ import { PLAN_LIMITS } from "@/lib/plans";
 import { validatePromoCode } from "@/lib/promo";
 
 const Body = z.object({
-  plan: z.enum(["BASIC", "PRO", "PREMIUM"]),
+  plan: z.enum(["BASIC", "PRO", "PREMIUM", "RESEARCHER"]),
   promoCode: z.string().max(40).nullable().optional(),
 });
 
@@ -88,6 +88,21 @@ export async function POST(req: Request) {
   // Use the promo's override Paymob link if provided (per-promo discounted prices),
   // otherwise fall back to the default link for the plan.
   const baseLink = promoLinkOverride ?? PAYMOB_LINKS[plan];
+
+  // Guard: a placeholder URL means the operator hasn't created the Paymob
+  // payment link for this plan yet (e.g. RESEARCHER on first deploy).
+  // Tell the client to use manual payment instead of redirecting them
+  // into a Paymob 404.
+  if (baseLink.includes("CHANGE_ME_")) {
+    return NextResponse.json(
+      {
+        error:
+          "Card payment isn't available for this plan yet — please use Vodafone Cash or InstaPay below.",
+      },
+      { status: 503 }
+    );
+  }
+
   const linkUrl = new URL(baseLink);
   linkUrl.searchParams.set("merchant_order_id", `mxh_${order.id}`);
 

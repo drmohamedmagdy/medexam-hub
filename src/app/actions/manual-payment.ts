@@ -27,7 +27,7 @@ export type ManualPayState =
   | null;
 
 const SubmitSchema = z.object({
-  plan: z.enum(["BASIC", "PRO", "PREMIUM"]),
+  plan: z.enum(["BASIC", "PRO", "PREMIUM", "RESEARCHER"]),
   method: z.enum(["VODAFONE_CASH", "INSTAPAY"]),
   proofImageUrl: z.string().url(),
   proofImagePathname: z.string().min(1).max(500),
