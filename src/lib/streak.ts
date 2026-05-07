@@ -10,6 +10,8 @@ const DAILY_GOAL_BY_PLAN: Record<Plan, number> = {
   BASIC: 15,
   PRO: 50,
   PREMIUM: 100,
+  // Researcher is a research-focused plan — exam practice isn't the focus.
+  RESEARCHER: 15,
 };
 
 export function getDailyGoal(plan: Plan): number {

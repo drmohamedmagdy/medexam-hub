@@ -489,6 +489,7 @@ function PlanBadge({ plan, label }: { plan: Plan; label: string }) {
     BASIC: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
     PRO: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
     PREMIUM: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
+    RESEARCHER: "bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-300",
   };
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${map[plan]}`}>{label}</span>

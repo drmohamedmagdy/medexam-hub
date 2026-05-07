@@ -36,7 +36,11 @@ export async function addAnalysisAction(
 ): Promise<AnalysisState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return { ok: false, error: "Available on Pro and Premium plans." };
+    return {
+      ok: false,
+      error:
+        "Available on the Researcher plan or Premium (statistical analyses are free; section generation costs credits on Premium).",
+    };
   }
 
   const projectId = String(formData.get("projectId") ?? "");

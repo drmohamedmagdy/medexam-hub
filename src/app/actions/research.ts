@@ -9,6 +9,10 @@ import { prisma } from "@/lib/db";
 import { generateSection } from "@/lib/research-generator";
 import { sectionsFor } from "@/lib/research-templates";
 import { canUseResearch } from "@/lib/research-access";
+import {
+  chargeForResearchSection,
+  preflightResearchSectionCharge,
+} from "@/lib/research-costs";
 import { extractText, MAX_FILE_BYTES } from "@/lib/file-upload";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +43,10 @@ export async function createResearchProjectAction(
 ): Promise<CreateResearchState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return { error: "The Research Assistant is available on the Pro and Premium plans." };
+    return {
+      error:
+        "The Research Assistant is available on the Researcher plan (unlimited) or Premium (pay-per-section in credits).",
+    };
   }
 
   const parsed = CreateSchema.safeParse({
@@ -113,8 +120,17 @@ export async function generateSectionAction(
 ): Promise<GenerateSectionState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return { ok: false, error: "Available on Pro and Premium plans." };
+    return {
+      ok: false,
+      error:
+        "Available on the Researcher plan (unlimited) or Premium (pay-per-section in credits).",
+    };
   }
+
+  // Pre-flight credit check for Premium users — fail fast before burning
+  // any Claude tokens if they can't afford this section.
+  const preflightError = await preflightResearchSectionCharge(user.id, user.plan);
+  if (preflightError) return { ok: false, error: preflightError };
 
   const projectId = String(formData.get("projectId") ?? "");
   const sectionId = String(formData.get("sectionId") ?? "");
@@ -213,6 +229,21 @@ export async function generateSectionAction(
       generatedAt: new Date(),
     },
   });
+
+  // Charge credits AFTER successful generation so failures don't burn the
+  // user's balance. No-op for the Researcher plan (unlimited).
+  try {
+    await chargeForResearchSection({
+      userId: user.id,
+      plan: user.plan,
+      projectId,
+      sectionTitle: section.title,
+    });
+  } catch (e) {
+    // Race: balance dropped between preflight and charge (very unlikely
+    // with one user, one tab). Surface it but the section is already saved.
+    console.error("[research] post-generation credit charge failed:", e);
+  }
 
   revalidatePath(`/research/${projectId}`);
   return { ok: true, content };
@@ -355,7 +386,10 @@ export async function attachResearchFileAction(
 ): Promise<AttachFileState> {
   const user = await requireUser();
   if (!canUseResearch(user.plan)) {
-    return { error: "Available on Pro and Premium plans." };
+    return {
+      error:
+        "Available on the Researcher plan or Premium (pay-per-section in credits).",
+    };
   }
 
   const parsed = AttachSchema.safeParse({

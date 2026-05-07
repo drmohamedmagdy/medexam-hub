@@ -12,6 +12,7 @@ enum Plan {
   BASIC
   PRO
   PREMIUM
+  RESEARCHER
 }
 
 enum Difficulty {

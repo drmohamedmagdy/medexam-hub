@@ -34,7 +34,12 @@ export default async function EditPromoPage({
 
   if (!promo) notFound();
 
-  const plans = parseApplicablePlans(promo.applicablePlans);
+  // Promo applicability UI currently supports BASIC/PRO/PREMIUM only.
+  // Researcher promos can be wired up here once the admin form exposes that
+  // checkbox + Paymob link slot.
+  const plans = parseApplicablePlans(promo.applicablePlans).filter(
+    (p): p is "BASIC" | "PRO" | "PREMIUM" => p !== "RESEARCHER"
+  );
   const allSelected = promo.applicablePlans === "ALL" || plans.length === 3;
   const links = parsePaymobLinks(promo.paymobLinks);
   const expiresAtIso = promo.expiresAt

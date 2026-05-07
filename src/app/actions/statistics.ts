@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { requireUser } from "@/lib/auth";
+import { canUseResearch } from "@/lib/research-access";
 import { prisma } from "@/lib/db";
 import { extractText, MAX_FILE_BYTES } from "@/lib/file-upload";
 import {
@@ -37,6 +38,12 @@ export async function replaceStatsFileAction(
   formData: FormData
 ): Promise<StatsState> {
   const user = await requireUser();
+  if (!canUseResearch(user.plan)) {
+    return {
+      error:
+        "Statistics is part of the Research suite — available on the Researcher plan or Premium.",
+    };
+  }
 
   const parsed = ReplaceSchema.safeParse({
     fileUrl: formData.get("fileUrl"),
@@ -126,6 +133,12 @@ export async function addStatsAnalysisAction(
   formData: FormData
 ): Promise<StatsAnalysisState> {
   const user = await requireUser();
+  if (!canUseResearch(user.plan)) {
+    return {
+      ok: false,
+      error: "Statistics requires the Researcher plan or Premium.",
+    };
+  }
   const kind = String(formData.get("kind") ?? "");
   if (!isAnalysisKind(kind)) {
     return { ok: false, error: "Unsupported analysis kind." };

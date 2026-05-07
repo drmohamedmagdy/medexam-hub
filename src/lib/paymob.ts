@@ -9,15 +9,18 @@ export const PAYMOB_LINKS: Record<Exclude<Plan, "FREE">, string> = {
   BASIC: "https://paymob.xyz/F7bYDEct/",
   PRO: "https://paymob.xyz/NrzwHqtz/",
   PREMIUM: "https://paymob.xyz/60HF1rQy/",
+  // Placeholder — create a Paymob payment link for 749 EGP and paste the URL
+  // here. Until then, manual / Vodafone-Cash flow is the only way to buy.
+  RESEARCHER: "https://paymob.xyz/CHANGE_ME_RESEARCHER/",
 };
 
 // Original full-price links — kept here so the 50% promo can be reverted by
-// swapping these into PAYMOB_LINKS. Do NOT delete; they're still configured
-// in Paymob's dashboard at 699 / 1500 / 2500 EGP.
+// swapping these into PAYMOB_LINKS.
 export const LEGACY_PAYMOB_LINKS_FULL_PRICE: Record<Exclude<Plan, "FREE">, string> = {
   BASIC: "https://paymob.xyz/CVf29Rwq/",
   PRO: "https://paymob.xyz/UrfqyJEg/",
   PREMIUM: "https://paymob.xyz/ebvePVh9/",
+  RESEARCHER: "https://paymob.xyz/CHANGE_ME_RESEARCHER_FULL/",
 };
 
 const TOKEN_TTL_MS = 30 * 60 * 1000;

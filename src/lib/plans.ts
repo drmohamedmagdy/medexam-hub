@@ -23,7 +23,12 @@ function discount(price: number): number {
   return Math.round(price * (1 - PROMO_DISCOUNT_PCT / 100));
 }
 
-const BASE_PRICES = { BASIC: 699, PRO: 1500, PREMIUM: 2500 } as const;
+const BASE_PRICES = {
+  BASIC: 699,
+  PRO: 1500,
+  PREMIUM: 2500,
+  RESEARCHER: 1499,
+} as const;
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   FREE: {
@@ -62,6 +67,17 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     originalPriceMonthly: PROMO_DISCOUNT_PCT > 0 ? BASE_PRICES.PREMIUM : undefined,
     label: "Premium",
     description: "For specialists, consultants, and educators — full analytics and PDF exports.",
+  },
+  RESEARCHER: {
+    monthlyQuestions: 500,
+    maxQuestionsPerExam: 30,
+    fileUploadsPerMonth: 30,
+    priceMonthly: discount(BASE_PRICES.RESEARCHER),
+    originalPriceMonthly: PROMO_DISCOUNT_PCT > 0 ? BASE_PRICES.RESEARCHER : undefined,
+    label: "Researcher",
+    description:
+      "Unlimited Research Assistant + Statistics. Generate protocols, theses, manuscripts, and systematic reviews; run any of 17 statistical tests; export Word with embedded charts.",
+    badge: "Research focus",
   },
 };
 

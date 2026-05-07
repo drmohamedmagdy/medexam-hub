@@ -5,7 +5,7 @@ import type { Plan } from "@/generated/prisma/client";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import UpgradeButton from "./UpgradeButton";
 
-const ORDER: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM"];
+const ORDER: Plan[] = ["FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER"];
 
 export default async function PlansPage() {
   const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
@@ -26,7 +26,7 @@ export default async function PlansPage() {
         )}
       </div>
 
-      <div className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {ORDER.map((plan) => {
           const cfg = PLAN_LIMITS[plan];
           const tp = t.plans.perPlan[plan];

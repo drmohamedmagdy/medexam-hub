@@ -44,8 +44,7 @@ export default async function RootLayout({
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
         { href: "/dashboard", label: t.nav.dashboard },
         { href: "/community", label: "Community" },
-        { href: "/research", label: "Research" },
-        { href: "/statistics", label: "Statistics" },
+        { href: "/research", label: "Research & Stats" },
         { href: "/library", label: t.nav.library },
         { href: "/exams", label: t.dashboard.recentExams },
         { href: "/plans", label: t.nav.plans },
@@ -96,8 +95,7 @@ export default async function RootLayout({
                 <>
                   <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
                   <Link href="/community" className="hover:text-blue-600">Community</Link>
-                  <Link href="/research" className="hover:text-blue-600">Research</Link>
-                  <Link href="/statistics" className="hover:text-blue-600">Statistics</Link>
+                  <Link href="/research" className="hover:text-blue-600">Research &amp; Stats</Link>
                   <Link href="/library" className="hover:text-blue-600">{t.nav.library}</Link>
                   {showAdmin && (
                     <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">

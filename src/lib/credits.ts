@@ -11,6 +11,7 @@ export const SIGNUP_BONUS_CREDITS: Record<Plan, number> = {
   BASIC: 50,
   PRO: 100,
   PREMIUM: 200,
+  RESEARCHER: 300,
 };
 
 export const REFERRAL_COMMISSION_CREDITS: Record<Plan, number> = {
@@ -18,6 +19,7 @@ export const REFERRAL_COMMISSION_CREDITS: Record<Plan, number> = {
   BASIC: 50,
   PRO: 100,
   PREMIUM: 200,
+  RESEARCHER: 300,
 };
 
 // At checkout, credits can offset at most 50% of the order amount. Stops
@@ -36,6 +38,7 @@ export type CreditTxType =
   | "redemption_refund"
   | "redemption_questions"
   | "redemption_files"
+  | "research_section_use"
   | "manual_adjust";
 
 // Codes use 26 letters + digits, omitting visually ambiguous chars
