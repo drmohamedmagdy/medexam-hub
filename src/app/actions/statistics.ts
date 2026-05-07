@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { requireUser } from "@/lib/auth";
 import { canUseResearch } from "@/lib/research-access";
+import {
+  preflightStatsAnalysis,
+  recordStatsAnalysisRun,
+} from "@/lib/research-quota";
 import { prisma } from "@/lib/db";
 import { extractText, MAX_FILE_BYTES } from "@/lib/file-upload";
 import {
@@ -154,6 +158,11 @@ export async function addStatsAnalysisAction(
     return { ok: false, error: "Couldn't parse this file as a CSV." };
   }
 
+  // Researcher plan: enforce monthly stats analyses quota. Premium has no
+  // quota for stats (free, local computation).
+  const quotaError = await preflightStatsAnalysis(user.id, user.plan);
+  if (quotaError) return { ok: false, error: quotaError };
+
   try {
     const input = parseDispatchInput(formData);
     const out = dispatchAnalysis(csv, input);
@@ -169,6 +178,7 @@ export async function addStatsAnalysisAction(
         computedAt: new Date(),
       },
     });
+    await recordStatsAnalysisRun(user.id, user.plan);
     revalidatePath("/statistics");
     return { ok: true, analysisId: created.id };
   } catch (e) {

@@ -609,7 +609,7 @@ const en = {
       PRO: { label: "Pro", description: "For exam candidates who need volume and file-based questions.",
         features: ["Everything in Basic", "50 AI exams per month (up to 1,500 questions)", "Up to 30 questions per exam", "Upload up to 6 files / month", "Download completed exams as PDF"] },
       PREMIUM: { label: "Premium", description: "For specialists, consultants, and educators.",
-        features: ["Everything in Pro", "100 AI exams per month (up to 5,000 questions)", "Up to 50 questions per exam", "Upload up to 15 files / month", "Advanced analytics", "Download completed exams as PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Everything in Pro", "100 AI exams per month (up to 5,000 questions)", "Up to 50 questions per exam", "Upload up to 15 files / month", "Advanced analytics", "Download completed exams as PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -673,7 +673,7 @@ const ar = {
       PRO: { label: "احترافي", description: "للمرشحين للامتحانات الذين يحتاجون إلى حجم وأسئلة من ملفات.",
         features: ["كل ما في الخطة الأساسية", "50 امتحانًا شهريًا (حتى 1,500 سؤال)", "حتى 30 سؤالاً لكل امتحان", "رفع حتى 6 ملفات شهريًا", "تنزيل الامتحانات المكتملة كملف PDF"] },
       PREMIUM: { label: "متميز", description: "للأخصائيين والاستشاريين والمعلمين.",
-        features: ["كل ما في الخطة الاحترافية", "100 امتحان شهريًا (حتى 5,000 سؤال)", "حتى 50 سؤالاً لكل امتحان", "رفع حتى 15 ملفًا شهريًا", "تحليلات متقدمة", "تنزيل الامتحانات المكتملة كملف PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["كل ما في الخطة الاحترافية", "100 امتحان شهريًا (حتى 5,000 سؤال)", "حتى 50 سؤالاً لكل امتحان", "رفع حتى 15 ملفًا شهريًا", "تحليلات متقدمة", "تنزيل الامتحانات المكتملة كملف PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -737,7 +737,7 @@ const fr = {
       PRO: { label: "Pro", description: "Pour les candidats qui ont besoin de volume et de questions à partir de fichiers.",
         features: ["Tout ce qui est inclus dans Basique", "50 examens IA par mois (jusqu'à 1 500 questions)", "Jusqu'à 30 questions par examen", "Téléverser jusqu'à 6 fichiers / mois", "Télécharger les examens en PDF"] },
       PREMIUM: { label: "Premium", description: "Pour les spécialistes, consultants et formateurs.",
-        features: ["Tout ce qui est inclus dans Pro", "100 examens IA par mois (jusqu'à 5 000 questions)", "Jusqu'à 50 questions par examen", "Téléverser jusqu'à 15 fichiers / mois", "Analyses avancées", "Télécharger les examens en PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Tout ce qui est inclus dans Pro", "100 examens IA par mois (jusqu'à 5 000 questions)", "Jusqu'à 50 questions par examen", "Téléverser jusqu'à 15 fichiers / mois", "Analyses avancées", "Télécharger les examens en PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -801,7 +801,7 @@ const es = {
       PRO: { label: "Pro", description: "Para candidatos a exámenes que necesitan volumen y preguntas desde archivos.",
         features: ["Todo lo de Básico", "50 exámenes IA al mes (hasta 1,500 preguntas)", "Hasta 30 preguntas por examen", "Subir hasta 6 archivos / mes", "Descargar exámenes en PDF"] },
       PREMIUM: { label: "Premium", description: "Para especialistas, consultores y educadores.",
-        features: ["Todo lo de Pro", "100 exámenes IA al mes (hasta 5,000 preguntas)", "Hasta 50 preguntas por examen", "Subir hasta 15 archivos / mes", "Analítica avanzada", "Descargar exámenes en PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Todo lo de Pro", "100 exámenes IA al mes (hasta 5,000 preguntas)", "Hasta 50 preguntas por examen", "Subir hasta 15 archivos / mes", "Analítica avanzada", "Descargar exámenes en PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -865,7 +865,7 @@ const de = {
       PRO: { label: "Pro", description: "Für Prüfungskandidaten mit hohem Volumen und Datei-Fragen.",
         features: ["Alles aus Basic", "50 KI-Prüfungen pro Monat (bis 1.500 Fragen)", "Bis zu 30 Fragen pro Prüfung", "Bis zu 6 Datei-Uploads / Monat", "Prüfungen als PDF herunterladen"] },
       PREMIUM: { label: "Premium", description: "Für Fachärzte, Consultants und Lehrende.",
-        features: ["Alles aus Pro", "100 KI-Prüfungen pro Monat (bis 5.000 Fragen)", "Bis zu 50 Fragen pro Prüfung", "Bis zu 15 Datei-Uploads / Monat", "Erweiterte Analytik", "Prüfungen als PDF herunterladen"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Alles aus Pro", "100 KI-Prüfungen pro Monat (bis 5.000 Fragen)", "Bis zu 50 Fragen pro Prüfung", "Bis zu 15 Datei-Uploads / Monat", "Erweiterte Analytik", "Prüfungen als PDF herunterladen"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -929,7 +929,7 @@ const it = {
       PRO: { label: "Pro", description: "Per chi prepara esami con volume e domande da file.",
         features: ["Tutto del piano Basic", "50 esami IA al mese (fino a 1.500 domande)", "Fino a 30 domande per esame", "Carica fino a 6 file / mese", "Scarica gli esami in PDF"] },
       PREMIUM: { label: "Premium", description: "Per specialisti, consulenti ed educatori.",
-        features: ["Tutto del piano Pro", "100 esami IA al mese (fino a 5.000 domande)", "Fino a 50 domande per esame", "Carica fino a 15 file / mese", "Analitica avanzata", "Scarica gli esami in PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Tutto del piano Pro", "100 esami IA al mese (fino a 5.000 domande)", "Fino a 50 domande per esame", "Carica fino a 15 file / mese", "Analitica avanzata", "Scarica gli esami in PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -993,7 +993,7 @@ const pt = {
       PRO: { label: "Pro", description: "Para candidatos que precisam de volume e questões a partir de arquivos.",
         features: ["Tudo do Básico", "50 exames IA por mês (até 1.500 questões)", "Até 30 questões por exame", "Upload de até 6 arquivos / mês", "Baixar exames em PDF"] },
       PREMIUM: { label: "Premium", description: "Para especialistas, consultores e educadores.",
-        features: ["Tudo do Pro", "100 exames IA por mês (até 5.000 questões)", "Até 50 questões por exame", "Upload de até 15 arquivos / mês", "Análise avançada", "Baixar exames em PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Tudo do Pro", "100 exames IA por mês (até 5.000 questões)", "Até 50 questões por exame", "Upload de até 15 arquivos / mês", "Análise avançada", "Baixar exames em PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -1057,7 +1057,7 @@ const tr = {
       PRO: { label: "Pro", description: "Hacme ve dosya tabanlı sorulara ihtiyaç duyan adaylar için.",
         features: ["Basic'teki her şey", "Ayda 50 YZ sınavı (en fazla 1.500 soru)", "Sınav başına en fazla 30 soru", "Ayda en fazla 6 dosya yükleme", "Sınavları PDF olarak indir"] },
       PREMIUM: { label: "Premium", description: "Uzmanlar, danışmanlar ve eğitmenler için.",
-        features: ["Pro'daki her şey", "Ayda 100 YZ sınavı (en fazla 5.000 soru)", "Sınav başına en fazla 50 soru", "Ayda en fazla 15 dosya yükleme", "Gelişmiş analizler", "Sınavları PDF olarak indir"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Pro'daki her şey", "Ayda 100 YZ sınavı (en fazla 5.000 soru)", "Sınav başına en fazla 50 soru", "Ayda en fazla 15 dosya yükleme", "Gelişmiş analizler", "Sınavları PDF olarak indir"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -1121,7 +1121,7 @@ const ur = {
       PRO: { label: "پرو", description: "حجم اور فائل پر مبنی سوالات کی ضرورت رکھنے والے امیدواروں کے لیے۔",
         features: ["بیسک میں موجود سب کچھ", "ماہانہ 50 AI امتحانات (1,500 سوالات تک)", "فی امتحان 30 سوالات تک", "ماہانہ 6 فائلز تک اپ لوڈ", "مکمل امتحانات کو PDF میں ڈاؤن لوڈ کریں"] },
       PREMIUM: { label: "پریمیم", description: "تخصصین، مشیرین اور معلمین کے لیے۔",
-        features: ["پرو میں موجود سب کچھ", "ماہانہ 100 AI امتحانات (5,000 سوالات تک)", "فی امتحان 50 سوالات تک", "ماہانہ 15 فائلز تک اپ لوڈ", "اعلیٰ تجزیات", "مکمل امتحانات کو PDF میں ڈاؤن لوڈ کریں"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["پرو میں موجود سب کچھ", "ماہانہ 100 AI امتحانات (5,000 سوالات تک)", "فی امتحان 50 سوالات تک", "ماہانہ 15 فائلز تک اپ لوڈ", "اعلیٰ تجزیات", "مکمل امتحانات کو PDF میں ڈاؤن لوڈ کریں"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };
@@ -1185,7 +1185,7 @@ const fa = {
       PRO: { label: "حرفه‌ای", description: "برای داوطلبان آزمونی که به حجم و سؤالات از فایل نیاز دارند.",
         features: ["تمام امکانات پایه", "۵۰ آزمون هوش مصنوعی در ماه (تا ۱٬۵۰۰ سؤال)", "حداکثر ۳۰ سؤال در هر آزمون", "بارگذاری تا ۶ فایل در ماه", "دانلود آزمون‌های کامل‌شده به PDF"] },
       PREMIUM: { label: "پریمیوم", description: "برای متخصصان، مشاوران و آموزشگران.",
-        features: ["تمام امکانات حرفه‌ای", "۱۰۰ آزمون هوش مصنوعی در ماه (تا ۵٬۰۰۰ سؤال)", "حداکثر ۵۰ سؤال در هر آزمون", "بارگذاری تا ۱۵ فایل در ماه", "تحلیل پیشرفته", "دانلود آزمون‌های کامل‌شده به PDF"] }, RESEARCHER: { label: "Researcher", description: "Unlimited Research Assistant + Statistics — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word export.", features: ["Unlimited research projects", "Unlimited statistical analyses", "30 file uploads / month with AI summary", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["تمام امکانات حرفه‌ای", "۱۰۰ آزمون هوش مصنوعی در ماه (تا ۵٬۰۰۰ سؤال)", "حداکثر ۵۰ سؤال در هر آزمون", "بارگذاری تا ۱۵ فایل در ماه", "تحلیل پیشرفته", "دانلود آزمون‌های کامل‌شده به PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
     },
   },
 };

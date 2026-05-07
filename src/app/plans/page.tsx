@@ -31,12 +31,15 @@ export default async function PlansPage() {
           const cfg = PLAN_LIMITS[plan];
           const tp = t.plans.perPlan[plan];
           const isCurrent = user?.plan === plan;
-          const isHighlighted = cfg.badge === "Most popular";
-          const badgeText =
-            cfg.badge === "Most popular"
-              ? t.plans.badgePopular
-              : cfg.badge === "Best value"
-                ? t.plans.badgeValue
+          const isSpecial = cfg.badge === "Special service";
+          const isPopular = cfg.badge === "Most popular";
+          const isHighlighted = isPopular || isSpecial;
+          const badgeText = isPopular
+            ? t.plans.badgePopular
+            : cfg.badge === "Best value"
+              ? t.plans.badgeValue
+              : isSpecial
+                ? "✨ Special service"
                 : null;
 
           return (
@@ -45,17 +48,21 @@ export default async function PlansPage() {
               className={`relative flex flex-col rounded-2xl border p-6 ${
                 isCurrent
                   ? "border-blue-600 bg-blue-50 dark:bg-blue-950"
-                  : isHighlighted
-                    ? "border-blue-500 ring-2 ring-blue-500/30 bg-white dark:bg-zinc-900"
-                    : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+                  : isSpecial
+                    ? "border-violet-500 ring-2 ring-violet-500/40 bg-gradient-to-b from-violet-50 to-white dark:from-violet-950/40 dark:to-zinc-900"
+                    : isPopular
+                      ? "border-blue-500 ring-2 ring-blue-500/30 bg-white dark:bg-zinc-900"
+                      : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
               }`}
             >
               {badgeText && !isCurrent && (
                 <span
                   className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-semibold ${
-                    cfg.badge === "Most popular"
+                    isPopular
                       ? "bg-blue-600 text-white"
-                      : "bg-emerald-600 text-white"
+                      : isSpecial
+                        ? "bg-violet-600 text-white shadow-md"
+                        : "bg-emerald-600 text-white"
                   }`}
                 >
                   {badgeText}

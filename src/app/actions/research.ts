@@ -13,6 +13,10 @@ import {
   chargeForResearchSection,
   preflightResearchSectionCharge,
 } from "@/lib/research-costs";
+import {
+  preflightCreateResearchProject,
+  recordResearchProjectCreated,
+} from "@/lib/research-quota";
 import { extractText, MAX_FILE_BYTES } from "@/lib/file-upload";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,6 +69,11 @@ export async function createResearchProjectAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
+  // RESEARCHER plan: enforce monthly project quota (5 + bonus pool).
+  // Premium has no project quota — they pay 30 credits per section instead.
+  const quotaError = await preflightCreateResearchProject(user.id, user.plan);
+  if (quotaError) return { error: quotaError };
+
   const project = await prisma.researchProject.create({
     data: {
       userId: user.id,
@@ -100,6 +109,10 @@ export async function createResearchProjectAction(
       })
     )
   );
+
+  // Drain bonus pool if this project pushed the user past their plan cap.
+  // No-op for non-Researcher plans.
+  await recordResearchProjectCreated(user.id, user.plan);
 
   revalidatePath("/research");
   redirect(`/research/${project.id}`);

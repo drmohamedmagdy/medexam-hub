@@ -5,6 +5,10 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canUseResearch } from "@/lib/research-access";
 import {
+  preflightStatsAnalysis,
+  recordStatsAnalysisRun,
+} from "@/lib/research-quota";
+import {
   dispatchAnalysis,
   isAnalysisKind,
   parseCsv,
@@ -63,6 +67,11 @@ export async function addAnalysisAction(
     return { ok: false, error: "Couldn't parse this file as a CSV. Check the format." };
   }
 
+  // Researcher plan: enforce monthly stats analyses quota. Premium has no
+  // quota for stats (free, local computation).
+  const quotaError = await preflightStatsAnalysis(user.id, user.plan);
+  if (quotaError) return { ok: false, error: quotaError };
+
   try {
     const input = parseDispatchInput(formData);
     const out = dispatchAnalysis(csv.parsed, input);
@@ -83,6 +92,8 @@ export async function addAnalysisAction(
         computedAt: new Date(),
       },
     });
+    // Drain bonus pool if this analysis pushed the user past their cap.
+    await recordStatsAnalysisRun(user.id, user.plan);
     revalidatePath(`/research/${projectId}`);
     return { ok: true, analysisId: created.id };
   } catch (e) {

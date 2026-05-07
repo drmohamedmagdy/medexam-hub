@@ -20,6 +20,16 @@ const FILE_BUNDLES = [
   { amount: 3, cost: 45 },
 ] as const;
 
+const RESEARCH_PROJECT_BUNDLES = [
+  { amount: 1, cost: 100 },
+  { amount: 3, cost: 300 },
+] as const;
+
+const STATS_ANALYSIS_BUNDLES = [
+  { amount: 5, cost: 50 },
+  { amount: 25, cost: 250 },
+] as const;
+
 export default function RedeemCreditsCard({
   balance,
   planLabel,
@@ -112,6 +122,58 @@ export default function RedeemCreditsCard({
         </div>
       </div>
 
+      <div className="mt-5">
+        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          🧠 Research projects
+          <span className="ml-1 text-xs text-zinc-500">100 credits per extra project</span>
+        </h3>
+        <p className="mt-1 text-xs text-zinc-500">
+          For Researcher-plan users who&apos;ve used their monthly 5 projects.
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {RESEARCH_PROJECT_BUNDLES.map((b) => (
+            <Bundle
+              key={`rp-${b.amount}`}
+              kind="research_projects"
+              amount={b.amount}
+              cost={b.cost}
+              disabled={balance < b.cost || pending}
+              action={action}
+              label={
+                b.amount === 1
+                  ? "+1 research project"
+                  : `+${b.amount} research projects`
+              }
+              costLabel={t.redeemCostFmt.replace("{n}", b.cost.toString())}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          📊 Statistical analyses
+          <span className="ml-1 text-xs text-zinc-500">10 credits per extra analysis</span>
+        </h3>
+        <p className="mt-1 text-xs text-zinc-500">
+          For Researcher-plan users who&apos;ve used their monthly 25 analyses.
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {STATS_ANALYSIS_BUNDLES.map((b) => (
+            <Bundle
+              key={`sa-${b.amount}`}
+              kind="stats_analyses"
+              amount={b.amount}
+              cost={b.cost}
+              disabled={balance < b.cost || pending}
+              action={action}
+              label={`+${b.amount} statistical analyses`}
+              costLabel={t.redeemCostFmt.replace("{n}", b.cost.toString())}
+            />
+          ))}
+        </div>
+      </div>
+
       <p className="mt-4 text-xs text-zinc-500">{t.redeemRenewTip}</p>
     </section>
   );
@@ -126,7 +188,7 @@ function Bundle({
   label,
   costLabel,
 }: {
-  kind: "questions" | "files";
+  kind: "questions" | "files" | "research_projects" | "stats_analyses";
   amount: number;
   cost: number;
   disabled: boolean;

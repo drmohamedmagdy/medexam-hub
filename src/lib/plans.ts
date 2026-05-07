@@ -27,7 +27,10 @@ const BASE_PRICES = {
   BASIC: 699,
   PRO: 1500,
   PREMIUM: 2500,
-  RESEARCHER: 1499,
+  // Researcher plan: bundles unlimited Claude-token cost (5 projects, 25
+  // stats analyses, 25 file uploads / month). Top-ups in credits available
+  // for users who hit the cap mid-month.
+  RESEARCHER: 5000,
 } as const;
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
@@ -71,13 +74,13 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   RESEARCHER: {
     monthlyQuestions: 500,
     maxQuestionsPerExam: 30,
-    fileUploadsPerMonth: 30,
+    fileUploadsPerMonth: 25,
     priceMonthly: discount(BASE_PRICES.RESEARCHER),
     originalPriceMonthly: PROMO_DISCOUNT_PCT > 0 ? BASE_PRICES.RESEARCHER : undefined,
     label: "Researcher",
     description:
-      "Unlimited Research Assistant + Statistics. Generate protocols, theses, manuscripts, and systematic reviews; run any of 17 statistical tests; export Word with embedded charts.",
-    badge: "Research focus",
+      "Dedicated AI Research & Statistics service: protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.",
+    badge: "Special service",
   },
 };
 

@@ -10,7 +10,7 @@ import { createNotification } from "@/lib/notifications";
 export type RedeemState = { ok?: boolean; error?: string } | null;
 
 const Schema = z.object({
-  kind: z.enum(["questions", "files"]),
+  kind: z.enum(["questions", "files", "research_projects", "stats_analyses"]),
   amount: z.coerce.number().int().min(1).max(500),
 });
 
@@ -45,14 +45,17 @@ export async function redeemBonusQuotaAction(
     };
   }
 
+  const titleByKind: Record<typeof parsed.data.kind, string> = {
+    questions: `+${parsed.data.amount} bonus question${parsed.data.amount === 1 ? "" : "s"} added`,
+    files: `+${parsed.data.amount} bonus file upload${parsed.data.amount === 1 ? "" : "s"} added`,
+    research_projects: `+${parsed.data.amount} bonus research project${parsed.data.amount === 1 ? "" : "s"} added`,
+    stats_analyses: `+${parsed.data.amount} bonus statistical analys${parsed.data.amount === 1 ? "is" : "es"} added`,
+  };
   await createNotification({
     userId: user.id,
     category: "system",
     emoji: "🎁",
-    title:
-      parsed.data.kind === "questions"
-        ? `+${parsed.data.amount} bonus questions added`
-        : `+${parsed.data.amount} bonus file upload${parsed.data.amount === 1 ? "" : "s"} added`,
+    title: titleByKind[parsed.data.kind],
     body: "Your bonus pool grew. It never expires — use it whenever your monthly plan quota runs out.",
     href: "/account/subscription",
   });
@@ -60,5 +63,7 @@ export async function redeemBonusQuotaAction(
   revalidatePath("/account/subscription");
   revalidatePath("/exam/new");
   revalidatePath("/dashboard");
+  revalidatePath("/research");
+  revalidatePath("/statistics");
   return { ok: true };
 }

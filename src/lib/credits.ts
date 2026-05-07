@@ -27,9 +27,11 @@ export const REFERRAL_COMMISSION_CREDITS: Record<Plan, number> = {
 export const MAX_CREDITS_DISCOUNT_FRACTION = 0.5;
 
 // Bonus quota pricing — credits spent per unit of monthly quota added.
-// 1 extra question = 5 credits, 1 extra file upload = 15 credits.
+// Top-ups are perpetual: they never expire, drain only on overflow.
 export const CREDITS_PER_BONUS_QUESTION = 5;
 export const CREDITS_PER_BONUS_FILE = 15;
+export const CREDITS_PER_BONUS_RESEARCH_PROJECT = 100;
+export const CREDITS_PER_BONUS_STATS_ANALYSIS = 10;
 
 export type CreditTxType =
   | "signup_bonus"
@@ -38,8 +40,12 @@ export type CreditTxType =
   | "redemption_refund"
   | "redemption_questions"
   | "redemption_files"
+  | "redemption_research_projects"
+  | "redemption_stats_analyses"
   | "research_section_use"
   | "manual_adjust";
+
+export type BonusKind = "questions" | "files" | "research_projects" | "stats_analyses";
 
 // Codes use 26 letters + digits, omitting visually ambiguous chars
 // (0/O/1/I/L). 7 chars × 31 alphabet = ~27 billion — comfortable headroom.
@@ -255,15 +261,42 @@ export function maxCreditsForOrder(amountCents: number, balance: number): number
  *
  * Throws on insufficient balance / invalid amount.
  */
+const BONUS_UNIT_COST: Record<BonusKind, number> = {
+  questions: CREDITS_PER_BONUS_QUESTION,
+  files: CREDITS_PER_BONUS_FILE,
+  research_projects: CREDITS_PER_BONUS_RESEARCH_PROJECT,
+  stats_analyses: CREDITS_PER_BONUS_STATS_ANALYSIS,
+};
+
+const BONUS_TX_TYPE: Record<BonusKind, CreditTxType> = {
+  questions: "redemption_questions",
+  files: "redemption_files",
+  research_projects: "redemption_research_projects",
+  stats_analyses: "redemption_stats_analyses",
+};
+
+const BONUS_LABEL_SINGULAR: Record<BonusKind, string> = {
+  questions: "bonus question",
+  files: "bonus file upload",
+  research_projects: "bonus research project",
+  stats_analyses: "bonus statistical analysis",
+};
+
+const BONUS_LABEL_PLURAL: Record<BonusKind, string> = {
+  questions: "bonus questions",
+  files: "bonus file uploads",
+  research_projects: "bonus research projects",
+  stats_analyses: "bonus statistical analyses",
+};
+
 export async function redeemForBonusQuota(args: {
   userId: string;
-  kind: "questions" | "files";
+  kind: BonusKind;
   amount: number;
   yearMonth: string;
 }): Promise<void> {
   if (args.amount <= 0) throw new Error("amount must be positive");
-  const perUnit =
-    args.kind === "questions" ? CREDITS_PER_BONUS_QUESTION : CREDITS_PER_BONUS_FILE;
+  const perUnit = BONUS_UNIT_COST[args.kind];
   const cost = perUnit * args.amount;
 
   await prisma.$transaction(async (tx) => {
@@ -287,11 +320,10 @@ export async function redeemForBonusQuota(args: {
       data: {
         userId: args.userId,
         amount: -cost,
-        type: args.kind === "questions" ? "redemption_questions" : "redemption_files",
-        description:
-          args.kind === "questions"
-            ? `+${args.amount} bonus questions`
-            : `+${args.amount} bonus file upload${args.amount === 1 ? "" : "s"}`,
+        type: BONUS_TX_TYPE[args.kind],
+        description: `+${args.amount} ${
+          args.amount === 1 ? BONUS_LABEL_SINGULAR[args.kind] : BONUS_LABEL_PLURAL[args.kind]
+        }`,
       },
     });
     await tx.user.update({
@@ -307,7 +339,7 @@ export async function redeemForBonusQuota(args: {
  */
 export async function getBonusBalance(
   userId: string,
-  kind: "questions" | "files"
+  kind: BonusKind
 ): Promise<number> {
   const grants = await prisma.bonusGrant.findMany({
     where: { userId, kind },
@@ -323,7 +355,7 @@ export async function getBonusBalance(
  */
 export async function drainBonus(
   userId: string,
-  kind: "questions" | "files",
+  kind: BonusKind,
   amount: number
 ): Promise<number> {
   if (amount <= 0) return 0;
