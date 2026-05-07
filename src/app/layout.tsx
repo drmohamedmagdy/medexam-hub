@@ -130,6 +130,12 @@ export default async function RootLayout({
                 ) : (
                   <>
                     <Link
+                      href="/plans"
+                      className={`hidden md:inline-flex ${pill} ${NAV_COLOR_DESKTOP.indigo}`}
+                    >
+                      {t.nav.plans}
+                    </Link>
+                    <Link
                       href="/login"
                       className="text-sm font-semibold text-zinc-700 hover:text-blue-600 dark:text-zinc-300"
                     >
@@ -175,13 +181,6 @@ export default async function RootLayout({
                   className={`${pill} ${NAV_COLOR_DESKTOP.zinc}`}
                 >
                   {t.account.manageLink}
-                </Link>
-              </nav>
-            )}
-            {!user && (
-              <nav className="mt-3 hidden items-center gap-2 text-sm md:flex">
-                <Link href="/plans" className={`${pill} ${NAV_COLOR_DESKTOP.indigo}`}>
-                  {t.nav.plans}
                 </Link>
               </nav>
             )}
