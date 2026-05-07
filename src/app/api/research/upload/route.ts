@@ -31,6 +31,8 @@ export async function POST(request: Request) {
           "text/csv",
           "application/csv",
           "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/octet-stream",
         ],
         maximumSizeInBytes: 15 * 1024 * 1024, // 15 MB — bigger than exam-prep so datasets fit
         addRandomSuffix: true,
