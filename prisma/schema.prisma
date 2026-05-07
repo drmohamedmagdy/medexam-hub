@@ -97,6 +97,9 @@ model User {
   invitesSent      GroupInvite[]       @relation("InvitesSent")
   posts            Post[]
   comments         PostComment[]
+
+  // Research Assistant
+  researchProjects ResearchProject[]
 }
 
 model CreditTransaction {
@@ -500,4 +503,56 @@ model PostComment {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Research Assistant — Phase 1
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ResearchKind {
+  PROTOCOL
+  THESIS
+}
+
+model ResearchProject {
+  id            String   @id @default(cuid())
+  userId        String
+  kind          ResearchKind
+  title         String
+  specialty     String?
+  studyType     String?
+  sampleSize    Int?
+  population    String?
+  university    String?
+  language      String   @default("English")
+  // "vancouver" | "apa" | "mla"
+  citationStyle String   @default("vancouver")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sections ResearchSection[]
+
+  @@index([userId, createdAt])
+}
+
+model ResearchSection {
+  id          String    @id @default(cuid())
+  projectId   String
+  // "introduction" | "lit_review" | "aim" | "questions" | "methodology"
+  // | "inclusion_exclusion" | "ethics" | "stats_plan" | "references"
+  // | "patients_methods" | "results" | "discussion" | "conclusion"
+  kind        String
+  title       String
+  content     String
+  orderIndex  Int
+  generatedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  project     ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, orderIndex])
+  @@unique([projectId, kind])
+  @@index([projectId])
 }
