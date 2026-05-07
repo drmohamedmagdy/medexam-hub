@@ -85,18 +85,19 @@ export default async function RootLayout({
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/"
-                className="flex items-center gap-2 font-semibold"
-                aria-label="MedExam Hub home"
+                title="Back to home"
+                aria-label="MedExam Hub — back to home"
+                className="flex items-center gap-3 transition hover:opacity-90"
               >
                 <Image
                   src="/logo.webp"
-                  alt="MedExam Hub"
-                  width={64}
-                  height={64}
+                  alt=""
+                  width={72}
+                  height={72}
                   className="h-12 w-auto sm:h-16"
                   priority
                 />
-                <span className="whitespace-nowrap text-base sm:text-lg">
+                <span className="whitespace-nowrap text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
                   MedExam Hub
                 </span>
               </Link>
