@@ -51,7 +51,10 @@ export default async function StatisticsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <Link href="/research" className="text-sm text-zinc-500 hover:text-blue-600">
+        &larr; Research &amp; Stats
+      </Link>
+      <header className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">📊 Statistics</h1>
           <p className="mt-1 text-sm text-zinc-500">
