@@ -42,12 +42,12 @@ export default async function RootLayout({
   const mobileItems: NavItem[] = user
     ? [
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
+        { href: "/plans", label: t.nav.plans },
         { href: "/dashboard", label: t.nav.dashboard },
-        { href: "/community", label: "Community" },
         { href: "/research", label: "Research & Stats" },
+        { href: "/community", label: "Community" },
         { href: "/library", label: t.nav.library },
         { href: "/exams", label: t.dashboard.recentExams },
-        { href: "/plans", label: t.nav.plans },
         ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
         { href: "/account/subscription", label: t.account.manageLink },
       ]
@@ -90,12 +90,12 @@ export default async function RootLayout({
 
             {/* Desktop nav */}
             <div className="hidden items-center gap-5 text-sm md:flex lg:gap-6">
-              <Link href="/plans" className="hover:text-blue-600">{t.nav.plans}</Link>
               {user ? (
                 <>
+                  <Link href="/plans" className="hover:text-blue-600">{t.nav.plans}</Link>
                   <Link href="/dashboard" className="hover:text-blue-600">{t.nav.dashboard}</Link>
-                  <Link href="/community" className="hover:text-blue-600">Community</Link>
                   <Link href="/research" className="hover:text-blue-600">Research &amp; Stats</Link>
+                  <Link href="/community" className="hover:text-blue-600">Community</Link>
                   <Link href="/library" className="hover:text-blue-600">{t.nav.library}</Link>
                   {showAdmin && (
                     <Link href="/admin" className="font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300">
@@ -120,6 +120,7 @@ export default async function RootLayout({
                 </>
               ) : (
                 <>
+                  <Link href="/plans" className="hover:text-blue-600">{t.nav.plans}</Link>
                   <Link href="/login" className="hover:text-blue-600">{t.nav.signin}</Link>
                   <Link
                     href="/signup"
