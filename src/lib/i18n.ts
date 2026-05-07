@@ -528,7 +528,7 @@ function feats(t: Record<string, { title: string; body: string }>): FeatureItem[
 
 const en = {
   nav: {
-    plans: "Plans", dashboard: "Generate Exams", generate: "+ New exam",
+    plans: "Plans", dashboard: "Dashboard", generate: "+ New exam",
     signin: "Sign in", signup: "Start free", signout: "Sign out",
     languageMenuLabel: "Change language",
     library: "Library",

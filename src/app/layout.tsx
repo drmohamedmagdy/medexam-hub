@@ -63,7 +63,7 @@ export default async function RootLayout({
         { href: "/plans", label: t.nav.plans, color: "indigo" },
       ];
 
-  const pill = "rounded-full px-3 py-1.5 text-xs font-medium transition";
+  const pill = "rounded-full px-4 py-2 text-sm font-semibold transition";
 
   return (
     <html lang={locale} dir={dir} className={`${geistSans.variable} h-full antialiased`}>
@@ -128,7 +128,7 @@ export default async function RootLayout({
                   </Link>
                   <Link
                     href="/exam/new"
-                    className="rounded-full bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700"
+                    className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                   >
                     {t.nav.generate}
                   </Link>
@@ -136,7 +136,7 @@ export default async function RootLayout({
                   <form action={logoutAction}>
                     <button
                       type="submit"
-                      className="rounded-full px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                      className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                     >
                       {t.nav.signout}
                     </button>
@@ -152,7 +152,7 @@ export default async function RootLayout({
                   </Link>
                   <Link
                     href="/signup"
-                    className="rounded-full bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700"
+                    className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                   >
                     {t.nav.signup}
                   </Link>
