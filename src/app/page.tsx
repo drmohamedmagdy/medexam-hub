@@ -4,14 +4,16 @@ import { SPECIALTIES } from "@/lib/specialties";
 import { EXAM_TYPE_GROUPS } from "@/lib/exam-types";
 import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
+import { getCurrentUser } from "@/lib/auth";
 import SpecialtyFilter from "@/components/SpecialtyFilter";
 import StickyMobileCta from "@/components/StickyMobileCta";
 import HeroDemoButton from "@/components/HeroDemoButton";
 import FeatureVideo from "@/components/FeatureVideo";
 
 export default async function Home() {
-  const locale = await getLocale();
+  const [locale, user] = await Promise.all([getLocale(), getCurrentUser()]);
   const t = getTranslations(locale);
+  const isGuest = !user;
   const tH = t.home;
   const tHE = t.homeExtra;
   const totalFormats = EXAM_TYPE_GROUPS.reduce((s, g) => s + g.exams.length, 0);
@@ -217,8 +219,8 @@ export default async function Home() {
                 body: "Pick specialty, format, and difficulty — get a real exam in seconds.",
                 src: "/demo/exams.mp4",
                 poster: "/demo/exams-poster.jpg",
-                href: "/exam/new",
-                cta: "Try it →",
+                href: isGuest ? "/signup" : "/exam/new",
+                cta: isGuest ? "Sign up to try →" : "Try it →",
               },
               {
                 emoji: "🧠",
@@ -226,8 +228,8 @@ export default async function Home() {
                 body: "Drafts protocols, theses, manuscripts, and systematic reviews.",
                 src: "/demo/research.mp4",
                 poster: "/demo/research-poster.jpg",
-                href: "/research",
-                cta: "Open Research →",
+                href: isGuest ? "/signup" : "/research",
+                cta: isGuest ? "Sign up to open →" : "Open Research →",
               },
               {
                 emoji: "📊",
@@ -235,17 +237,17 @@ export default async function Home() {
                 body: "Upload data, run any of 17 tests, export Word with embedded charts.",
                 src: "/demo/statistics.mp4",
                 poster: "/demo/statistics-poster.jpg",
-                href: "/statistics",
-                cta: "Open Stats →",
+                href: isGuest ? "/signup" : "/statistics",
+                cta: isGuest ? "Sign up to open →" : "Open Stats →",
               },
               {
                 emoji: "📚",
                 title: "Free medical library",
-                body: "Curated PDFs, summaries, and reference notes — no signup.",
+                body: "Curated PDFs, summaries, and reference notes.",
                 src: "/demo/library.mp4",
                 poster: "/demo/library-poster.jpg",
-                href: "/library",
-                cta: "Browse library →",
+                href: isGuest ? "/signup" : "/library",
+                cta: isGuest ? "Sign up to browse →" : "Browse library →",
               },
             ].map((f) => (
               <div
@@ -348,7 +350,7 @@ export default async function Home() {
               </div>
             ))}
             <Link
-              href="/exam/new"
+              href={isGuest ? "/signup" : "/exam/new"}
               className="flex flex-col items-start justify-between rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50/50 p-5 text-blue-800 transition hover:bg-blue-100 dark:border-cyan-700/60 dark:bg-cyan-950/30 dark:text-cyan-200 dark:hover:bg-cyan-950/50"
             >
               <p className="text-sm">
