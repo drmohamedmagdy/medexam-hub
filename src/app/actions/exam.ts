@@ -211,6 +211,19 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       numQuestions: effectiveTotal,
     });
   } catch (e) {
+    // Log the full reason to Vercel for triage; the user sees a friendlier
+    // message returned in the action state.
+    console.error(
+      "[createExamAction] generation failed",
+      {
+        examId: exam.id,
+        primaryFormat,
+        isMixed,
+        merged,
+        numQuestions: effectiveTotal,
+      },
+      e
+    );
     await prisma.exam.update({
       where: { id: exam.id },
       data: { status: ExamStatus.FAILED },

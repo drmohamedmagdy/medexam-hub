@@ -165,15 +165,35 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
     .sort((a, b) => FORMAT_ORDER.indexOf(a.format) - FORMAT_ORDER.indexOf(b.format));
 
   if (batches.length > 1) {
+    // Run each format in parallel. If a single batch fails (Zod validation
+    // mismatch, transient OpenAI hiccup, etc.) retry it once sequentially —
+    // mixed exams rolled three rolls of the AI dice and the failure rate
+    // multiplies, so a single retry per batch is worth the few extra seconds.
     const results = await Promise.all(
-      batches.map((b) =>
-        generateSingleFormat({
+      batches.map(async (b) => {
+        const args = {
           ...input,
           formatBatches: undefined,
           questionFormat: b.format,
           numQuestions: b.count,
-        })
-      )
+        };
+        try {
+          return await generateSingleFormat(args);
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          console.warn(
+            `[exam-generator] ${b.format} batch failed once (${reason}); retrying`
+          );
+          try {
+            return await generateSingleFormat(args);
+          } catch (err2) {
+            const reason2 = err2 instanceof Error ? err2.message : String(err2);
+            throw new Error(
+              `Couldn't generate the ${b.format} portion (${b.count} questions): ${reason2}`
+            );
+          }
+        }
+      })
     );
     return results.flat();
   }
