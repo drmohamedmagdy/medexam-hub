@@ -411,45 +411,7 @@ export default function NewExamForm({
         )}
 
         <Field label={labels.questionFormat}>
-          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
-              <input
-                type="radio"
-                name="questionFormat"
-                value="MCQ"
-                defaultChecked
-                className="mt-0.5 h-4 w-4"
-              />
-              <span>
-                <span className="block font-medium">{labels.qfMcq}</span>
-                <span className="block text-xs text-zinc-500">{labels.qfMcqSub}</span>
-              </span>
-            </label>
-            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
-              <input
-                type="radio"
-                name="questionFormat"
-                value="TRUE_FALSE"
-                className="mt-0.5 h-4 w-4"
-              />
-              <span>
-                <span className="block font-medium">{labels.qfTrueFalse}</span>
-                <span className="block text-xs text-zinc-500">{labels.qfTrueFalseSub}</span>
-              </span>
-            </label>
-            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-zinc-300 px-3 py-2.5 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 dark:border-zinc-700 dark:has-[:checked]:bg-blue-950/40">
-              <input
-                type="radio"
-                name="questionFormat"
-                value="SHORT_NOTES"
-                className="mt-0.5 h-4 w-4"
-              />
-              <span>
-                <span className="block font-medium">{labels.qfShortNotes}</span>
-                <span className="block text-xs text-zinc-500">{labels.qfShortNotesSub}</span>
-              </span>
-            </label>
-          </div>
+          <FormatPicker labels={labels} />
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -569,6 +531,74 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="block text-sm font-medium">{label}</span>
       {children}
     </label>
+  );
+}
+
+type Fmt = "MCQ" | "TRUE_FALSE" | "SHORT_NOTES";
+
+function FormatPicker({ labels }: { labels: Labels }) {
+  const [selected, setSelected] = useState<Fmt[]>(["MCQ"]);
+
+  function toggle(f: Fmt) {
+    setSelected((prev) => {
+      const has = prev.includes(f);
+      if (has) {
+        // Don't allow zero — keep at least one ticked.
+        if (prev.length === 1) return prev;
+        return prev.filter((x) => x !== f);
+      }
+      // Preserve canonical order: MCQ → TRUE_FALSE → SHORT_NOTES.
+      const order: Fmt[] = ["MCQ", "TRUE_FALSE", "SHORT_NOTES"];
+      return order.filter((x) => prev.includes(x) || x === f);
+    });
+  }
+
+  const primary: Fmt = selected[0] ?? "MCQ";
+  const csv = selected.length > 1 ? selected.join(",") : "";
+
+  const items: Array<{ value: Fmt; title: string; sub: string }> = [
+    { value: "MCQ", title: labels.qfMcq, sub: labels.qfMcqSub },
+    { value: "TRUE_FALSE", title: labels.qfTrueFalse, sub: labels.qfTrueFalseSub },
+    { value: "SHORT_NOTES", title: labels.qfShortNotes, sub: labels.qfShortNotesSub },
+  ];
+
+  return (
+    <>
+      <input type="hidden" name="questionFormat" value={primary} />
+      <input type="hidden" name="questionFormats" value={csv} />
+      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {items.map((it) => {
+          const checked = selected.includes(it.value);
+          return (
+            <label
+              key={it.value}
+              className={`flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2.5 text-sm transition ${
+                checked
+                  ? "border-blue-600 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/40"
+                  : "border-zinc-300 dark:border-zinc-700"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggle(it.value)}
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                <span className="block font-medium">{it.title}</span>
+                <span className="block text-xs text-zinc-500">{it.sub}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      {selected.length > 1 && (
+        <p className="mt-2 text-xs text-blue-700 dark:text-cyan-300">
+          🎲 Mixing {selected.length} formats — questions will be split evenly
+          and interleaved.
+        </p>
+      )}
+    </>
   );
 }
 

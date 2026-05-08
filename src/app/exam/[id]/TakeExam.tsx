@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { submitExamAction } from "@/app/actions/exam";
 
+type QuestionFormat = "MCQ" | "TRUE_FALSE" | "SHORT_NOTES";
+
 type Question = {
   id: string;
   prompt: string;
+  format: QuestionFormat;
   options: { id: string; text: string }[];
 };
-
-type QuestionFormat = "MCQ" | "TRUE_FALSE" | "SHORT_NOTES";
 
 export default function TakeExam({
   examId,
@@ -23,6 +24,9 @@ export default function TakeExam({
   title: string;
   mode: "PRACTICE" | "EXAM";
   timeLimitSec: number | null;
+  /** Exam-level "primary" format, used for the header pill on single-format
+   * exams. Mixed-format exams fall back to "MIXED" labelling and each
+   * Question renders its own input. */
   questionFormat: QuestionFormat;
   questions: Question[];
 }) {
@@ -61,6 +65,10 @@ export default function TakeExam({
   }
 
   const answeredCount = Object.values(answers).filter((v) => (v ?? "").trim().length > 0).length;
+  const isMixed =
+    questions.length > 1 &&
+    new Set(questions.map((qq) => qq.format)).size > 1;
+  const headerFormat: QuestionFormat | "MIXED" = isMixed ? "MIXED" : questionFormat;
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28 pt-6 sm:px-6 sm:pb-8 sm:pt-8">
@@ -69,7 +77,13 @@ export default function TakeExam({
           <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
           <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm">
             Q {idx + 1} / {total} · {mode === "EXAM" ? "Exam" : "Practice"} ·{" "}
-            <FormatPill format={questionFormat} /> · {answeredCount}/{total} answered
+            <FormatPill format={headerFormat} />
+            {isMixed && (
+              <span className="ml-1.5 text-zinc-400">
+                (this Q: <FormatPill format={q.format} />)
+              </span>
+            )}{" "}
+            · {answeredCount}/{total} answered
           </p>
         </div>
         {secondsLeft !== null && (
@@ -89,13 +103,13 @@ export default function TakeExam({
       <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:mt-8 sm:p-6">
         <p className="text-base leading-relaxed">{q.prompt}</p>
 
-        {questionFormat === "TRUE_FALSE" ? (
+        {q.format === "TRUE_FALSE" ? (
           <TrueFalseInput
             value={answers[q.id]}
             options={q.options}
             onPick={pick}
           />
-        ) : questionFormat === "SHORT_NOTES" ? (
+        ) : q.format === "SHORT_NOTES" ? (
           <ShortNotesInput
             value={answers[q.id] ?? ""}
             onChange={pick}
@@ -274,9 +288,15 @@ function ShortNotesInput({
   );
 }
 
-function FormatPill({ format }: { format: QuestionFormat }) {
+function FormatPill({ format }: { format: QuestionFormat | "MIXED" }) {
   const label =
-    format === "TRUE_FALSE" ? "True/False" : format === "SHORT_NOTES" ? "Short notes" : "MCQ";
+    format === "MIXED"
+      ? "Mixed"
+      : format === "TRUE_FALSE"
+        ? "True/False"
+        : format === "SHORT_NOTES"
+          ? "Short notes"
+          : "MCQ";
   return <span>{label}</span>;
 }
 

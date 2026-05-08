@@ -30,6 +30,10 @@ const ShortNotesQuestionSchema = z.object({
 
 export type GeneratedQuestion = {
   prompt: string;
+  // The format this individual question was generated in. Set by the
+  // generator so mixed-format exams can render the right input UI per
+  // question.
+  format: QuestionFormat;
   // MCQ + TRUE_FALSE
   options?: Array<{ id: string; text: string }>;
   correctId?: string;
@@ -51,6 +55,13 @@ export type GenerateExamInput = {
   sourceFilename?: string | null;
   audience?: Audience;
   questionFormat?: QuestionFormat;
+  /**
+   * For mixed-format exams: the full set of formats the user picked. The
+   * total numQuestions is split proportionally across these and the
+   * generator runs one API call per format. Falls back to a single-format
+   * run when null/undefined or length === 1.
+   */
+  formats?: QuestionFormat[];
   difficulty: Difficulty;
   numQuestions: number;
 };
@@ -137,6 +148,48 @@ const McqExamSchema = z.object({ questions: z.array(McqQuestionSchema).min(1) })
 const ShortNotesExamSchema = z.object({ questions: z.array(ShortNotesQuestionSchema).min(1) });
 
 export async function generateExam(input: GenerateExamInput): Promise<GeneratedQuestion[]> {
+  // Mixed-format exam: dispatch one generation per format with the count
+  // split proportionally, then merge + interleave so the take-exam UI
+  // doesn't show all the same type back-to-back.
+  const formats = (input.formats ?? []).filter((f, i, arr) => arr.indexOf(f) === i);
+  if (formats.length > 1) {
+    const splits = splitCount(input.numQuestions, formats.length);
+    const batches = await Promise.all(
+      formats.map((f, i) =>
+        generateSingleFormat({
+          ...input,
+          formats: undefined,
+          questionFormat: f,
+          numQuestions: splits[i],
+        })
+      )
+    );
+    return interleave(batches);
+  }
+  const single = formats[0] ?? input.questionFormat;
+  return generateSingleFormat({ ...input, formats: undefined, questionFormat: single });
+}
+
+function splitCount(total: number, parts: number): number[] {
+  const base = Math.floor(total / parts);
+  const remainder = total - base * parts;
+  return Array.from({ length: parts }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+function interleave<T>(batches: T[][]): T[] {
+  const out: T[] = [];
+  const maxLen = Math.max(0, ...batches.map((b) => b.length));
+  for (let i = 0; i < maxLen; i++) {
+    for (const b of batches) {
+      if (i < b.length) out.push(b[i]);
+    }
+  }
+  return out;
+}
+
+async function generateSingleFormat(
+  input: GenerateExamInput
+): Promise<GeneratedQuestion[]> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
 
@@ -281,6 +334,7 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
     }
     return result.data.questions.map((q) => ({
       prompt: q.prompt,
+      format,
       modelAnswer: q.modelAnswer,
       explanation: q.explanation,
       learningPoint: q.learningPoint ?? null,
@@ -305,6 +359,7 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
 
   return result.data.questions.map((q) => ({
     prompt: q.prompt,
+    format,
     options: q.options,
     correctId: q.correctId,
     explanation: q.explanation,

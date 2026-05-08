@@ -20,9 +20,14 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
   if (!exam || exam.userId !== user.id) redirect("/dashboard");
   if (exam.status !== "COMPLETED") redirect(`/exam/${id}`);
 
-  const isShortNotes = exam.questionFormat === "SHORT_NOTES";
+  // Per-question format determines rendering. Exam-level isShortNotes is
+  // true only when EVERY question is a short-notes one — that's when the
+  // overall results header switches to the self-assessment card.
+  const isShortNotes = exam.questions.every((q) => q.format === "SHORT_NOTES");
   const correct = exam.questions.filter((q) => q.isCorrect).length;
+  const gradable = exam.questions.filter((q) => q.format !== "SHORT_NOTES").length;
   const total = exam.questions.length;
+  const isMixed = new Set(exam.questions.map((q) => q.format)).size > 1;
   const canPdf = canExportPdf(user.plan);
   const scoreInt = Math.round(exam.scorePct ?? 0);
   const showConfetti = !isShortNotes && scoreInt >= 95;
@@ -45,7 +50,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{exam.title}</h1>
           <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-            {[exam.examType, exam.specialty, exam.difficulty, formatLabel(exam.questionFormat)]
+            {[exam.examType, exam.specialty, exam.difficulty, isMixed ? "Mixed" : formatLabel(exam.questionFormat)]
               .filter(Boolean)
               .join(" · ")}{" "}
             · submitted {exam.submittedAt?.toLocaleString()}
@@ -54,7 +59,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         {!isShortNotes ? (
           <div className="flex items-baseline gap-2 sm:block sm:text-right">
             <div className="text-3xl font-semibold">{scoreInt}%</div>
-            <div className="text-sm text-zinc-500">{correct} of {total} correct</div>
+            <div className="text-sm text-zinc-500">
+              {correct} of {gradable} correct
+              {isMixed && total > gradable && (
+                <span className="ml-1">· {total - gradable} self-assessed</span>
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-sm text-zinc-500">
@@ -93,7 +103,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
 
       <ol className="mt-8 space-y-5 sm:mt-10 sm:space-y-6">
         {exam.questions.map((q, i) => {
-          if (isShortNotes) {
+          if (q.format === "SHORT_NOTES") {
             return (
               <li
                 key={q.id}

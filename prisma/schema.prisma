@@ -232,6 +232,10 @@ model Exam {
   questionFormat QuestionFormat @default(MCQ)
   status         ExamStatus     @default(GENERATING)
   numQuestions Int
+  // JSON array of QuestionFormat values when the exam mixes multiple
+  // formats (e.g. ["MCQ","TRUE_FALSE","SHORT_NOTES"]). Null on single-format
+  // exams — `questionFormat` is the source of truth in that case.
+  formatsAllowedJson String?
   timeLimitSec Int?
   createdAt    DateTime   @default(now())
   startedAt    DateTime?
@@ -285,6 +289,11 @@ model Question {
   examId        String
   orderIndex    Int
   prompt        String
+  // Per-question format. For single-format exams every Question shares the
+  // exam's format; for mixed-format exams (Exam.formatsAllowedJson set) each
+  // Question carries its own type so the take-exam UI can render the right
+  // controls per question.
+  format        QuestionFormat @default(MCQ)
   // For MCQ + TRUE_FALSE: JSON-encoded option list and the correct option id.
   // For SHORT_NOTES: optionsJson is "[]" and correctId is "" (unused).
   optionsJson   String

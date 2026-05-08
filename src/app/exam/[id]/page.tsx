@@ -8,6 +8,7 @@ import ShareExamCard from "./results/ShareExamCard";
 type QuestionForClient = {
   id: string;
   prompt: string;
+  format: "MCQ" | "TRUE_FALSE" | "SHORT_NOTES";
   options: { id: string; text: string }[];
 };
 
@@ -40,6 +41,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
   const questions: QuestionForClient[] = exam.questions.map((q) => ({
     id: q.id,
     prompt: q.prompt,
+    format: q.format,
     options: JSON.parse(q.optionsJson) as { id: string; text: string }[],
   }));
 

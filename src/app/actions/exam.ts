@@ -22,6 +22,10 @@ const NewExamSchema = z
     language: z.string().max(8).optional().or(z.literal("")),
     audience: z.enum(["MEDICAL", "PARAMEDICAL", "NONMEDICAL"]).optional(),
     questionFormat: z.nativeEnum(QuestionFormat).optional(),
+    // Comma-separated list of formats for mixed exams. When present (and
+    // length > 1), the exam will mix question types — the AI generates each
+    // format separately and the questions are interleaved.
+    questionFormats: z.string().max(80).optional().or(z.literal("")),
     difficulty: z.nativeEnum(Difficulty),
     mode: z.nativeEnum(ExamMode),
     numQuestions: z.coerce.number().int().min(1).max(100),
@@ -44,6 +48,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     language: formData.get("language") ?? "",
     audience: formData.get("audience") || undefined,
     questionFormat: formData.get("questionFormat") || undefined,
+    questionFormats: formData.get("questionFormats") ?? "",
     difficulty: formData.get("difficulty"),
     mode: formData.get("mode"),
     numQuestions: formData.get("numQuestions"),
@@ -99,7 +104,24 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     fileLabel: sourceFile ? `From ${sourceFile.filename}` : null,
   });
 
-  const questionFormat = input.questionFormat ?? QuestionFormat.MCQ;
+  // Parse mixed-format selection. The form sends a comma-separated list of
+  // QuestionFormat values when the user picked more than one. If only one
+  // is set (or none), we behave exactly as before — no mixing, no extra
+  // formatsAllowedJson record.
+  const validFormats = new Set<QuestionFormat>([
+    QuestionFormat.MCQ,
+    QuestionFormat.TRUE_FALSE,
+    QuestionFormat.SHORT_NOTES,
+  ]);
+  const requestedFormats = (input.questionFormats ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s): s is QuestionFormat => (validFormats as Set<string>).has(s));
+  const dedupedFormats = Array.from(new Set(requestedFormats));
+  const isMixed = dedupedFormats.length > 1;
+  const primaryFormat: QuestionFormat = isMixed
+    ? dedupedFormats[0]
+    : (dedupedFormats[0] ?? input.questionFormat ?? QuestionFormat.MCQ);
 
   const exam = await prisma.exam.create({
     data: {
@@ -111,7 +133,8 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       sourceFileId: sourceFile?.id ?? null,
       difficulty: input.difficulty,
       mode: input.mode,
-      questionFormat,
+      questionFormat: primaryFormat,
+      formatsAllowedJson: isMixed ? JSON.stringify(dedupedFormats) : null,
       status: ExamStatus.GENERATING,
       numQuestions: input.numQuestions,
       timeLimitSec: input.timeLimitMin ? input.timeLimitMin * 60 : null,
@@ -152,7 +175,8 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       sourceText: trimmed?.text ?? null,
       sourceFilename: sourceFile?.filename ?? null,
       audience: input.audience ?? "MEDICAL",
-      questionFormat,
+      questionFormat: primaryFormat,
+      formats: isMixed ? dedupedFormats : undefined,
       difficulty: input.difficulty,
       numQuestions: input.numQuestions,
     });
@@ -172,6 +196,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
           examId: exam.id,
           orderIndex: i,
           prompt: q.prompt,
+          format: q.format ?? primaryFormat,
           // For SHORT_NOTES the generator returns no options/correctId, so
           // store empty fallbacks. For MCQ/TF, persist the AI output as-is.
           optionsJson: JSON.stringify(q.options ?? []),
@@ -242,19 +267,24 @@ export async function submitExamAction(formData: FormData): Promise<void> {
   const answers = AnswerMapSchema.parse(JSON.parse(answersJson));
 
   const totalQuestions = exam!.questions.length;
-  const isShortNotes = exam!.questionFormat === QuestionFormat.SHORT_NOTES;
 
+  // Grade per-question based on each question's format. For mixed exams,
+  // SHORT_NOTES questions are stored as free text (no auto-grade) while
+  // MCQ / TRUE_FALSE are auto-graded against correctId. The overall score
+  // is the percentage of *gradable* questions answered correctly; if every
+  // question is short-notes, scorePct stays null.
   let correctCount = 0;
+  let gradableCount = 0;
   await prisma.$transaction(
     exam!.questions.map((q) => {
       const submitted = answers[q.id] ?? null;
-      if (isShortNotes) {
-        // SHORT_NOTES: store the user's free-text answer, no auto-grade.
+      if (q.format === QuestionFormat.SHORT_NOTES) {
         return prisma.question.update({
           where: { id: q.id },
           data: { selectedText: submitted, isCorrect: null },
         });
       }
+      gradableCount += 1;
       const isCorrect = submitted !== null && submitted === q.correctId;
       if (isCorrect) correctCount += 1;
       return prisma.question.update({
@@ -264,13 +294,14 @@ export async function submitExamAction(formData: FormData): Promise<void> {
     })
   );
 
-  // SHORT_NOTES exams aren't auto-graded — keep scorePct null so the
-  // analytics charts skip them and the results page knows not to show a %.
-  const scorePct = isShortNotes
-    ? null
-    : totalQuestions === 0
-      ? 0
-      : (correctCount / totalQuestions) * 100;
+  // If the exam was 100% short-notes, leave scorePct null so analytics
+  // skip it and the results page renders the self-assessment view.
+  const scorePct =
+    gradableCount === 0
+      ? null
+      : totalQuestions === 0
+        ? 0
+        : (correctCount / gradableCount) * 100;
 
   // Quota was already consumed at generation time. Submission just grades
   // the answers and marks the exam complete — no further usage tracking.
