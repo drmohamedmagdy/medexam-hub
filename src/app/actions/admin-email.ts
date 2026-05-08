@@ -4,11 +4,21 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { sendBatch } from "@/lib/email";
 import { PLAN_LIMITS } from "@/lib/plans";
 import type { Plan } from "@/generated/prisma/client";
 
-const SEGMENTS = ["ALL_OPTIN", "FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER", "PAID", "INACTIVE"] as const;
+const SEGMENTS = [
+  "ALL_OPTIN",
+  "FREE",
+  "BASIC",
+  "PRO",
+  "PREMIUM",
+  "RESEARCHER",
+  "PAID",
+  "INACTIVE",
+  "FAILED_BROADCAST",
+] as const;
 type Segment = (typeof SEGMENTS)[number];
 
 const Schema = z.object({
@@ -57,28 +67,29 @@ export async function adminBroadcastAction(
     return { ok: true, dryRun: true, recipients: recipients.length };
   }
 
-  let sent = 0;
-  for (const u of recipients) {
-    const firstName = u.name?.split(" ")[0] ?? "there";
-    const planLabel = PLAN_LIMITS[u.plan].label;
-    const personalized = body
-      .replaceAll("{firstName}", escapeHtml(firstName))
-      .replaceAll("{name}", escapeHtml(u.name ?? u.email))
-      .replaceAll("{email}", escapeHtml(u.email))
-      .replaceAll("{planLabel}", escapeHtml(planLabel));
-    const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;line-height:1.55;">${personalized}</div>`;
-    const r = await sendEmail({
-      toUserId: u.id,
-      toEmail: u.email,
-      subject,
-      category: "broadcast",
-      html,
-    });
-    if (r.ok) sent += 1;
-  }
+  // Throttle to stay under Resend's 5-requests-per-second free-tier limit:
+  // 4 emails in parallel, 1.1 s wait between batches → ~3.6 req/sec, well
+  // below the cap. Failures (real bounces, etc.) still get logged via
+  // sendEmail's existing EmailLog write.
+  const result = await sendBatch(
+    recipients.map((u) => ({ id: u.id, email: u.email })),
+    (r) => {
+      const u = recipients.find((x) => x.id === r.id)!;
+      const firstName = u.name?.split(" ")[0] ?? "there";
+      const planLabel = PLAN_LIMITS[u.plan].label;
+      const personalized = body
+        .replaceAll("{firstName}", escapeHtml(firstName))
+        .replaceAll("{name}", escapeHtml(u.name ?? u.email))
+        .replaceAll("{email}", escapeHtml(u.email))
+        .replaceAll("{planLabel}", escapeHtml(planLabel));
+      const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;line-height:1.55;">${personalized}</div>`;
+      return { subject, category: "broadcast", html };
+    },
+    { batchSize: 4, delayMs: 1100 }
+  );
 
   revalidatePath("/admin/email");
-  return { ok: true, dryRun: false, recipients: recipients.length, sent };
+  return { ok: true, dryRun: false, recipients: recipients.length, sent: result.sent };
 }
 
 type WhereFilter = NonNullable<Parameters<typeof prisma.user.findMany>[0]>["where"];
@@ -109,6 +120,35 @@ async function buildWhere(segment: Segment): Promise<WhereFilter> {
           { exams: { none: { createdAt: { gte: cutoff } } } },
         ],
       };
+    }
+    case "FAILED_BROADCAST": {
+      // Users whose most recent broadcast EmailLog in the last 7 days is a
+      // failure AND who don't have any successful broadcast row in that
+      // same window — i.e. they didn't get the message.
+      const cutoff = new Date(Date.now() - 7 * DAY_MS);
+      const failed = await prisma.emailLog.findMany({
+        where: {
+          category: "broadcast",
+          error: { not: null },
+          sentAt: { gte: cutoff },
+        },
+        select: { userId: true },
+        distinct: ["userId"],
+      });
+      const sent = await prisma.emailLog.findMany({
+        where: {
+          category: "broadcast",
+          error: null,
+          sentAt: { gte: cutoff },
+        },
+        select: { userId: true },
+        distinct: ["userId"],
+      });
+      const sentIds = new Set(sent.map((e) => e.userId));
+      const targetIds = failed
+        .map((e) => e.userId)
+        .filter((id) => !sentIds.has(id));
+      return { ...base, id: { in: targetIds } };
     }
   }
 }

@@ -31,6 +31,7 @@ export default function BroadcastForm() {
           <option value="RESEARCHER">Researcher plan users</option>
           <option value="PAID">All paid users (Basic / Pro / Premium / Researcher)</option>
           <option value="INACTIVE">Inactive 30+ days</option>
+          <option value="FAILED_BROADCAST">⚠️ Recently failed broadcast (last 7 days, didn&apos;t receive any successful broadcast since)</option>
         </select>
         <p className="mt-1 text-xs text-zinc-500">
           Only users who haven&apos;t unsubscribed from marketing emails will receive your message.
