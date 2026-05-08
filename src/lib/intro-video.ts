@@ -71,7 +71,15 @@ function candidateUrls(surface: IntroSurface): (string | undefined)[] {
       "/demo/hero.mp4",
     ];
   }
-  return [env("NEXT_PUBLIC_INTRO_VIDEO_URL"), "/demo/hero.mp4"];
+  // Hero "Watch demo" lightbox: prefer hero.mp4, but fall back to the
+  // signup or login video if no dedicated hero asset exists. Most users
+  // are new, so signup.mp4 is the natural second choice.
+  return [
+    env("NEXT_PUBLIC_INTRO_VIDEO_URL"),
+    "/demo/hero.mp4",
+    "/demo/signup.mp4",
+    "/demo/login.mp4",
+  ];
 }
 
 function publicFileExists(urlPath: string): boolean {
