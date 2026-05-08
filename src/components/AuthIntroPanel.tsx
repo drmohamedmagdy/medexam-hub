@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { IntroVideo } from "@/lib/intro-video";
 
 type Highlight = { emoji: string; text: string };
@@ -13,10 +13,10 @@ const HIGHLIGHTS: Highlight[] = [
 ];
 
 /**
- * Auth-side intro panel: renders the configured intro video (YouTube /
- * Vimeo iframe or local MP4) plus a highlight list. Used on /signup and
- * /login. Set NEXT_PUBLIC_INTRO_VIDEO_URL to swap the video source
- * without code changes.
+ * Auth-side intro panel with autoplay-muted video and a tap-to-unmute
+ * overlay so visitors can hear the audio with one click. Browsers
+ * block unsolicited autoplay-with-sound; the muted-then-unmute pattern
+ * is the standard workaround.
  */
 export default function AuthIntroPanel({
   video,
@@ -72,6 +72,8 @@ export default function AuthIntroPanel({
 
 function VideoFrame({ video }: { video: IntroVideo }) {
   const [failed, setFailed] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   if (video.kind === "youtube" || video.kind === "vimeo") {
     return (
@@ -109,18 +111,54 @@ function VideoFrame({ video }: { video: IntroVideo }) {
     );
   }
 
+  function toggleMute() {
+    const v = videoRef.current;
+    if (!v) return;
+    const next = !muted;
+    v.muted = next;
+    setMuted(next);
+    // Browsers may have paused after mute toggle on some platforms; nudge it.
+    if (v.paused) void v.play().catch(() => {});
+  }
+
   return (
-    /* eslint-disable-next-line jsx-a11y/media-has-caption */
-    <video
-      src={video.src}
-      poster={video.poster}
-      autoPlay
-      loop
-      muted
-      playsInline
-      preload="metadata"
-      onError={() => setFailed(true)}
-      className="aspect-video w-full rounded-lg bg-zinc-100 object-cover dark:bg-slate-800"
-    />
+    <div className="relative overflow-hidden rounded-lg bg-zinc-100 dark:bg-slate-800">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <video
+        ref={videoRef}
+        src={video.src}
+        poster={video.poster}
+        autoPlay
+        loop
+        muted={muted}
+        playsInline
+        preload="metadata"
+        onError={() => setFailed(true)}
+        className="aspect-video w-full object-cover"
+      />
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? "Unmute video" : "Mute video"}
+        title={muted ? "Tap to unmute" : "Tap to mute"}
+        className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur transition hover:bg-black/85"
+      >
+        {muted ? (
+          <>
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.59 3L20 8.41 18.59 7l-3.59 3.59L11.41 7 10 8.41 13.59 12 10 15.59 11.41 17l3.59-3.59L18.59 17 20 15.59 16.59 12z" />
+            </svg>
+            Tap to unmute
+          </>
+        ) : (
+          <>
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+            </svg>
+            Sound on
+          </>
+        )}
+      </button>
+    </div>
   );
 }
