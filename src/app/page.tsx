@@ -6,6 +6,8 @@ import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import SpecialtyFilter from "@/components/SpecialtyFilter";
 import StickyMobileCta from "@/components/StickyMobileCta";
+import HeroDemoButton from "@/components/HeroDemoButton";
+import FeatureVideo from "@/components/FeatureVideo";
 
 export default async function Home() {
   const locale = await getLocale();
@@ -89,6 +91,7 @@ export default async function Home() {
                 {tH.ctaStart}
                 <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
+              <HeroDemoButton label="Watch demo (60s)" />
               <Link
                 href="/plans"
                 className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3.5 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
@@ -187,6 +190,92 @@ export default async function Home() {
               <p className="mt-2 text-sm text-zinc-600 dark:text-slate-400">{f.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* SEE IT IN ACTION — autoplay, muted, looping inline videos */}
+      <section className="relative overflow-hidden border-y border-zinc-200 bg-gradient-to-b from-white via-blue-50/40 to-white dark:border-slate-800/60 dark:from-slate-950 dark:via-blue-950/20 dark:to-slate-950">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/70 px-3 py-1 text-xs font-medium text-blue-700 dark:border-cyan-700/50 dark:bg-cyan-950/40 dark:text-cyan-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+              Live preview
+            </span>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+              See MedExam Hub in action
+            </h2>
+            <p className="mt-2 text-zinc-600 dark:text-slate-400">
+              Quick looks at the four tools you&apos;ll spend most of your time in.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                emoji: "🎯",
+                title: "AI exam generator",
+                body: "Pick specialty, format, and difficulty — get a real exam in seconds.",
+                src: "/demo/exams.mp4",
+                poster: "/demo/exams-poster.jpg",
+                href: "/exam/new",
+                cta: "Try it →",
+              },
+              {
+                emoji: "🧠",
+                title: "Research Assistant",
+                body: "Drafts protocols, theses, manuscripts, and systematic reviews.",
+                src: "/demo/research.mp4",
+                poster: "/demo/research-poster.jpg",
+                href: "/research",
+                cta: "Open Research →",
+              },
+              {
+                emoji: "📊",
+                title: "Statistics workspace",
+                body: "Upload data, run any of 17 tests, export Word with embedded charts.",
+                src: "/demo/statistics.mp4",
+                poster: "/demo/statistics-poster.jpg",
+                href: "/statistics",
+                cta: "Open Stats →",
+              },
+              {
+                emoji: "📚",
+                title: "Free medical library",
+                body: "Curated PDFs, summaries, and reference notes — no signup.",
+                src: "/demo/library.mp4",
+                poster: "/demo/library-poster.jpg",
+                href: "/library",
+                cta: "Browse library →",
+              },
+            ].map((f) => (
+              <div
+                key={f.title}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-3 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-600/10 dark:border-slate-800 dark:bg-slate-900/60 dark:backdrop-blur dark:hover:border-cyan-700/60 dark:hover:shadow-cyan-500/15 sm:p-4"
+              >
+                <FeatureVideo
+                  src={f.src}
+                  poster={f.poster}
+                  emoji={f.emoji}
+                  title={f.title}
+                />
+                <div className="mt-3 flex-1 px-1">
+                  <h3 className="text-sm font-semibold sm:text-base">
+                    <span aria-hidden className="mr-1.5">{f.emoji}</span>
+                    {f.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-600 dark:text-slate-400 sm:text-sm">
+                    {f.body}
+                  </p>
+                </div>
+                <Link
+                  href={f.href}
+                  className="mt-3 inline-flex items-center justify-center rounded-md bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-cyan-300 dark:hover:bg-blue-950/70 sm:text-sm"
+                >
+                  {f.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
