@@ -66,7 +66,7 @@ export default async function SignupPage({
         {/* Intro / video column — appears above form on mobile */}
         <div className="order-1 lg:order-2">
           <AuthIntroPanel
-            video={resolveIntroVideo()}
+            video={resolveIntroVideo("signup")}
             heading="See what you'll get"
             subheading="A 60-second tour of the AI exam generator, Research Assistant, Statistics workspace, and free library."
           />

@@ -51,7 +51,7 @@ export default async function LoginPage({
         {/* Intro / video column — above form on mobile */}
         <div className="order-1 lg:order-2">
           <AuthIntroPanel
-            video={resolveIntroVideo()}
+            video={resolveIntroVideo("login")}
             heading="Welcome back"
             subheading="A quick reminder of what's inside — sign in to pick up where you left off."
           />
