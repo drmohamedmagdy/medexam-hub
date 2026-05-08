@@ -11,11 +11,18 @@ type Labels = {
   submitLoading: string;
 };
 
-export default function LoginForm({ labels }: { labels: Labels }) {
+export default function LoginForm({
+  labels,
+  next,
+}: {
+  labels: Labels;
+  next?: string | null;
+}) {
   const [state, action, pending] = useActionState<AuthState, FormData>(loginAction, null);
 
   return (
     <form action={action} className="mt-8 space-y-4">
+      {next && <input type="hidden" name="next" value={next} />}
       <div>
         <label htmlFor="email" className="block text-sm font-medium">{labels.email}</label>
         <input

@@ -9,12 +9,14 @@ import LoginForm from "./LoginForm";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ verify?: string }>;
+  searchParams: Promise<{ verify?: string; next?: string }>;
 }) {
   const sp = await searchParams;
   const verifyInvalid = sp.verify === "invalid";
   const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+  const nextRaw = (sp.next ?? "").trim();
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw.slice(0, 500) : null;
+  if (user) redirect(next ?? "/dashboard");
 
   const locale = await getLocale();
   const t = getTranslations(locale);
@@ -33,6 +35,7 @@ export default async function LoginPage({
             </div>
           )}
           <LoginForm
+            next={next}
             labels={{
               email: t.login.email,
               password: t.login.password,

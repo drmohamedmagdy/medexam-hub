@@ -238,11 +238,21 @@ model Exam {
   submittedAt  DateTime?
   scorePct     Float?
 
+  // Share link (the master exam can be taken by other users — questions
+  // are copied to a fork Exam owned by each taker). Only set on the master.
+  shareToken     String?    @unique
+  // When the user takes someone else's shared exam, this points back at
+  // the master so the creator can see all attempts ranked.
+  sharedFromId   String?
+
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions    Question[]
   sourceFile   FileUpload? @relation(fields: [sourceFileId], references: [id], onDelete: SetNull)
+  sharedFrom   Exam?       @relation("ExamShares", fields: [sharedFromId], references: [id], onDelete: Cascade)
+  sharedAttempts Exam[]    @relation("ExamShares")
 
   @@index([userId, createdAt])
+  @@index([sharedFromId])
 }
 
 model FileUpload {

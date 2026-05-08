@@ -33,6 +33,21 @@ const LoginSchema = z.object({
 
 export type AuthState = { error?: string } | null;
 
+/**
+ * Returns the requested post-auth redirect target, but only if it's a safe
+ * same-origin path. Anything weird (external host, protocol-relative,
+ * missing leading slash) falls back to /dashboard so we can't be turned
+ * into an open redirect.
+ */
+function safeNextRedirect(raw: FormDataEntryValue | null): string {
+  if (typeof raw !== "string") return "/dashboard";
+  const v = raw.trim();
+  if (!v.startsWith("/") || v.startsWith("//")) return "/dashboard";
+  // Reject URLs containing a host or protocol after the leading slash.
+  if (/^\/[a-z]+:\/\//i.test(v)) return "/dashboard";
+  return v.slice(0, 500);
+}
+
 export async function signupAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = SignupSchema.safeParse({
     name: formData.get("name"),
@@ -90,7 +105,7 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
   }).catch(() => {});
 
   await createSession(user.id);
-  redirect("/dashboard");
+  redirect(safeNextRedirect(formData.get("next")));
 }
 
 export type ResendVerifyState = { ok?: boolean; error?: string } | null;
@@ -145,7 +160,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   }
 
   await createSession(user.id);
-  redirect("/dashboard");
+  redirect(safeNextRedirect(formData.get("next")));
 }
 
 export async function logoutAction(): Promise<void> {

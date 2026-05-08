@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { canExportPdf } from "@/lib/plans";
 import PrintPdfButton from "./PrintPdfButton";
 import ScoreCelebration from "./ScoreCelebration";
+import ShareExamCard from "./ShareExamCard";
 import Confetti from "@/components/Confetti";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,6 +26,17 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
   const canPdf = canExportPdf(user.plan);
   const scoreInt = Math.round(exam.scorePct ?? 0);
   const showConfetti = !isShortNotes && scoreInt >= 95;
+  // Share section is only useful for the original exam (not forks). Count
+  // attempts so the card can link to the leaderboard when there are any.
+  const isOriginal = exam.sharedFromId === null;
+  const attemptCount = isOriginal
+    ? await prisma.exam.count({
+        where: { sharedFromId: exam.id, status: "COMPLETED" },
+      })
+    : 0;
+  const shareUrl = exam.shareToken
+    ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://medexamhub.org"}/e/${exam.shareToken}`
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 print:max-w-full print:px-0 print:py-0">
@@ -68,6 +80,15 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         <div className="mt-4 print:hidden">
           <PrintPdfButton />
         </div>
+      )}
+
+      {isOriginal && (
+        <ShareExamCard
+          examId={exam.id}
+          initialToken={exam.shareToken}
+          initialUrl={shareUrl}
+          attemptCount={attemptCount}
+        />
       )}
 
       <ol className="mt-8 space-y-5 sm:mt-10 sm:space-y-6">

@@ -305,6 +305,32 @@ export async function submitExamAction(formData: FormData): Promise<void> {
     } catch {
       // best-effort
     }
+
+    // Shared-exam attempt: notify the creator that someone finished
+    // their shared exam, with the score so they can see the leaderboard
+    // shift in real time.
+    try {
+      if (exam!.sharedFromId && scorePct !== null) {
+        const master = await prisma.exam.findUnique({
+          where: { id: exam!.sharedFromId },
+          select: { id: true, userId: true, title: true },
+        });
+        if (master) {
+          const takerName = user.name?.trim() || user.email.split("@")[0];
+          const scoreLabel = `${Math.round(scorePct)}%`;
+          await createNotification({
+            userId: master.userId,
+            category: "system",
+            emoji: "🏁",
+            title: `${takerName} finished your shared exam — ${scoreLabel}`,
+            body: `Open the leaderboard for "${master.title}" to see how everyone stacks up.`,
+            href: `/exam/${master.id}/leaderboard`,
+          });
+        }
+      }
+    } catch {
+      // best-effort
+    }
   })();
 
   redirect(`/exam/${examId}/results`);

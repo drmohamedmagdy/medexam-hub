@@ -10,15 +10,19 @@ import SignupForm from "./SignupForm";
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; next?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
-
-  const [locale, sp] = await Promise.all([getLocale(), searchParams]);
-  const t = getTranslations(locale);
-
+  const [user, locale, sp] = await Promise.all([
+    getCurrentUser(),
+    getLocale(),
+    searchParams,
+  ]);
   const refCode = (sp.ref ?? "").trim().toUpperCase().slice(0, 40) || null;
+  const nextRaw = (sp.next ?? "").trim();
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw.slice(0, 500) : null;
+  if (user) redirect(next ?? "/dashboard");
+
+  const t = getTranslations(locale);
   const referrer = refCode ? await findUserByReferralCode(refCode) : null;
 
   return (
@@ -46,6 +50,7 @@ export default async function SignupPage({
 
           <SignupForm
             referralCode={referrer ? refCode : null}
+            next={next}
             labels={{
               name: t.signup.name,
               email: t.signup.email,
