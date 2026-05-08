@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import TakeExam from "./TakeExam";
+import ShareExamCard from "./results/ShareExamCard";
 
 type QuestionForClient = {
   id: string;
@@ -42,14 +43,38 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
     options: JSON.parse(q.optionsJson) as { id: string; text: string }[],
   }));
 
+  // Share UI shows on the master exam only — not on forks taken by
+  // other users (they can't re-share someone else's exam).
+  const isOriginal = exam.sharedFromId === null;
+  const attemptCount = isOriginal
+    ? await prisma.exam.count({
+        where: { sharedFromId: exam.id, status: "COMPLETED" },
+      })
+    : 0;
+  const shareUrl = exam.shareToken
+    ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://medexamhub.org"}/e/${exam.shareToken}`
+    : null;
+
   return (
-    <TakeExam
-      examId={exam.id}
-      title={exam.title}
-      mode={exam.mode}
-      timeLimitSec={exam.timeLimitSec}
-      questionFormat={exam.questionFormat}
-      questions={questions}
-    />
+    <>
+      {isOriginal && (
+        <div className="mx-auto max-w-3xl px-4 pt-4 sm:px-6">
+          <ShareExamCard
+            examId={exam.id}
+            initialToken={exam.shareToken}
+            initialUrl={shareUrl}
+            attemptCount={attemptCount}
+          />
+        </div>
+      )}
+      <TakeExam
+        examId={exam.id}
+        title={exam.title}
+        mode={exam.mode}
+        timeLimitSec={exam.timeLimitSec}
+        questionFormat={exam.questionFormat}
+        questions={questions}
+      />
+    </>
   );
 }

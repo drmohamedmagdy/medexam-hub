@@ -41,8 +41,11 @@ export async function enableShareAction(formData: FormData): Promise<ShareState>
   if (exam.sharedFromId) {
     return { ok: false, error: "This is a forked attempt — only the original exam can be shared." };
   }
-  if (exam.status !== ExamStatus.COMPLETED) {
-    return { ok: false, error: "Finish this exam before sharing it." };
+  // Allow sharing as soon as the exam is generated (READY) — the creator
+  // doesn't have to take it themselves first. GENERATING / FAILED are still
+  // blocked because there are no real questions yet.
+  if (exam.status === ExamStatus.GENERATING || exam.status === ExamStatus.FAILED) {
+    return { ok: false, error: "Wait for the exam to finish generating before sharing." };
   }
 
   let token = exam.shareToken;
