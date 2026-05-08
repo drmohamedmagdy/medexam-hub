@@ -97,7 +97,9 @@ export default function NewExamForm({
 
   const difficultyDefault = defaults?.difficulty ?? "RESIDENT";
   const modeDefault = defaults?.mode ?? "PRACTICE";
-  const numQDefault = Math.min(Math.max(1, defaults?.numQuestions ?? 5), maxPerExam);
+  // Picker default: per-format counts. Honour any saved default total
+  // by giving MCQ that count, leaving the other formats off.
+  const numQDefault = Math.min(Math.max(1, defaults?.numQuestions ?? 10), maxPerExam);
 
   // Controlled difficulty so the select stays valid when the user switches
   // between medical (7-level) and generic (4-level) tabs.
@@ -411,7 +413,7 @@ export default function NewExamForm({
         )}
 
         <Field label={labels.questionFormat}>
-          <FormatPicker labels={labels} />
+          <FormatPicker labels={labels} defaultMcqCount={numQDefault} />
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -447,29 +449,16 @@ export default function NewExamForm({
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label={labels.questionsMax.replace("{n}", String(maxPerExam))}>
-            <input
-              name="numQuestions"
-              type="number"
-              required
-              min={1}
-              max={maxPerExam}
-              defaultValue={numQDefault}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </Field>
-          <Field label={labels.timeLimit}>
-            <input
-              name="timeLimitMin"
-              type="number"
-              min={0}
-              max={240}
-              placeholder={labels.timeLimitPlaceholder}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </Field>
-        </div>
+        <Field label={labels.timeLimit}>
+          <input
+            name="timeLimitMin"
+            type="number"
+            min={0}
+            max={240}
+            placeholder={labels.timeLimitPlaceholder}
+            className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </Field>
 
         <Field label={labels.questionLanguage}>
           <select
@@ -535,26 +524,48 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 type Fmt = "MCQ" | "TRUE_FALSE" | "SHORT_NOTES";
+const FMT_ORDER: Fmt[] = ["MCQ", "TRUE_FALSE", "SHORT_NOTES"];
 
-function FormatPicker({ labels }: { labels: Labels }) {
-  const [selected, setSelected] = useState<Fmt[]>(["MCQ"]);
+function FormatPicker({
+  labels,
+  defaultMcqCount,
+}: {
+  labels: Labels;
+  defaultMcqCount: number;
+}) {
+  // Per-format counts. 0 = format not included. Default: MCQ on with the
+  // user's saved-default total, others off.
+  const [counts, setCounts] = useState<Record<Fmt, number>>({
+    MCQ: defaultMcqCount,
+    TRUE_FALSE: 0,
+    SHORT_NOTES: 0,
+  });
+
+  const selected = FMT_ORDER.filter((f) => counts[f] > 0);
+  const total = FMT_ORDER.reduce((s, f) => s + counts[f], 0);
+  const isMixed = selected.length > 1;
 
   function toggle(f: Fmt) {
-    setSelected((prev) => {
-      const has = prev.includes(f);
-      if (has) {
-        // Don't allow zero — keep at least one ticked.
-        if (prev.length === 1) return prev;
-        return prev.filter((x) => x !== f);
+    setCounts((prev) => {
+      const isOn = prev[f] > 0;
+      if (isOn) {
+        // Don't let the user uncheck the last remaining format.
+        if (selected.length === 1) return prev;
+        return { ...prev, [f]: 0 };
       }
-      // Preserve canonical order: MCQ → TRUE_FALSE → SHORT_NOTES.
-      const order: Fmt[] = ["MCQ", "TRUE_FALSE", "SHORT_NOTES"];
-      return order.filter((x) => prev.includes(x) || x === f);
+      // Default a freshly-ticked format to 5 questions.
+      return { ...prev, [f]: 5 };
     });
   }
 
+  function setCount(f: Fmt, n: number) {
+    setCounts((prev) => ({ ...prev, [f]: Math.max(0, Math.min(100, Math.floor(n) || 0)) }));
+  }
+
   const primary: Fmt = selected[0] ?? "MCQ";
-  const csv = selected.length > 1 ? selected.join(",") : "";
+  const csv = FMT_ORDER.filter((f) => counts[f] > 0)
+    .map((f) => `${f}:${counts[f]}`)
+    .join(",");
 
   const items: Array<{ value: Fmt; title: string; sub: string }> = [
     { value: "MCQ", title: labels.qfMcq, sub: labels.qfMcqSub },
@@ -565,39 +576,63 @@ function FormatPicker({ labels }: { labels: Labels }) {
   return (
     <>
       <input type="hidden" name="questionFormat" value={primary} />
-      <input type="hidden" name="questionFormats" value={csv} />
-      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <input type="hidden" name="questionCounts" value={csv} />
+      {/* Override the global numQuestions input (further down the form) so
+          the server uses the sum of per-format counts as the total. */}
+      <input type="hidden" name="numQuestions" value={total || 1} />
+
+      <div className="mt-2 space-y-2">
         {items.map((it) => {
-          const checked = selected.includes(it.value);
+          const checked = counts[it.value] > 0;
           return (
-            <label
+            <div
               key={it.value}
-              className={`flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2.5 text-sm transition ${
+              className={`flex flex-wrap items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition ${
                 checked
                   ? "border-blue-600 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/40"
                   : "border-zinc-300 dark:border-zinc-700"
               }`}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggle(it.value)}
-                className="mt-0.5 h-4 w-4"
-              />
-              <span>
-                <span className="block font-medium">{it.title}</span>
-                <span className="block text-xs text-zinc-500">{it.sub}</span>
-              </span>
-            </label>
+              <label className="flex flex-1 cursor-pointer items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(it.value)}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="min-w-0">
+                  <span className="block font-medium">{it.title}</span>
+                  <span className="block text-xs text-zinc-500">{it.sub}</span>
+                </span>
+              </label>
+              {checked && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={counts[it.value]}
+                    onChange={(e) => setCount(it.value, Number(e.target.value))}
+                    className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  />
+                  <span className="text-xs text-zinc-500">questions</span>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
-      {selected.length > 1 && (
-        <p className="mt-2 text-xs text-blue-700 dark:text-cyan-300">
-          🎲 Mixing {selected.length} formats — questions will be split evenly
-          and interleaved.
-        </p>
-      )}
+
+      <p className="mt-3 text-xs">
+        <span className="font-semibold">Total: {total} question{total === 1 ? "" : "s"}</span>
+        {isMixed && (
+          <span className="ml-2 text-blue-700 dark:text-cyan-300">
+            · Order in exam: {selected.map((f) => labels[
+              f === "MCQ" ? "qfMcq" : f === "TRUE_FALSE" ? "qfTrueFalse" : "qfShortNotes"
+            ]).join(" → ")}
+          </span>
+        )}
+      </p>
     </>
   );
 }

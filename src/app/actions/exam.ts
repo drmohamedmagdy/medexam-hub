@@ -22,10 +22,12 @@ const NewExamSchema = z
     language: z.string().max(8).optional().or(z.literal("")),
     audience: z.enum(["MEDICAL", "PARAMEDICAL", "NONMEDICAL"]).optional(),
     questionFormat: z.nativeEnum(QuestionFormat).optional(),
-    // Comma-separated list of formats for mixed exams. When present (and
-    // length > 1), the exam will mix question types — the AI generates each
-    // format separately and the questions are interleaved.
-    questionFormats: z.string().max(80).optional().or(z.literal("")),
+    // Mixed-format exam config: comma-separated `<FORMAT>:<count>` pairs,
+    // e.g. "MCQ:5,TRUE_FALSE:3,SHORT_NOTES:2". The generator runs one AI
+    // call per non-zero entry and concatenates the results in the canonical
+    // order (MCQ → TRUE_FALSE → SHORT_NOTES). When set, this overrides
+    // numQuestions (the total comes from the sum of per-format counts).
+    questionCounts: z.string().max(120).optional().or(z.literal("")),
     difficulty: z.nativeEnum(Difficulty),
     mode: z.nativeEnum(ExamMode),
     numQuestions: z.coerce.number().int().min(1).max(100),
@@ -48,7 +50,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     language: formData.get("language") ?? "",
     audience: formData.get("audience") || undefined,
     questionFormat: formData.get("questionFormat") || undefined,
-    questionFormats: formData.get("questionFormats") ?? "",
+    questionCounts: formData.get("questionCounts") ?? "",
     difficulty: formData.get("difficulty"),
     mode: formData.get("mode"),
     numQuestions: formData.get("numQuestions"),
@@ -104,24 +106,52 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     fileLabel: sourceFile ? `From ${sourceFile.filename}` : null,
   });
 
-  // Parse mixed-format selection. The form sends a comma-separated list of
-  // QuestionFormat values when the user picked more than one. If only one
-  // is set (or none), we behave exactly as before — no mixing, no extra
-  // formatsAllowedJson record.
-  const validFormats = new Set<QuestionFormat>([
+  // Parse mixed-format selection. The form sends a comma-separated list
+  // of `<FORMAT>:<count>` pairs. Each non-zero entry runs as its own
+  // generation; results are concatenated MCQ → TRUE_FALSE → SHORT_NOTES.
+  // When only one format has count > 0 (or `questionCounts` is empty),
+  // we fall back to the legacy single-format path.
+  const FORMAT_ORDER: QuestionFormat[] = [
     QuestionFormat.MCQ,
     QuestionFormat.TRUE_FALSE,
     QuestionFormat.SHORT_NOTES,
-  ]);
-  const requestedFormats = (input.questionFormats ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s): s is QuestionFormat => (validFormats as Set<string>).has(s));
-  const dedupedFormats = Array.from(new Set(requestedFormats));
-  const isMixed = dedupedFormats.length > 1;
-  const primaryFormat: QuestionFormat = isMixed
-    ? dedupedFormats[0]
-    : (dedupedFormats[0] ?? input.questionFormat ?? QuestionFormat.MCQ);
+  ];
+  const validFormats = new Set<QuestionFormat>(FORMAT_ORDER);
+  const formatBatches: { format: QuestionFormat; count: number }[] = [];
+  for (const pair of (input.questionCounts ?? "").split(",")) {
+    const trimmed = pair.trim();
+    if (!trimmed) continue;
+    const [rawFormat, rawCount] = trimmed.split(":");
+    const f = (rawFormat ?? "").trim();
+    const c = Number((rawCount ?? "").trim());
+    if (!validFormats.has(f as QuestionFormat)) continue;
+    if (!Number.isInteger(c) || c <= 0) continue;
+    formatBatches.push({ format: f as QuestionFormat, count: c });
+  }
+  // Dedupe + canonical order.
+  const merged: { format: QuestionFormat; count: number }[] = [];
+  for (const f of FORMAT_ORDER) {
+    const sum = formatBatches
+      .filter((b) => b.format === f)
+      .reduce((s, b) => s + b.count, 0);
+    if (sum > 0) merged.push({ format: f, count: sum });
+  }
+  const isMixed = merged.length > 1;
+  const totalFromBatches = merged.reduce((s, b) => s + b.count, 0);
+  const effectiveTotal = totalFromBatches > 0 ? totalFromBatches : input.numQuestions;
+  const primaryFormat: QuestionFormat = merged[0]?.format ?? input.questionFormat ?? QuestionFormat.MCQ;
+
+  // Re-validate the (possibly increased) total against plan + remaining quota.
+  if (effectiveTotal > planCfg.maxQuestionsPerExam) {
+    return {
+      error: `Your ${planCfg.label} plan allows at most ${planCfg.maxQuestionsPerExam} questions per exam.`,
+    };
+  }
+  if (effectiveTotal > usage.remaining) {
+    return {
+      error: `You have ${usage.remaining} of ${usage.limit} questions remaining this month on the ${planCfg.label} plan. Reduce the question count or upgrade for more.`,
+    };
+  }
 
   const exam = await prisma.exam.create({
     data: {
@@ -134,9 +164,9 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       difficulty: input.difficulty,
       mode: input.mode,
       questionFormat: primaryFormat,
-      formatsAllowedJson: isMixed ? JSON.stringify(dedupedFormats) : null,
+      formatsAllowedJson: isMixed ? JSON.stringify(merged) : null,
       status: ExamStatus.GENERATING,
-      numQuestions: input.numQuestions,
+      numQuestions: effectiveTotal,
       timeLimitSec: input.timeLimitMin ? input.timeLimitMin * 60 : null,
     },
   });
@@ -176,9 +206,9 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       sourceFilename: sourceFile?.filename ?? null,
       audience: input.audience ?? "MEDICAL",
       questionFormat: primaryFormat,
-      formats: isMixed ? dedupedFormats : undefined,
+      formatBatches: isMixed ? merged : undefined,
       difficulty: input.difficulty,
-      numQuestions: input.numQuestions,
+      numQuestions: effectiveTotal,
     });
   } catch (e) {
     await prisma.exam.update({

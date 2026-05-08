@@ -56,15 +56,18 @@ export type GenerateExamInput = {
   audience?: Audience;
   questionFormat?: QuestionFormat;
   /**
-   * For mixed-format exams: the full set of formats the user picked. The
-   * total numQuestions is split proportionally across these and the
-   * generator runs one API call per format. Falls back to a single-format
-   * run when null/undefined or length === 1.
+   * For mixed-format exams: explicit count per format. The generator
+   * dispatches one API call per non-zero entry and concatenates the
+   * results in the canonical order (MCQ → TRUE_FALSE → SHORT_NOTES) so
+   * the take-exam UI groups same-format questions together. When this
+   * is provided `numQuestions` is ignored.
    */
-  formats?: QuestionFormat[];
+  formatBatches?: { format: QuestionFormat; count: number }[];
   difficulty: Difficulty;
   numQuestions: number;
 };
+
+const FORMAT_ORDER: QuestionFormat[] = ["MCQ", "TRUE_FALSE", "SHORT_NOTES"];
 
 const DIFFICULTY_GUIDANCE: Record<Difficulty, string> = {
   BEGINNER: "Basic conceptual recall, suitable for first-year students.",
@@ -148,43 +151,41 @@ const McqExamSchema = z.object({ questions: z.array(McqQuestionSchema).min(1) })
 const ShortNotesExamSchema = z.object({ questions: z.array(ShortNotesQuestionSchema).min(1) });
 
 export async function generateExam(input: GenerateExamInput): Promise<GeneratedQuestion[]> {
-  // Mixed-format exam: dispatch one generation per format with the count
-  // split proportionally, then merge + interleave so the take-exam UI
-  // doesn't show all the same type back-to-back.
-  const formats = (input.formats ?? []).filter((f, i, arr) => arr.indexOf(f) === i);
-  if (formats.length > 1) {
-    const splits = splitCount(input.numQuestions, formats.length);
-    const batches = await Promise.all(
-      formats.map((f, i) =>
+  // Mixed-format exam: explicit per-format counts. Dispatch one API call
+  // per non-zero entry and concatenate in canonical order.
+  const batches = (input.formatBatches ?? [])
+    .filter((b) => b.count > 0)
+    // Dedupe + sort canonical so questions land MCQ → T/F → SHORT_NOTES.
+    .reduce<{ format: QuestionFormat; count: number }[]>((acc, b) => {
+      const existing = acc.find((x) => x.format === b.format);
+      if (existing) existing.count += b.count;
+      else acc.push({ ...b });
+      return acc;
+    }, [])
+    .sort((a, b) => FORMAT_ORDER.indexOf(a.format) - FORMAT_ORDER.indexOf(b.format));
+
+  if (batches.length > 1) {
+    const results = await Promise.all(
+      batches.map((b) =>
         generateSingleFormat({
           ...input,
-          formats: undefined,
-          questionFormat: f,
-          numQuestions: splits[i],
+          formatBatches: undefined,
+          questionFormat: b.format,
+          numQuestions: b.count,
         })
       )
     );
-    return interleave(batches);
+    return results.flat();
   }
-  const single = formats[0] ?? input.questionFormat;
-  return generateSingleFormat({ ...input, formats: undefined, questionFormat: single });
-}
 
-function splitCount(total: number, parts: number): number[] {
-  const base = Math.floor(total / parts);
-  const remainder = total - base * parts;
-  return Array.from({ length: parts }, (_, i) => base + (i < remainder ? 1 : 0));
-}
-
-function interleave<T>(batches: T[][]): T[] {
-  const out: T[] = [];
-  const maxLen = Math.max(0, ...batches.map((b) => b.length));
-  for (let i = 0; i < maxLen; i++) {
-    for (const b of batches) {
-      if (i < b.length) out.push(b[i]);
-    }
-  }
-  return out;
+  const single = batches[0]?.format ?? input.questionFormat;
+  const count = batches[0]?.count ?? input.numQuestions;
+  return generateSingleFormat({
+    ...input,
+    formatBatches: undefined,
+    questionFormat: single,
+    numQuestions: count,
+  });
 }
 
 async function generateSingleFormat(
