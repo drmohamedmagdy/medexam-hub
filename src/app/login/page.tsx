@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import AuthIntroPanel from "@/components/AuthIntroPanel";
+import { resolveIntroVideo } from "@/lib/intro-video";
 import LoginForm from "./LoginForm";
 
 export default async function LoginPage({
@@ -50,6 +51,7 @@ export default async function LoginPage({
         {/* Intro / video column — above form on mobile */}
         <div className="order-1 lg:order-2">
           <AuthIntroPanel
+            video={resolveIntroVideo()}
             heading="Welcome back"
             subheading="A quick reminder of what's inside — sign in to pick up where you left off."
           />

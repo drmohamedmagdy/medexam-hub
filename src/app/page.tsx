@@ -5,6 +5,7 @@ import { EXAM_TYPE_GROUPS } from "@/lib/exam-types";
 import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { getCurrentUser } from "@/lib/auth";
+import { resolveIntroVideo } from "@/lib/intro-video";
 import SpecialtyFilter from "@/components/SpecialtyFilter";
 import StickyMobileCta from "@/components/StickyMobileCta";
 import HeroDemoButton from "@/components/HeroDemoButton";
@@ -14,6 +15,7 @@ export default async function Home() {
   const [locale, user] = await Promise.all([getLocale(), getCurrentUser()]);
   const t = getTranslations(locale);
   const isGuest = !user;
+  const introVideo = resolveIntroVideo();
   const tH = t.home;
   const tHE = t.homeExtra;
   const totalFormats = EXAM_TYPE_GROUPS.reduce((s, g) => s + g.exams.length, 0);
@@ -93,7 +95,7 @@ export default async function Home() {
                 {tH.ctaStart}
                 <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
-              <HeroDemoButton label="Watch demo (60s)" />
+              <HeroDemoButton video={introVideo} label="Watch demo (60s)" />
               <Link
                 href="/plans"
                 className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3.5 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"

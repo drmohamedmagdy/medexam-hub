@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { findUserByReferralCode } from "@/lib/credits";
 import AuthIntroPanel from "@/components/AuthIntroPanel";
+import { resolveIntroVideo } from "@/lib/intro-video";
 import SignupForm from "./SignupForm";
 
 export default async function SignupPage({
@@ -65,6 +66,7 @@ export default async function SignupPage({
         {/* Intro / video column — appears above form on mobile */}
         <div className="order-1 lg:order-2">
           <AuthIntroPanel
+            video={resolveIntroVideo()}
             heading="See what you'll get"
             subheading="A 60-second tour of the AI exam generator, Research Assistant, Statistics workspace, and free library."
           />

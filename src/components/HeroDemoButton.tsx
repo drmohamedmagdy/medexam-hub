@@ -1,20 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { IntroVideo } from "@/lib/intro-video";
 
 /**
- * "Watch demo" button that opens a video lightbox. Falls back gracefully
- * if the source file (configurable) doesn't exist — the lightbox opens,
- * the <video> errors, and the user just closes it.
+ * "Watch demo" button that opens a video lightbox. Accepts the resolved
+ * intro video so a YouTube / Vimeo URL set via NEXT_PUBLIC_INTRO_VIDEO_URL
+ * embeds as an iframe; otherwise plays the local /demo/hero.mp4.
  */
 export default function HeroDemoButton({
-  src = "/demo/hero.mp4",
-  poster = "/demo/hero-poster.jpg",
+  video,
   label,
   closeLabel = "Close",
 }: {
-  src?: string;
-  poster?: string;
+  video: IntroVideo;
   label: string;
   closeLabel?: string;
 }) {
@@ -73,15 +72,25 @@ export default function HeroDemoButton({
                 <path d="M18 6L6 18" />
               </svg>
             </button>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              src={src}
-              poster={poster}
-              controls
-              autoPlay
-              playsInline
-              className="aspect-video w-full bg-black"
-            />
+            {video.kind === "youtube" || video.kind === "vimeo" ? (
+              <iframe
+                src={`${video.embedUrl}${video.embedUrl.includes("?") ? "&" : "?"}autoplay=1`}
+                title="MedExam Hub — demo video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="aspect-video w-full bg-black"
+              />
+            ) : (
+              /* eslint-disable-next-line jsx-a11y/media-has-caption */
+              <video
+                src={video.src}
+                poster={video.poster}
+                controls
+                autoPlay
+                playsInline
+                className="aspect-video w-full bg-black"
+              />
+            )}
           </div>
         </div>
       )}
