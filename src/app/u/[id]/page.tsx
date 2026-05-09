@@ -7,6 +7,7 @@ import { getFriendshipState } from "@/lib/friendship";
 import OpenMessageButton from "./OpenMessageButton";
 import FriendButtons from "./FriendButtons";
 import IncomingFriendRequests from "./IncomingFriendRequests";
+import Gallery from "./Gallery";
 
 export async function generateMetadata({
   params,
@@ -369,38 +370,7 @@ export default async function ProfilePage({
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
                 Gallery
               </h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {galleryItems.map((m) => (
-                  <figure
-                    key={m.id}
-                    className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
-                  >
-                    {m.kind === "video" ? (
-                      /* eslint-disable-next-line jsx-a11y/media-has-caption */
-                      <video
-                        src={m.url}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        className="aspect-video w-full bg-zinc-100 object-cover dark:bg-zinc-800"
-                      />
-                    ) : (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={m.url}
-                        alt={m.caption ?? ""}
-                        loading="lazy"
-                        className="aspect-video w-full bg-zinc-100 object-cover dark:bg-zinc-800"
-                      />
-                    )}
-                    {m.caption && (
-                      <figcaption className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400">
-                        {m.caption}
-                      </figcaption>
-                    )}
-                  </figure>
-                ))}
-              </div>
+              <Gallery items={galleryItems} />
             </section>
           )}
 
