@@ -55,7 +55,6 @@ export default async function RootLayout({
         { href: "/library", label: t.nav.library, color: "emerald" },
         { href: "/courses", label: "Courses", color: "cyan" },
         { href: `/u/${user.id}`, label: "My profile", color: "rose" },
-        { href: "/messages", label: "Messages", color: "blue" },
         ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
         { href: "/account/subscription", label: t.account.manageLink, color: "zinc" },
       ]
@@ -187,12 +186,6 @@ export default async function RootLayout({
                   className={`${pill} ${NAV_COLOR_DESKTOP.rose}`}
                 >
                   My profile
-                </Link>
-                <Link
-                  href="/messages"
-                  className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}
-                >
-                  Messages
                 </Link>
                 <Link
                   href="/account/subscription"

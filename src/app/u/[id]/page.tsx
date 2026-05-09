@@ -58,8 +58,10 @@ export default async function ProfilePage({
 
   // Public stats: completed exams + average score across NON-fork exams
   // (so a user's "public stats" reflect their own work, not someone
-  // else's leaderboard scores).
-  const [completedCount, avgAgg] = await Promise.all([
+  // else's leaderboard scores). Unread message count is loaded only when
+  // the user is viewing their own profile — used by the inbox shortcut
+  // button next to "Edit profile".
+  const [completedCount, avgAgg, unreadMessages] = await Promise.all([
     prisma.exam.count({
       where: { userId: profile.id, status: "COMPLETED", sharedFromId: null },
     }),
@@ -72,6 +74,11 @@ export default async function ProfilePage({
       },
       _avg: { scorePct: true },
     }),
+    isMe
+      ? prisma.message.count({
+          where: { receiverId: profile.id, readAt: null },
+        })
+      : Promise.resolve(0),
   ]);
 
   const displayName =
@@ -102,12 +109,35 @@ export default async function ProfilePage({
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {isMe ? (
-              <Link
-                href={`/u/${profile.id}/edit`}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                Edit profile
-              </Link>
+              <>
+                <Link
+                  href={`/u/${profile.id}/edit`}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  Edit profile
+                </Link>
+                <Link
+                  href="/messages"
+                  className="relative inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  aria-label={
+                    unreadMessages > 0
+                      ? `Messages (${unreadMessages} unread)`
+                      : "Messages"
+                  }
+                  title="Open inbox"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  Messages
+                  {unreadMessages > 0 && (
+                    <span className="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
+                    </span>
+                  )}
+                </Link>
+              </>
             ) : me ? (
               <OpenMessageButton userId={profile.id} />
             ) : (
