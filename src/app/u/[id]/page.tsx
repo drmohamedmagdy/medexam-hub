@@ -201,6 +201,13 @@ export default async function ProfilePage({
                   Edit profile
                 </Link>
                 <Link
+                  href={`/u/${profile.id}/content`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  title="Manage gallery, files, and articles"
+                >
+                  📁 My content
+                </Link>
+                <Link
                   href="/messages"
                   className="relative inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
                   aria-label={
