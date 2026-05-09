@@ -132,6 +132,8 @@ model User {
   // Spaced repetition — one card per (user, missed question)
   reviewCards     ReviewCard[]
   reviewLogs      ReviewLog[]
+
+  errorLogs       ErrorLog[]
 }
 
 model ProfileMedia {
@@ -471,6 +473,25 @@ model ReviewCard {
   @@unique([userId, questionId])
   @@index([userId, due])
   @@index([userId, state])
+}
+
+// Captures runtime errors from both server boundaries and the client
+// error.tsx boundary (via /api/errors/log). Lets the admin see what's
+// actually breaking in production instead of waiting for user reports.
+model ErrorLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  route     String?
+  message   String
+  stack     String?
+  digest    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([digest])
 }
 
 // One row per grade event, so we can compute review accuracy and

@@ -24,6 +24,7 @@ export default async function AdminLayout({
             <AdminLink href="/admin/email">Emails</AdminLink>
             <AdminLink href="/admin/library">Library</AdminLink>
             <AdminLink href="/admin/courses">Courses</AdminLink>
+            <AdminLink href="/admin/errors">Errors</AdminLink>
           </nav>
         </div>
       </div>
