@@ -57,6 +57,13 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
     ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://medexamhub.org"}/e/${exam.shareToken}`
     : null;
 
+  // Lockdown mode kicks in for any exam taken under "test conditions":
+  // either creator chose EXAM mode, or this is a forked attempt of someone
+  // else's shared exam (where leaderboard fairness matters). Practice
+  // attempts on the user's own exams stay relaxed.
+  const lockdown = exam.mode === "EXAM" || exam.sharedFromId !== null;
+  const watermark = user.email;
+
   return (
     <>
       {isOriginal && (
@@ -76,6 +83,8 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
         timeLimitSec={exam.timeLimitSec}
         questionFormat={exam.questionFormat}
         questions={questions}
+        lockdown={lockdown}
+        watermark={watermark}
       />
     </>
   );

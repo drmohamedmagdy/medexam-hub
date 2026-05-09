@@ -19,6 +19,8 @@ export default function TakeExam({
   timeLimitSec,
   questionFormat,
   questions,
+  lockdown,
+  watermark,
 }: {
   examId: string;
   title: string;
@@ -29,6 +31,13 @@ export default function TakeExam({
    * Question renders its own input. */
   questionFormat: QuestionFormat;
   questions: Question[];
+  /** When true, switching tabs / minimising / closing the page auto-
+   * submits the exam after a short grace period. Applied to EXAM-mode
+   * exams and shared-exam forks. */
+  lockdown: boolean;
+  /** Email or identifier shown as a translucent watermark across the page
+   * so screenshots are traceable to the user. */
+  watermark: string;
 }) {
   const [idx, setIdx] = useState(0);
   // For MCQ/TF the value is the chosen option id; for SHORT_NOTES it's the
@@ -36,7 +45,15 @@ export default function TakeExam({
   // distinguishes by exam.questionFormat.
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [secondsLeft, setSecondsLeft] = useState<number | null>(timeLimitSec);
+  const [violations, setViolations] = useState(0);
+  const [autoSubmitted, setAutoSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  // Latest answers tracked in a ref so the visibility / unload handlers
+  // can read them without re-binding on every keystroke.
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   const q = questions[idx];
   const total = questions.length;
@@ -60,6 +77,61 @@ export default function TakeExam({
     return () => clearInterval(interval);
   }, [mode, timeLimitSec]);
 
+  // Lockdown: auto-submit on second tab-switch / window-blur, and warn on
+  // first. A short grace period (3s) tolerates the brief blur that can
+  // happen when iOS surfaces autofill, the password keychain, etc.
+  useEffect(() => {
+    if (!lockdown) return;
+    let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function handleViolation() {
+      setViolations((v) => {
+        const next = v + 1;
+        if (next >= 2 && !autoSubmitted) {
+          setAutoSubmitted(true);
+          formRef.current?.requestSubmit();
+        }
+        return next;
+      });
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === "hidden") {
+        hiddenTimer = setTimeout(() => handleViolation(), 3000);
+      } else if (hiddenTimer) {
+        clearTimeout(hiddenTimer);
+        hiddenTimer = null;
+      }
+    }
+
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      // Triggers the browser's native "Leave site?" confirmation. The
+      // exact wording is browser-controlled — we just need to set
+      // returnValue to a non-empty string.
+      e.preventDefault();
+      e.returnValue = "Leaving this page will auto-submit your exam.";
+      return e.returnValue;
+    }
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      if (hiddenTimer) clearTimeout(hiddenTimer);
+    };
+  }, [lockdown, autoSubmitted]);
+
+  // Block right-click / long-press context menu in lockdown mode — common
+  // way to "Save image" / "Inspect" the question. Real determined users
+  // can still bypass with devtools; this just adds friction.
+  useEffect(() => {
+    if (!lockdown) return;
+    const onContext = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener("contextmenu", onContext);
+    return () => document.removeEventListener("contextmenu", onContext);
+  }, [lockdown]);
+
   function pick(value: string) {
     setAnswers((prev) => ({ ...prev, [q.id]: value }));
   }
@@ -71,7 +143,61 @@ export default function TakeExam({
   const headerFormat: QuestionFormat | "MIXED" = isMixed ? "MIXED" : questionFormat;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-28 pt-6 sm:px-6 sm:pb-8 sm:pt-8">
+    <div
+      className={`relative mx-auto max-w-3xl px-4 pb-28 pt-6 sm:px-6 sm:pb-8 sm:pt-8 ${
+        lockdown ? "select-none [-webkit-touch-callout:none]" : ""
+      }`}
+    >
+      {/* Diagonal watermark — visible on screen + captured in screenshots
+          so any leak is traceable to the user. */}
+      {lockdown && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-10 overflow-hidden"
+          style={{ contain: "strict" }}
+        >
+          <div
+            className="absolute inset-0 opacity-[0.07] dark:opacity-[0.11]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(-30deg, transparent 0 80px, rgba(15,23,42,0.0) 80px 81px)`,
+            }}
+          >
+            <div
+              className="grid h-full w-full"
+              style={{
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gridAutoRows: "120px",
+                transform: "rotate(-30deg) scale(1.6)",
+                transformOrigin: "center",
+              }}
+            >
+              {Array.from({ length: 60 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-center font-mono text-xs text-zinc-700 dark:text-zinc-200"
+                >
+                  {watermark} · {new Date().toISOString().slice(0, 10)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lockdown && violations === 0 && (
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          🔒 <strong>Exam mode</strong> — leaving this page (switching tabs,
+          locking your phone, closing the browser) will auto-submit your exam
+          after a brief warning. One warning is allowed.
+        </div>
+      )}
+      {lockdown && violations === 1 && !autoSubmitted && (
+        <div className="mb-4 rounded-md border border-red-400 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800 dark:border-red-700 dark:bg-red-950/50 dark:text-red-200">
+          ⚠️ Tab-switch detected — one more and your exam will auto-submit
+          immediately.
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
