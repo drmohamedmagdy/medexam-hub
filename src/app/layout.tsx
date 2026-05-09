@@ -53,6 +53,7 @@ export default async function RootLayout({
         { href: "/research", label: "Research & Stats", color: "violet" },
         { href: "/community", label: "Community", color: "rose" },
         { href: "/library", label: t.nav.library, color: "emerald" },
+        { href: "/courses", label: "Courses", color: "cyan" },
         ...(showAdmin ? ([{ href: "/admin", label: "Admin", emphasis: "admin" }] as NavItem[]) : []),
         { href: "/account/subscription", label: t.account.manageLink, color: "zinc" },
       ]
@@ -170,6 +171,9 @@ export default async function RootLayout({
                 </Link>
                 <Link href="/library" className={`${pill} ${NAV_COLOR_DESKTOP.emerald}`}>
                   {t.nav.library}
+                </Link>
+                <Link href="/courses" className={`${pill} ${NAV_COLOR_DESKTOP.cyan}`}>
+                  Courses
                 </Link>
                 {showAdmin && (
                   <Link href="/admin" className={`${pill} ${NAV_COLOR_DESKTOP.amber}`}>

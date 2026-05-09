@@ -170,6 +170,31 @@ model Notification {
   @@index([userId, readAt])
 }
 
+model Course {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  category        String   // freeform tag like "Cardiology", "USMLE Step 1", "Wound Care"
+  // Video file on Vercel Blob
+  videoFilename   String
+  videoMimeType   String
+  videoSizeBytes  Int
+  videoUrl        String   // public Vercel Blob URL
+  videoPathname   String   // pathname inside Blob (used for delete)
+  durationSec     Int?     // optional, set if known
+  // Optional thumbnail image
+  thumbnailUrl      String?
+  thumbnailPathname String?
+  uploadedBy      String   // admin user id who uploaded it
+  viewCount       Int      @default(0)
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublished, createdAt])
+}
+
 model LibraryResource {
   id            String   @id @default(cuid())
   title         String

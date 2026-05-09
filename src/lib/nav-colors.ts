@@ -8,6 +8,7 @@ export type NavColor =
   | "violet"
   | "rose"
   | "emerald"
+  | "cyan"
   | "amber"
   | "zinc";
 
@@ -21,6 +22,8 @@ export const NAV_COLOR_DESKTOP: Record<NavColor, string> = {
   rose: "bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50",
   emerald:
     "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50",
+  cyan:
+    "bg-cyan-50 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50",
   amber:
     "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-900/50",
   zinc: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
@@ -36,6 +39,8 @@ export const NAV_COLOR_MOBILE: Record<NavColor, string> = {
   rose: "bg-rose-50 text-rose-800 hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-200",
   emerald:
     "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-200",
+  cyan:
+    "bg-cyan-50 text-cyan-800 hover:bg-cyan-100 dark:bg-cyan-950/50 dark:text-cyan-200",
   amber:
     "bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-200",
   zinc: "bg-zinc-100 text-zinc-800 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200",
