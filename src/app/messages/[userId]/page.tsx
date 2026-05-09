@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { markThreadReadAction } from "@/app/actions/messages";
 import MessageThreadComposer from "./MessageThreadComposer";
 
 export async function generateMetadata({
@@ -49,8 +48,17 @@ export default async function MessageThreadPage({
     take: 500,
   });
 
-  // Mark all incoming messages from this partner as read on view.
-  await markThreadReadAction(partner.id);
+  // Mark all incoming messages from this partner as read on view. Done
+  // inline (not via the server action) because a server action would call
+  // revalidatePath during page render, which Next.js 16 rejects.
+  await prisma.message.updateMany({
+    where: {
+      senderId: partner.id,
+      receiverId: me.id,
+      readAt: null,
+    },
+    data: { readAt: new Date() },
+  });
 
   const partnerName = partner.name?.trim() || partner.email.split("@")[0];
   const partnerInitial = partnerName[0]?.toUpperCase() ?? "?";
