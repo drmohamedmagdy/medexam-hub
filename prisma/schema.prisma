@@ -116,6 +116,32 @@ model User {
   // Direct messaging
   sentMessages     Message[]   @relation("MessageSender")
   receivedMessages Message[]   @relation("MessageReceiver")
+
+  // Profile media (images / videos shown on /u/<id>)
+  profileMedia     ProfileMedia[]
+
+  // Group join requests sent by this user
+  joinRequests     GroupJoinRequest[] @relation("RequesterJoinRequests")
+  reviewedRequests GroupJoinRequest[] @relation("ReviewerJoinRequests")
+}
+
+model ProfileMedia {
+  id           String   @id @default(cuid())
+  userId       String
+  // "image" | "video"
+  kind         String
+  url          String
+  pathname     String   // Vercel Blob pathname for delete
+  mimeType     String
+  sizeBytes    Int
+  caption      String?
+  thumbnailUrl String?  // optional poster for videos
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sortOrder])
 }
 
 model Message {
@@ -131,6 +157,25 @@ model Message {
 
   @@index([senderId, receiverId, sentAt])
   @@index([receiverId, readAt])
+}
+
+model GroupJoinRequest {
+  id         String   @id @default(cuid())
+  groupId    String
+  userId     String
+  message    String?
+  // "pending" | "approved" | "rejected"
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  decidedAt  DateTime?
+  decidedBy  String?
+
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  requester User   @relation("RequesterJoinRequests", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer  User?  @relation("ReviewerJoinRequests", fields: [decidedBy], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, userId])
+  @@index([groupId, status])
 }
 
 model CreditTransaction {
@@ -505,6 +550,7 @@ model Group {
   members     GroupMember[]
   invites     GroupInvite[]
   posts       Post[]
+  joinRequests GroupJoinRequest[]
 
   @@index([ownerId])
   @@index([isPublic, createdAt])

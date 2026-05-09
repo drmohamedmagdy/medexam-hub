@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import PostCard from "../../PostCard";
 import ComposeBox from "../../ComposeBox";
+import RequestJoinPanel from "./RequestJoinPanel";
+import PendingRequestsList from "./PendingRequestsList";
 import {
   joinPublicGroupAction,
   leaveGroupAction,
@@ -39,15 +41,26 @@ export default async function GroupDetailPage({
   const isOwner = group.ownerId === user.id;
   const canPost = isMember;
 
-  // Private groups: only members can see posts.
+  // Private groups: only members can see posts. Non-members can request
+  // to join — the owner gets a notification and can approve/reject from
+  // the group page.
   if (!isMember && !group.isPublic) {
     const ownerName = group.owner.name?.split(" ")[0] ?? group.owner.email.split("@")[0];
+    const myRequest = await prisma.groupJoinRequest.findUnique({
+      where: { groupId_userId: { groupId: id, userId: user.id } },
+      select: { status: true, createdAt: true },
+    });
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 text-center sm:px-6">
         <h1 className="text-2xl font-semibold">{t.groupPrivateLockedTitle.replace("{name}", group.name)}</h1>
         <p className="mt-2 text-sm text-zinc-500">
           {t.groupPrivateLockedBody.replace("{owner}", ownerName)}
         </p>
+
+        <div className="mt-6">
+          <RequestJoinPanel groupId={group.id} existingStatus={myRequest?.status ?? null} />
+        </div>
+
         <Link
           href="/community/groups"
           className="mt-6 inline-block rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
@@ -57,6 +70,17 @@ export default async function GroupDetailPage({
       </div>
     );
   }
+
+  // Owner-side: pending join requests to approve / reject.
+  const pendingRequests = isOwner
+    ? await prisma.groupJoinRequest.findMany({
+        where: { groupId: id, status: "pending" },
+        orderBy: { createdAt: "asc" },
+        include: {
+          requester: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        },
+      })
+    : [];
 
   const posts = await prisma.post.findMany({
     where: { groupId: id },
@@ -152,6 +176,22 @@ export default async function GroupDetailPage({
           </div>
         </div>
       </header>
+
+      {isOwner && pendingRequests.length > 0 && (
+        <PendingRequestsList
+          requests={pendingRequests.map((r) => ({
+            id: r.id,
+            createdAt: r.createdAt.toISOString(),
+            message: r.message,
+            requester: {
+              id: r.requester.id,
+              name: r.requester.name,
+              email: r.requester.email,
+              avatarUrl: r.requester.avatarUrl,
+            },
+          }))}
+        />
+      )}
 
       {canPost && (
         <div className="mt-5">
