@@ -15,7 +15,8 @@ export type EmailCategory =
   | "group_invite"
   | "community_digest"
   | "public_group_announcement"
-  | "public_group_post";
+  | "public_group_post"
+  | "review_reminder";
 
 const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour — short window for password reset
@@ -343,6 +344,40 @@ export function reengagementEmail(
       </p>
       <p style="font-size:13px;color:#666;">Tip: try a new specialty or exam format to stretch into areas you haven't covered.</p>
       ${unsubFooter(userId, "marketing")}
+    `),
+  };
+}
+
+export function reviewReminderEmail(
+  name: string | null,
+  userId: string,
+  dueCount: number,
+  topSpecialties: Array<{ specialty: string; count: number }>
+): { subject: string; html: string } {
+  const greet = name ? `Hi ${escape(name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  const cardWord = dueCount === 1 ? "card" : "cards";
+  const specialtyList =
+    topSpecialties.length > 0
+      ? `<ul style="padding-left:18px;margin:8px 0 12px;color:#444;">${topSpecialties
+          .slice(0, 4)
+          .map(
+            (s) =>
+              `<li>${escape(s.specialty)} — <strong>${s.count}</strong></li>`
+          )
+          .join("")}</ul>`
+      : "";
+  return {
+    subject: `${dueCount} ${cardWord} due for review`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>You have <strong>${dueCount}</strong> ${cardWord} due for spaced-repetition review today — questions you got wrong on past exams.</p>
+      ${specialtyList ? `<p style="margin-bottom:4px;color:#444;">Top areas to clear:</p>${specialtyList}` : ""}
+      <p>
+        <a href="${url}/review/session" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Start review →</a>
+      </p>
+      <p style="font-size:13px;color:#666;">Even five minutes a day keeps the missed concepts from slipping back out.</p>
+      ${unsubFooter(userId, "reminders")}
     `),
   };
 }

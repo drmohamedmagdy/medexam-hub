@@ -7,6 +7,7 @@ import {
   expiredEmail,
   reengagementEmail,
   communityDigestEmail,
+  reviewReminderEmail,
 } from "@/lib/email";
 
 /**
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
     expired: 0,
     reengagement: 0,
     communityDigest: 0,
+    reviewReminder: 0,
     errors: 0,
   };
 
@@ -196,6 +198,73 @@ export async function GET(req: Request) {
       where: { id: { in: newPosts.map((p) => p.id) } },
       data: { digestSentAt: now },
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Review-due reminders — daily nudge for users with cards waiting in
+  // /review. Aggregate per-user counts in one query, then per-user
+  // specialty breakdown so the email can list the top areas to clear.
+  // ─────────────────────────────────────────────────────────────────────────
+  const dayBefore = new Date(now.getTime() - DAY_MS);
+  const dueGroups = await prisma.reviewCard.groupBy({
+    by: ["userId"],
+    where: { due: { lte: now } },
+    _count: { _all: true },
+  });
+  if (dueGroups.length > 0) {
+    const candidateUserIds = dueGroups.map((g) => g.userId);
+    const reviewRecipients = await prisma.user.findMany({
+      where: {
+        id: { in: candidateUserIds },
+        emailReminders: true,
+        emailVerifiedAt: { not: null },
+        OR: [
+          { lastReviewReminderAt: null },
+          { lastReviewReminderAt: { lt: dayBefore } },
+        ],
+      },
+      select: { id: true, email: true, name: true },
+    });
+    const dueCountById = new Map(
+      dueGroups.map((g) => [g.userId, g._count._all] as const)
+    );
+    for (const u of reviewRecipients) {
+      const dueCount = dueCountById.get(u.id) ?? 0;
+      if (dueCount === 0) continue;
+      // Pull the user's top specialties for the email body. One query per
+      // user, but bounded by the cap of recipients above.
+      const specialtyRows = await prisma.reviewCard.findMany({
+        where: { userId: u.id, due: { lte: now } },
+        select: {
+          question: { select: { exam: { select: { specialty: true } } } },
+        },
+        take: 200,
+      });
+      const buckets = new Map<string, number>();
+      for (const r of specialtyRows) {
+        const s = r.question.exam.specialty?.trim() || "Unspecified";
+        buckets.set(s, (buckets.get(s) ?? 0) + 1);
+      }
+      const top = Array.from(buckets.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([specialty, count]) => ({ specialty, count }));
+      const tpl = reviewReminderEmail(u.name, u.id, dueCount, top);
+      const r = await sendEmail({
+        toUserId: u.id,
+        toEmail: u.email,
+        subject: tpl.subject,
+        category: "review_reminder",
+        html: tpl.html,
+      });
+      if (r.ok) {
+        counts.reviewReminder += 1;
+        await prisma.user.update({
+          where: { id: u.id },
+          data: { lastReviewReminderAt: now },
+        });
+      } else counts.errors += 1;
+    }
   }
 
   return NextResponse.json({ ok: true, counts });

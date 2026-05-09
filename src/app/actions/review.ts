@@ -44,19 +44,29 @@ export async function gradeReviewCardAction(formData: FormData): Promise<void> {
     parsed.data.grade as ReviewGrade
   );
 
-  await prisma.reviewCard.update({
-    where: { id: card.id },
-    data: {
-      state: update.state,
-      intervalDays: update.intervalDays,
-      ease: update.ease,
-      reps: update.reps,
-      lapses: update.lapses,
-      due: update.due,
-      lastReviewedAt: update.lastReviewedAt,
-    },
-  });
+  await prisma.$transaction([
+    prisma.reviewCard.update({
+      where: { id: card.id },
+      data: {
+        state: update.state,
+        intervalDays: update.intervalDays,
+        ease: update.ease,
+        reps: update.reps,
+        lapses: update.lapses,
+        due: update.due,
+        lastReviewedAt: update.lastReviewedAt,
+      },
+    }),
+    prisma.reviewLog.create({
+      data: {
+        userId: user.id,
+        cardId: card.id,
+        grade: parsed.data.grade,
+      },
+    }),
+  ]);
 
   revalidatePath("/review");
   revalidatePath("/review/session");
+  revalidatePath("/review/stats");
 }

@@ -66,6 +66,7 @@ model User {
   // Last sent timestamps so the daily cron doesn't double-send within a window
   lastReminderSentAt    DateTime?
   lastReengagementAt    DateTime?
+  lastReviewReminderAt  DateTime?
   // Per-user defaults remembered from the last exam they generated
   defaultGenerationMode String?
   defaultSpecialty      String?
@@ -130,6 +131,7 @@ model User {
 
   // Spaced repetition — one card per (user, missed question)
   reviewCards     ReviewCard[]
+  reviewLogs      ReviewLog[]
 }
 
 model ProfileMedia {
@@ -464,10 +466,28 @@ model ReviewCard {
 
   user     User     @relation(fields: [userId],     references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  logs     ReviewLog[]
 
   @@unique([userId, questionId])
   @@index([userId, due])
   @@index([userId, state])
+}
+
+// One row per grade event, so we can compute review accuracy and
+// trends without grinding aggregate counters back out of ReviewCard.
+model ReviewLog {
+  id         String   @id @default(cuid())
+  userId     String
+  cardId     String
+  // again | hard | good | easy
+  grade      String
+  reviewedAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card ReviewCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reviewedAt])
+  @@index([cardId])
 }
 
 model UsageLog {

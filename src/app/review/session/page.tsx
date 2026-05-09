@@ -31,14 +31,28 @@ function parseOptions(json: string): RawOption[] {
   }
 }
 
-export default async function ReviewSessionPage() {
+export default async function ReviewSessionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ specialty?: string }>;
+}) {
   const user = await requireUser();
+  const sp = await searchParams;
+  const specialtyFilter = (sp.specialty ?? "").trim() || null;
   const now = new Date();
+
+  const baseWhere = specialtyFilter
+    ? {
+        userId: user.id,
+        due: { lte: now },
+        question: { exam: { specialty: specialtyFilter } },
+      }
+    : { userId: user.id, due: { lte: now } };
 
   // Pull the next due card. Tie-break by oldest due so a queue clears in
   // FIFO order rather than the user seeing the same lapse repeatedly.
   const card = await prisma.reviewCard.findFirst({
-    where: { userId: user.id, due: { lte: now } },
+    where: baseWhere,
     orderBy: { due: "asc" },
     select: {
       id: true,
@@ -62,9 +76,11 @@ export default async function ReviewSessionPage() {
     },
   });
 
-  const remaining = await prisma.reviewCard.count({
-    where: { userId: user.id, due: { lte: now } },
-  });
+  const remaining = await prisma.reviewCard.count({ where: baseWhere });
+
+  const overviewHref = specialtyFilter
+    ? `/review?specialty=${encodeURIComponent(specialtyFilter)}`
+    : "/review";
 
   if (!card) {
     return (
@@ -74,12 +90,13 @@ export default async function ReviewSessionPage() {
             ✅ All caught up
           </h1>
           <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-200">
-            No cards are due right now. Take another exam to add more, or come
-            back later.
+            {specialtyFilter
+              ? `No ${specialtyFilter} cards due right now.`
+              : "No cards are due right now. Take another exam to add more, or come back later."}
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link
-              href="/review"
+              href={overviewHref}
               className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
             >
               Back to review
@@ -103,12 +120,17 @@ export default async function ReviewSessionPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex items-center justify-between text-sm">
         <Link
-          href="/review"
+          href={overviewHref}
           className="text-zinc-500 hover:text-blue-600"
         >
           &larr; End session
         </Link>
         <span className="text-xs text-zinc-500">
+          {specialtyFilter && (
+            <span className="mr-2 rounded-full bg-blue-100 px-2 py-0.5 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
+              {specialtyFilter}
+            </span>
+          )}
           {remaining} card{remaining === 1 ? "" : "s"} remaining
         </span>
       </div>
