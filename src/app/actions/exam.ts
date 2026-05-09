@@ -318,6 +318,7 @@ export async function submitExamAction(formData: FormData): Promise<void> {
   // question is short-notes, scorePct stays null.
   let correctCount = 0;
   let gradableCount = 0;
+  const wrongQuestionIds: string[] = [];
   await prisma.$transaction(
     exam!.questions.map((q) => {
       const submitted = answers[q.id] ?? null;
@@ -330,12 +331,26 @@ export async function submitExamAction(formData: FormData): Promise<void> {
       gradableCount += 1;
       const isCorrect = submitted !== null && submitted === q.correctId;
       if (isCorrect) correctCount += 1;
+      else wrongQuestionIds.push(q.id);
       return prisma.question.update({
         where: { id: q.id },
         data: { selectedId: submitted, isCorrect },
       });
     })
   );
+
+  // Spaced repetition: every gradable wrong answer becomes a review
+  // card the user can drill later in /review. skipDuplicates because
+  // re-taking the same exam shouldn't reset existing schedules.
+  if (wrongQuestionIds.length > 0) {
+    await prisma.reviewCard.createMany({
+      data: wrongQuestionIds.map((qid) => ({
+        userId: user.id,
+        questionId: qid,
+      })),
+      skipDuplicates: true,
+    });
+  }
 
   // If the exam was 100% short-notes, leave scorePct null so analytics
   // skip it and the results page renders the self-assessment view.

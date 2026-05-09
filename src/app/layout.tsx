@@ -48,6 +48,7 @@ export default async function RootLayout({
   const mobileItems: NavItem[] = user
     ? [
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary" },
+        { href: "/review", label: "📚 Review", color: "amber" },
         { href: "/plans", label: t.nav.plans, color: "indigo" },
         { href: "/dashboard", label: t.nav.dashboard, color: "blue" },
         { href: "/research", label: "Research & Stats", color: "violet" },
@@ -163,6 +164,9 @@ export default async function RootLayout({
                 </Link>
                 <Link href="/dashboard" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
                   {t.nav.dashboard}
+                </Link>
+                <Link href="/review" className={`${pill} ${NAV_COLOR_DESKTOP.amber}`}>
+                  📚 Review
                 </Link>
                 <Link href="/research" className={`${pill} ${NAV_COLOR_DESKTOP.violet}`}>
                   Research &amp; Stats

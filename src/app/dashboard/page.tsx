@@ -23,7 +23,7 @@ export default async function DashboardPage({
   const t = getTranslations(locale);
   const dx = t.dashboardExtras;
 
-  const [usage, exams, streak, todayCount, achievementsList] = await Promise.all([
+  const [usage, exams, streak, todayCount, achievementsList, reviewDueCount] = await Promise.all([
     getMonthlyQuestionsUsage(user.id, user.plan),
     prisma.exam.findMany({
       where: { userId: user.id },
@@ -37,6 +37,9 @@ export default async function DashboardPage({
     getStudyStreak(user.id),
     getQuestionsAnsweredToday(user.id),
     getAchievementProgress(user.id, user.achievements),
+    prisma.reviewCard.count({
+      where: { userId: user.id, due: { lte: new Date() } },
+    }),
   ]);
   const dailyGoal = getDailyGoal(user.plan);
   const dailyPct = dailyGoal === 0 ? 0 : Math.min(100, Math.round((todayCount / dailyGoal) * 100));
@@ -109,6 +112,25 @@ export default async function DashboardPage({
         copy={t.banner.perPlan[user.plan as "FREE" | "BASIC" | "PRO"]}
         dismissLabel={t.banner.dismiss}
       />
+
+      {reviewDueCount > 0 && (
+        <Link
+          href="/review/session"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm transition hover:border-amber-400 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-950/60"
+        >
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+              📚 {reviewDueCount} card{reviewDueCount === 1 ? "" : "s"} due for review
+            </div>
+            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+              Drill the questions you got wrong on a spaced schedule.
+            </p>
+          </div>
+          <span className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">
+            Start →
+          </span>
+        </Link>
+      )}
 
       {/* QUICK ACTIONS — visual entry points sized for thumb-tap */}
       <div className="mt-6 grid gap-3 sm:mt-8 sm:gap-4 grid-cols-1 sm:grid-cols-3">
