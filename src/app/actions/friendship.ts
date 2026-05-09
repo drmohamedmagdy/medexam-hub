@@ -42,33 +42,35 @@ export async function sendFriendRequestAction(
 
   const { userAId, userBId } = pair(me.id, target.id);
 
-  // Upsert: re-requesting after a rejection bumps the row back to pending.
-  await prisma.friendship.upsert({
+  // Look first so we can refuse to clobber an accepted/pending row. Upsert
+  // alone can't express "create or revive-from-rejected only" without this.
+  const existing = await prisma.friendship.findUnique({
     where: { userAId_userBId: { userAId, userBId } },
-    update: {
-      // Don't downgrade an already-accepted friendship.
-      status: "pending",
-      requestedBy: me.id,
-      message: parsed.data.message || null,
-      decidedAt: null,
-    },
-    create: {
-      userAId,
-      userBId,
-      status: "pending",
-      requestedBy: me.id,
-      message: parsed.data.message || null,
-    },
+    select: { status: true, requestedBy: true },
   });
+  if (existing?.status === "accepted") return { ok: true };
+  if (existing?.status === "pending") return { ok: true };
 
-  // Don't accidentally clobber an existing accepted friendship — re-check
-  // and refuse if so.
-  const final = await prisma.friendship.findUnique({
-    where: { userAId_userBId: { userAId, userBId } },
-    select: { status: true },
-  });
-  if (final?.status === "accepted") {
-    return { ok: true };
+  if (existing) {
+    await prisma.friendship.update({
+      where: { userAId_userBId: { userAId, userBId } },
+      data: {
+        status: "pending",
+        requestedBy: me.id,
+        message: parsed.data.message || null,
+        decidedAt: null,
+      },
+    });
+  } else {
+    await prisma.friendship.create({
+      data: {
+        userAId,
+        userBId,
+        status: "pending",
+        requestedBy: me.id,
+        message: parsed.data.message || null,
+      },
+    });
   }
 
   const senderName = me.name?.trim() || me.email.split("@")[0];

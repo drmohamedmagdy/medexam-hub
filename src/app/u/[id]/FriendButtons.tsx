@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   sendFriendRequestAction,
@@ -25,10 +25,14 @@ export default function FriendButtons({
     null
   );
 
-  if (sendState?.ok) {
-    setOpen(false);
-    router.refresh();
-  }
+  // Close the form and refresh so the parent re-renders with state="request_sent".
+  // Doing this in render would loop ("setState during render").
+  useEffect(() => {
+    if (sendState && sendState.ok) {
+      setOpen(false);
+      router.refresh();
+    }
+  }, [sendState, router]);
 
   if (state === "friends") {
     return (
