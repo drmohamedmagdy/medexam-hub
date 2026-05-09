@@ -4,14 +4,17 @@ import { PLAN_LIMITS } from "@/lib/plans";
 
 export const metadata = { title: "Admin — Users" };
 
+const PAGE_SIZE = 100;
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; plan?: string }>;
+  searchParams: Promise<{ q?: string; plan?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
   const planFilter = sp.plan;
+  const pageNum = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
   const where: Parameters<typeof prisma.user.findMany>[0] extends infer P
     ? P extends { where?: infer W }
@@ -28,27 +31,48 @@ export default async function AdminUsersPage({
     where.plan = planFilter as "FREE" | "BASIC" | "PRO" | "PREMIUM" | "RESEARCHER";
   }
 
-  const users = await prisma.user.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      plan: true,
-      planExpiresAt: true,
-      planCancelledAt: true,
-      createdAt: true,
-      _count: { select: { exams: true } },
-    },
-  });
+  const [total, users] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (pageNum - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        plan: true,
+        planExpiresAt: true,
+        planCancelledAt: true,
+        createdAt: true,
+        _count: { select: { exams: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(pageNum, totalPages);
+  const startIdx = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = (safePage - 1) * PAGE_SIZE + users.length;
+
+  function pageHref(p: number) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (planFilter) params.set("plan", planFilter);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `/admin/users?${qs}` : "/admin/users";
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        {users.length} {users.length === 1 ? "user" : "users"} shown (max 100)
+        {total === 0
+          ? "No users"
+          : `Showing ${startIdx}–${endIdx} of ${total}`}
+        {totalPages > 1 && ` · page ${safePage} of ${totalPages}`}
       </p>
 
       <form className="mt-6 flex flex-wrap items-center gap-2 text-sm">
@@ -70,6 +94,8 @@ export default async function AdminUsersPage({
           <option value="PREMIUM">Premium</option>
           <option value="RESEARCHER">Researcher</option>
         </select>
+        {/* Filter changes always reset back to page 1 — leave the page
+            field out so the form submission lands on /admin/users?q=…&plan=… */}
         <button
           type="submit"
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -142,6 +168,43 @@ export default async function AdminUsersPage({
           </table>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <nav
+          className="mt-4 flex items-center justify-between gap-3 text-sm"
+          aria-label="Pagination"
+        >
+          {safePage > 1 ? (
+            <Link
+              href={pageHref(safePage - 1)}
+              className="rounded-md border border-zinc-300 px-4 py-2 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            >
+              ← Previous
+            </Link>
+          ) : (
+            <span className="rounded-md border border-zinc-200 px-4 py-2 text-zinc-400 dark:border-zinc-800">
+              ← Previous
+            </span>
+          )}
+
+          <span className="text-xs text-zinc-500">
+            Page {safePage} of {totalPages}
+          </span>
+
+          {safePage < totalPages ? (
+            <Link
+              href={pageHref(safePage + 1)}
+              className="rounded-md border border-zinc-300 px-4 py-2 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            >
+              Next →
+            </Link>
+          ) : (
+            <span className="rounded-md border border-zinc-200 px-4 py-2 text-zinc-400 dark:border-zinc-800">
+              Next →
+            </span>
+          )}
+        </nav>
+      )}
     </div>
   );
 }
