@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import MessageThreadComposer from "./MessageThreadComposer";
+import MessageThreadClient from "./MessageThreadClient";
 
 export async function generateMetadata({
   params,
@@ -25,10 +25,7 @@ export default async function MessageThreadPage({
 }) {
   const { userId } = await params;
   const me = await requireUser();
-  if (userId === me.id) {
-    // No self-conversations.
-    notFound();
-  }
+  if (userId === me.id) notFound();
 
   const partner = await prisma.user.findUnique({
     where: { id: userId },
@@ -36,8 +33,7 @@ export default async function MessageThreadPage({
   });
   if (!partner) notFound();
 
-  // Fetch the full thread between these two.
-  const messages = await prisma.message.findMany({
+  const initial = await prisma.message.findMany({
     where: {
       OR: [
         { senderId: me.id, receiverId: partner.id },
@@ -45,23 +41,31 @@ export default async function MessageThreadPage({
       ],
     },
     orderBy: { sentAt: "asc" },
-    take: 500,
+    take: 200,
+    select: {
+      id: true,
+      senderId: true,
+      receiverId: true,
+      body: true,
+      sentAt: true,
+    },
   });
 
-  // Mark all incoming messages from this partner as read on view. Done
-  // inline (not via the server action) because a server action would call
-  // revalidatePath during page render, which Next.js 16 rejects.
+  // Mark inbound from this partner as read on initial view so the bell
+  // count clears even before the polling endpoint kicks in.
   await prisma.message.updateMany({
-    where: {
-      senderId: partner.id,
-      receiverId: me.id,
-      readAt: null,
-    },
+    where: { senderId: partner.id, receiverId: me.id, readAt: null },
     data: { readAt: new Date() },
   });
 
   const partnerName = partner.name?.trim() || partner.email.split("@")[0];
   const partnerInitial = partnerName[0]?.toUpperCase() ?? "?";
+
+  // Serialize Date → ISO string so it crosses the server/client boundary cleanly.
+  const initialMessages = initial.map((m) => ({
+    ...m,
+    sentAt: m.sentAt.toISOString(),
+  }));
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col px-4 py-6 sm:px-6 sm:py-8">
@@ -96,41 +100,11 @@ export default async function MessageThreadPage({
         </div>
       </header>
 
-      <ul className="mt-4 flex flex-1 flex-col gap-2 pb-4">
-        {messages.length === 0 && (
-          <li className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/60">
-            No messages yet — say hi 👋
-          </li>
-        )}
-        {messages.map((m) => {
-          const mine = m.senderId === me.id;
-          return (
-            <li
-              key={m.id}
-              className={`flex ${mine ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                  mine
-                    ? "rounded-br-sm bg-blue-600 text-white"
-                    : "rounded-bl-sm bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{m.body}</p>
-                <span
-                  className={`mt-1 block text-[10px] ${
-                    mine ? "text-blue-100" : "text-zinc-500 dark:text-zinc-500"
-                  }`}
-                >
-                  {m.sentAt.toLocaleString()}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      <MessageThreadComposer receiverId={partner.id} />
+      <MessageThreadClient
+        meId={me.id}
+        partnerId={partner.id}
+        initialMessages={initialMessages}
+      />
     </div>
   );
 }
