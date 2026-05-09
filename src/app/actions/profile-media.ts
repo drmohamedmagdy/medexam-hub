@@ -14,7 +14,14 @@ const AddSchema = z.object({
   mimeType: z.string().min(1).max(200),
   sizeBytes: z.coerce.number().int().min(1).max(50 * 1024 * 1024),
   caption: z.string().max(280).optional().or(z.literal("")),
+  originalName: z.string().max(255).optional().or(z.literal("")),
 });
+
+function kindFromMime(mime: string): "image" | "video" | "file" {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  return "file";
+}
 
 export async function addProfileMediaAction(
   _prev: MediaState,
@@ -27,11 +34,12 @@ export async function addProfileMediaAction(
     mimeType: formData.get("mimeType"),
     sizeBytes: formData.get("sizeBytes"),
     caption: String(formData.get("caption") ?? "").trim(),
+    originalName: String(formData.get("originalName") ?? "").trim(),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const kind = parsed.data.mimeType.startsWith("video/") ? "video" : "image";
+  const kind = kindFromMime(parsed.data.mimeType);
 
   // Sort order = current count, so new items show up at the end.
   const count = await prisma.profileMedia.count({ where: { userId: user.id } });
@@ -48,6 +56,8 @@ export async function addProfileMediaAction(
       mimeType: parsed.data.mimeType,
       sizeBytes: parsed.data.sizeBytes,
       caption: parsed.data.caption || null,
+      originalName:
+        kind === "file" ? parsed.data.originalName || null : null,
       sortOrder: count,
     },
   });

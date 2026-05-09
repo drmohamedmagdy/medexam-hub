@@ -56,7 +56,15 @@ export default async function ProfilePage({
   const isPrivate = !profile.profilePublic && !isMe && friendship !== "friends";
 
   // Stats / gallery / inbox count are loaded only when they'll be shown.
-  const [completedCount, avgAgg, unreadMessages, mediaItems, groupMemberships, pendingIncomingCount] = await Promise.all([
+  const [
+    completedCount,
+    avgAgg,
+    unreadMessages,
+    mediaItems,
+    groupMemberships,
+    pendingIncomingCount,
+    articles,
+  ] = await Promise.all([
     canSeeFull
       ? prisma.exam.count({
           where: { userId: profile.id, status: "COMPLETED", sharedFromId: null },
@@ -82,7 +90,15 @@ export default async function ProfilePage({
       ? prisma.profileMedia.findMany({
           where: { userId: profile.id },
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: { id: true, kind: true, url: true, mimeType: true, caption: true },
+          select: {
+            id: true,
+            kind: true,
+            url: true,
+            mimeType: true,
+            caption: true,
+            originalName: true,
+            sizeBytes: true,
+          },
         })
       : Promise.resolve([] as Array<{
           id: string;
@@ -90,6 +106,8 @@ export default async function ProfilePage({
           url: string;
           mimeType: string;
           caption: string | null;
+          originalName: string | null;
+          sizeBytes: number;
         }>),
     canSeeFull
       ? prisma.groupMember.findMany({
@@ -125,7 +143,26 @@ export default async function ProfilePage({
           },
         })
       : Promise.resolve(0),
+    canSeeFull
+      ? prisma.post.findMany({
+          where: { authorId: profile.id, kind: "ARTICLE", groupId: null },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: { id: true, title: true, body: true, createdAt: true, imageUrl: true },
+        })
+      : Promise.resolve([] as Array<{
+          id: string;
+          title: string | null;
+          body: string;
+          createdAt: Date;
+          imageUrl: string | null;
+        }>),
   ]);
+
+  const galleryItems = mediaItems.filter(
+    (m) => m.kind === "image" || m.kind === "video"
+  );
+  const fileItems = mediaItems.filter((m) => m.kind === "file");
 
   const displayName =
     profile.name?.trim() || profile.email.split("@")[0];
@@ -292,13 +329,13 @@ export default async function ProfilePage({
             </section>
           )}
 
-          {mediaItems.length > 0 && (
+          {galleryItems.length > 0 && (
             <section className="mt-8">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
                 Gallery
               </h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {mediaItems.map((m) => (
+                {galleryItems.map((m) => (
                   <figure
                     key={m.id}
                     className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
@@ -329,6 +366,92 @@ export default async function ProfilePage({
                   </figure>
                 ))}
               </div>
+            </section>
+          )}
+
+          {fileItems.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                Files
+              </h2>
+              <ul className="mt-3 space-y-2">
+                {fileItems.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    <span className="text-2xl">
+                      {fileEmojiFor(m.mimeType, m.originalName ?? "")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={m.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={m.originalName ?? undefined}
+                        className="block truncate text-sm font-medium hover:text-blue-600 dark:hover:text-cyan-400"
+                      >
+                        {m.originalName ?? "Untitled file"}
+                      </a>
+                      {m.caption && (
+                        <p className="truncate text-xs text-zinc-500">{m.caption}</p>
+                      )}
+                      <p className="text-[11px] text-zinc-400">
+                        {formatBytes(m.sizeBytes)}
+                      </p>
+                    </div>
+                    <a
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={m.originalName ?? undefined}
+                      className="shrink-0 rounded-md border border-blue-600 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-300"
+                    >
+                      Download
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {articles.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                Articles
+              </h2>
+              <ul className="mt-3 space-y-3">
+                {articles.map((a) => (
+                  <li key={a.id}>
+                    <Link
+                      href={`/community/post/${a.id}`}
+                      className="block rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-cyan-700/60"
+                    >
+                      <div className="flex items-start gap-3">
+                        {a.imageUrl && (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={a.imageUrl}
+                            alt=""
+                            className="h-16 w-16 shrink-0 rounded-md object-cover"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold">
+                            📰 {a.title?.trim() || "Untitled article"}
+                          </div>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">
+                            {a.body.slice(0, 220)}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            {a.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
         </>
@@ -372,4 +495,20 @@ function Stat({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   );
+}
+
+function fileEmojiFor(mime: string, name: string) {
+  if (mime === "application/pdf" || /\.pdf$/i.test(name)) return "📕";
+  if (mime.includes("word") || /\.docx?$/i.test(name)) return "📄";
+  if (mime.includes("presentation") || /\.pptx?$/i.test(name)) return "📊";
+  if (mime.includes("sheet") || mime.includes("excel") || /\.xlsx?$/i.test(name)) return "📈";
+  if (mime.startsWith("text/") || /\.(md|txt|csv)$/i.test(name)) return "📝";
+  if (mime === "application/zip" || /\.zip$/i.test(name)) return "🗜️";
+  return "📎";
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

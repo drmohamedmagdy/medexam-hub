@@ -132,13 +132,15 @@ model User {
 model ProfileMedia {
   id           String   @id @default(cuid())
   userId       String
-  // "image" | "video"
+  // "image" | "video" | "file"
   kind         String
   url          String
   pathname     String   // Vercel Blob pathname for delete
   mimeType     String
   sizeBytes    Int
   caption      String?
+  // Original filename, set for kind="file" so downloads keep the real name.
+  originalName String?
   thumbnailUrl String?  // optional poster for videos
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
