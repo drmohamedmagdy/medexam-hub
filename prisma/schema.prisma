@@ -75,6 +75,13 @@ model User {
   defaultMode           ExamMode?
   defaultLanguage       String?
   defaultNumQuestions   Int?
+  // Public profile bits. avatarUrl is a Vercel Blob link; avatarPathname
+  // is kept for delete. profilePublic gates whether non-friends can view
+  // /u/<id>. bio is plain text up to ~1000 chars.
+  avatarUrl             String?
+  avatarPathname        String?
+  bio                   String?
+  profilePublic         Boolean       @default(true)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
@@ -105,6 +112,25 @@ model User {
   // Standalone Statistics tool — separate from the research feature so
   // users who only need to crunch a CSV don't have to spin up a project.
   statsWorkspace   StatsWorkspace?
+
+  // Direct messaging
+  sentMessages     Message[]   @relation("MessageSender")
+  receivedMessages Message[]   @relation("MessageReceiver")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  body       String
+  sentAt     DateTime @default(now())
+  readAt     DateTime?
+
+  sender   User @relation("MessageSender",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, sentAt])
+  @@index([receiverId, readAt])
 }
 
 model CreditTransaction {

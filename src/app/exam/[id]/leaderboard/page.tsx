@@ -33,7 +33,7 @@ export default async function LeaderboardPage({
       userId: true,
       scorePct: true,
       submittedAt: true,
-      user: { select: { name: true, email: true } },
+      user: { select: { id: true, name: true, email: true } },
     },
     orderBy: [{ scorePct: "desc" }, { submittedAt: "asc" }],
   });
@@ -110,7 +110,12 @@ export default async function LeaderboardPage({
                       {medal}
                     </span>
                     <div>
-                      <div className="text-sm font-semibold">{name}</div>
+                      <Link
+                        href={`/u/${a.user.id}`}
+                        className="block text-sm font-semibold hover:text-blue-600 dark:hover:text-cyan-400"
+                      >
+                        {name}
+                      </Link>
                       <div className="text-xs text-zinc-500">
                         {a.submittedAt
                           ? a.submittedAt.toLocaleString()
@@ -118,7 +123,14 @@ export default async function LeaderboardPage({
                       </div>
                     </div>
                   </div>
-                  <div className="text-end">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/messages/${a.user.id}`}
+                      className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                      title="Send message"
+                    >
+                      ✉️
+                    </Link>
                     <div className="text-lg font-semibold">{score}%</div>
                   </div>
                 </li>
