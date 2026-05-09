@@ -92,14 +92,18 @@ export default async function RootLayout({
                 aria-label="MedExam Hub — back to home"
                 className="flex items-center gap-3 transition hover:opacity-90"
               >
-                <Image
-                  src="/logo.webp"
-                  alt=""
-                  width={72}
-                  height={72}
-                  className="h-12 w-auto sm:h-16"
-                  priority
-                />
+                {/* Wrapper gives the logo a soft white card in dark mode
+                    so its dark-blue brain illustration stays legible. */}
+                <span className="inline-flex items-center justify-center rounded-md dark:bg-white/95 dark:p-1">
+                  <Image
+                    src="/logo.webp"
+                    alt=""
+                    width={72}
+                    height={72}
+                    className="h-12 w-auto sm:h-16"
+                    priority
+                  />
+                </span>
                 <span className="whitespace-nowrap text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
                   MedExam Hub
                 </span>
@@ -138,15 +142,18 @@ export default async function RootLayout({
                     >
                       {t.nav.plans}
                     </Link>
+                    {/* Sign in + Start free move to their own centered
+                        row on mobile (below the logo). Hidden here on
+                        small screens; visible inline on md+. */}
                     <Link
                       href="/login"
-                      className="text-sm font-semibold text-zinc-700 hover:text-blue-600 dark:text-zinc-300"
+                      className="hidden text-sm font-semibold text-zinc-700 hover:text-blue-600 dark:text-zinc-300 md:inline-flex"
                     >
                       {t.nav.signin}
                     </Link>
                     <Link
                       href="/signup"
-                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 md:px-5"
+                      className="hidden rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 md:inline-flex md:px-5"
                     >
                       {t.nav.signup}
                     </Link>
@@ -155,6 +162,22 @@ export default async function RootLayout({
                 )}
               </div>
             </div>
+            {!user && (
+              <div className="mt-3 flex items-center justify-center gap-3 md:hidden">
+                <Link
+                  href="/login"
+                  className="text-sm font-semibold text-zinc-700 hover:text-blue-600 dark:text-zinc-300"
+                >
+                  {t.nav.signin}
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  {t.nav.signup}
+                </Link>
+              </div>
+            )}
 
             {/* Bottom row: navigation pills (signed-in users, desktop only). */}
             {user && (
