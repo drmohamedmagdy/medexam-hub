@@ -56,10 +56,8 @@ export default async function ProfilePage({
   // see the limited view.)
   const isPrivate = !profile.profilePublic && !isMe && friendship !== "friends";
 
-  // Stats / gallery / inbox count are loaded only when they'll be shown.
+  // Gallery / inbox count are loaded only when they'll be shown.
   const [
-    completedCount,
-    avgAgg,
     unreadMessages,
     mediaItems,
     groupMemberships,
@@ -67,22 +65,6 @@ export default async function ProfilePage({
     articles,
     friendCount,
   ] = await Promise.all([
-    canSeeFull
-      ? prisma.exam.count({
-          where: { userId: profile.id, status: "COMPLETED", sharedFromId: null },
-        })
-      : Promise.resolve(0),
-    canSeeFull
-      ? prisma.exam.aggregate({
-          where: {
-            userId: profile.id,
-            status: "COMPLETED",
-            sharedFromId: null,
-            scorePct: { not: null },
-          },
-          _avg: { scorePct: true },
-        })
-      : Promise.resolve({ _avg: { scorePct: null as number | null } }),
     isMe
       ? prisma.message.count({
           where: { receiverId: profile.id, readAt: null },
@@ -299,10 +281,10 @@ export default async function ProfilePage({
       )}
 
       {/* Locked-out view: only name, avatar, bio, and the message / friend
-          request buttons above. Stats, gallery, groups all hidden. */}
+          request buttons above. Gallery, files, articles, groups all hidden. */}
       {!canSeeFull && !isPrivate && (
         <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-          🔒 Stats, gallery, and groups are visible to friends only.
+          🔒 Gallery, files, and groups are visible to friends only.
           {friendship === "request_sent" && " Your request is pending."}
           {friendship === "request_received" && " They sent you a request — see above."}
           {friendship === "none" && " Send a friend request to see more."}
@@ -317,25 +299,6 @@ export default async function ProfilePage({
 
       {canSeeFull && (
         <>
-          <section className="mt-6 grid gap-3 sm:grid-cols-3">
-            <Stat
-              label="Exams completed"
-              value={completedCount.toLocaleString()}
-            />
-            <Stat
-              label="Average score"
-              value={
-                avgAgg._avg.scorePct !== null
-                  ? `${Math.round(avgAgg._avg.scorePct)}%`
-                  : "—"
-              }
-            />
-            <Stat
-              label="Member since"
-              value={profile.createdAt.toLocaleDateString()}
-            />
-          </section>
-
           {groupMemberships.length > 0 && (
             <section className="mt-8">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -487,17 +450,6 @@ function Avatar({
   return (
     <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-3xl font-bold text-white shadow-lg sm:h-28 sm:w-28">
       {initials}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-2xl font-bold tracking-tight">{value}</div>
-      <div className="mt-0.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
-        {label}
-      </div>
     </div>
   );
 }
