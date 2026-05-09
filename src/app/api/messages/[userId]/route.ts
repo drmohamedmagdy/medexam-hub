@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 export async function GET(
   req: NextRequest,
@@ -60,6 +61,15 @@ export async function POST(
 ) {
   const me = await getCurrentUser();
   if (!me) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  // 30 messages per minute per sender — well above polite chat
+  // cadence, well below spam.
+  const rl = rateLimit({
+    key: `messages-post:${me.id}`,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!rl.ok) return tooManyRequests(rl.retryAfterSec);
 
   const { userId: partnerId } = await params;
   if (partnerId === me.id) {

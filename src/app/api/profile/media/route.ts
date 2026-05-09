@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 /**
  * Vercel Blob client-upload coordinator for profile gallery items
@@ -8,7 +9,15 @@ import { requireUser } from "@/lib/auth";
  * short-lived signed token.
  */
 export async function POST(request: Request) {
-  await requireUser();
+  const user = await requireUser();
+  // 30 upload tokens per hour per user — generous but caps free
+  // storage abuse if an account is compromised.
+  const rl = rateLimit({
+    key: `profile-media:${user.id}`,
+    limit: 30,
+    windowMs: 60 * 60_000,
+  });
+  if (!rl.ok) return tooManyRequests(rl.retryAfterSec);
   const body = (await request.json()) as HandleUploadBody;
 
   try {

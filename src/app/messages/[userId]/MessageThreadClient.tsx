@@ -12,7 +12,6 @@ type Msg = {
 };
 
 const EPOCH = "1970-01-01T00:00:00.000Z";
-const POLL_MS = 3000;
 
 export default function MessageThreadClient({
   meId,
@@ -32,57 +31,47 @@ export default function MessageThreadClient({
   const scrollerRef = useRef<HTMLUListElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
-  // Poll for new messages every few seconds. Watermark is the latest
-  // confirmed sentAt — pending optimistic messages don't bump it because
-  // they haven't been written yet.
+  // Live updates via Server-Sent Events. EventSource auto-reconnects
+  // when the server closes (we cap each connection at ~25s to play
+  // nicely with Vercel function limits) and uses Last-Event-ID so we
+  // never replay messages we've already seen.
   useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (typeof window === "undefined" || typeof EventSource === "undefined") {
+      return;
+    }
+    const watermark = messagesRef.current
+      .filter((m) => !m.pending)
+      .reduce((acc, m) => (m.sentAt > acc ? m.sentAt : acc), EPOCH);
 
-    async function tick() {
+    const es = new EventSource(
+      `/api/messages/${partnerId}/stream?since=${encodeURIComponent(watermark)}`
+    );
+
+    function onMessage(ev: MessageEvent) {
       try {
-        const watermark = messagesRef.current
-          .filter((m) => !m.pending)
-          .reduce((acc, m) => (m.sentAt > acc ? m.sentAt : acc), EPOCH);
-        const res = await fetch(
-          `/api/messages/${partnerId}?since=${encodeURIComponent(watermark)}`,
-          { cache: "no-store" }
-        );
-        if (!res.ok) throw new Error("poll failed");
-        const data = (await res.json()) as { messages: Msg[] };
-        if (cancelled) return;
-        if (data.messages.length > 0) {
-          setMessages((cur) => {
-            const seen = new Set(cur.map((m) => m.id));
-            const additions = data.messages.filter((m) => !seen.has(m.id));
-            if (additions.length === 0) return cur;
-            // Best-effort dedupe: drop any pending optimistic copy whose
-            // body matches an arriving real message from me.
-            const myAdditionBodies = new Set(
-              additions.filter((a) => a.senderId === meId).map((a) => a.body)
-            );
+        const m = JSON.parse(ev.data) as Msg;
+        setMessages((cur) => {
+          if (cur.some((x) => x.id === m.id)) return cur;
+          // Drop pending optimistic copy whose body matches the
+          // arriving real message from me.
+          if (m.senderId === meId) {
             const pruned = cur.filter(
-              (m) =>
-                !(
-                  m.pending &&
-                  m.senderId === meId &&
-                  myAdditionBodies.has(m.body)
-                )
+              (x) => !(x.pending && x.senderId === meId && x.body === m.body)
             );
-            return [...pruned, ...additions];
-          });
-        }
+            return [...pruned, m];
+          }
+          return [...cur, m];
+        });
       } catch {
-        // Swallow — next tick retries.
-      } finally {
-        if (!cancelled) timer = setTimeout(tick, POLL_MS);
+        // Malformed payload — ignore, keep streaming.
       }
     }
 
-    timer = setTimeout(tick, POLL_MS);
+    es.addEventListener("message", onMessage as EventListener);
+
     return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
+      es.removeEventListener("message", onMessage as EventListener);
+      es.close();
     };
   }, [partnerId, meId]);
 
