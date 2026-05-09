@@ -123,6 +123,10 @@ model User {
   // Group join requests sent by this user
   joinRequests     GroupJoinRequest[] @relation("RequesterJoinRequests")
   reviewedRequests GroupJoinRequest[] @relation("ReviewerJoinRequests")
+
+  // Friendships — `Friendship` keeps userAId < userBId for uniqueness.
+  friendshipsAsA  Friendship[] @relation("FriendshipUserA")
+  friendshipsAsB  Friendship[] @relation("FriendshipUserB")
 }
 
 model ProfileMedia {
@@ -157,6 +161,29 @@ model Message {
 
   @@index([senderId, receiverId, sentAt])
   @@index([receiverId, readAt])
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  // Canonical ordering: userAId < userBId. Lets us use a single unique
+  // constraint to prevent A-B and B-A duplicates.
+  userAId     String
+  userBId     String
+  // pending | accepted | rejected
+  status      String   @default("pending")
+  // Which side initiated — needed so the recipient sees Accept/Reject
+  // buttons and the sender sees a "request pending" indicator.
+  requestedBy String
+  message     String?
+  createdAt   DateTime @default(now())
+  decidedAt   DateTime?
+
+  userA       User @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@index([userAId, status])
+  @@index([userBId, status])
 }
 
 model GroupJoinRequest {

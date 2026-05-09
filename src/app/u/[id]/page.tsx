@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plans";
+import { getFriendshipState } from "@/lib/friendship";
 import OpenMessageButton from "./OpenMessageButton";
+import FriendButtons from "./FriendButtons";
+import IncomingFriendRequests from "./IncomingFriendRequests";
 
 export async function generateMetadata({
   params,
@@ -38,45 +41,88 @@ export default async function ProfilePage({
       bio: true,
       profilePublic: true,
       createdAt: true,
-      _count: { select: { exams: true } },
-      profileMedia: {
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        select: {
-          id: true,
-          kind: true,
-          url: true,
-          mimeType: true,
-          caption: true,
-        },
-      },
     },
   });
   if (!profile) notFound();
 
   const isMe = me?.id === profile.id;
-  const isPrivate = !profile.profilePublic && !isMe;
+  const friendship = me ? await getFriendshipState(me.id, profile.id) : "none";
+  const canSeeFull = isMe || friendship === "friends";
 
-  // Public stats: completed exams + average score across NON-fork exams
-  // (so a user's "public stats" reflect their own work, not someone
-  // else's leaderboard scores). Unread message count is loaded only when
-  // the user is viewing their own profile — used by the inbox shortcut
-  // button next to "Edit profile".
-  const [completedCount, avgAgg, unreadMessages] = await Promise.all([
-    prisma.exam.count({
-      where: { userId: profile.id, status: "COMPLETED", sharedFromId: null },
-    }),
-    prisma.exam.aggregate({
-      where: {
-        userId: profile.id,
-        status: "COMPLETED",
-        sharedFromId: null,
-        scorePct: { not: null },
-      },
-      _avg: { scorePct: true },
-    }),
+  // Hard private profiles still show only the basics, even to friends.
+  // (Friend acceptance is the trust signal; the profilePublic flag is a
+  // global "discoverable" toggle. If the user turned it off, even friends
+  // see the limited view.)
+  const isPrivate = !profile.profilePublic && !isMe && friendship !== "friends";
+
+  // Stats / gallery / inbox count are loaded only when they'll be shown.
+  const [completedCount, avgAgg, unreadMessages, mediaItems, groupMemberships, pendingIncomingCount] = await Promise.all([
+    canSeeFull
+      ? prisma.exam.count({
+          where: { userId: profile.id, status: "COMPLETED", sharedFromId: null },
+        })
+      : Promise.resolve(0),
+    canSeeFull
+      ? prisma.exam.aggregate({
+          where: {
+            userId: profile.id,
+            status: "COMPLETED",
+            sharedFromId: null,
+            scorePct: { not: null },
+          },
+          _avg: { scorePct: true },
+        })
+      : Promise.resolve({ _avg: { scorePct: null as number | null } }),
     isMe
       ? prisma.message.count({
           where: { receiverId: profile.id, readAt: null },
+        })
+      : Promise.resolve(0),
+    canSeeFull
+      ? prisma.profileMedia.findMany({
+          where: { userId: profile.id },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: { id: true, kind: true, url: true, mimeType: true, caption: true },
+        })
+      : Promise.resolve([] as Array<{
+          id: string;
+          kind: string;
+          url: string;
+          mimeType: string;
+          caption: string | null;
+        }>),
+    canSeeFull
+      ? prisma.groupMember.findMany({
+          where: { userId: profile.id, group: { isPublic: true } },
+          select: {
+            group: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                _count: { select: { members: true } },
+              },
+            },
+          },
+          orderBy: { joinedAt: "desc" },
+          take: 12,
+        })
+      : Promise.resolve([] as Array<{
+          group: {
+            id: string;
+            name: string;
+            description: string | null;
+            _count: { members: number };
+          };
+        }>),
+    isMe
+      ? prisma.friendship.count({
+          where: {
+            status: "pending",
+            // I'm not the requester ⇒ I'm the recipient.
+            NOT: { requestedBy: profile.id },
+            OR: [{ userAId: profile.id }, { userBId: profile.id }],
+          },
         })
       : Promise.resolve(0),
   ]);
@@ -101,7 +147,8 @@ export default async function ProfilePage({
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">{displayName}</h1>
           <p className="mt-0.5 text-sm text-zinc-500">
-            {PLAN_LIMITS[profile.plan].label} plan · joined {memberSince}
+            joined {memberSince}
+            {canSeeFull && ` · ${PLAN_LIMITS[profile.plan].label} plan`}
           </p>
           {isMe && (
             <p className="mt-1 text-xs text-zinc-500">{profile.email}</p>
@@ -146,7 +193,10 @@ export default async function ProfilePage({
                 </Link>
               </>
             ) : me ? (
-              <OpenMessageButton userId={profile.id} />
+              <>
+                <OpenMessageButton userId={profile.id} />
+                <FriendButtons targetUserId={profile.id} state={friendship} />
+              </>
             ) : (
               <Link
                 href={`/login?next=${encodeURIComponent(`/u/${profile.id}`)}`}
@@ -159,23 +209,41 @@ export default async function ProfilePage({
         </div>
       </header>
 
-      {isPrivate ? (
+      {isMe && pendingIncomingCount > 0 && (
+        <IncomingFriendRequests userId={profile.id} />
+      )}
+
+      {/* Bio is visible to everyone (it's the user's introduction). */}
+      {profile.bio && (
+        <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            About
+          </h2>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+            {profile.bio}
+          </p>
+        </section>
+      )}
+
+      {/* Locked-out view: only name, avatar, bio, and the message / friend
+          request buttons above. Stats, gallery, groups all hidden. */}
+      {!canSeeFull && !isPrivate && (
+        <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+          🔒 Stats, gallery, and groups are visible to friends only.
+          {friendship === "request_sent" && " Your request is pending."}
+          {friendship === "request_received" && " They sent you a request — see above."}
+          {friendship === "none" && " Send a friend request to see more."}
+        </div>
+      )}
+
+      {isPrivate && (
         <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
           🔒 This profile is private.
         </div>
-      ) : (
-        <>
-          {profile.bio && (
-            <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                About
-              </h2>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
-                {profile.bio}
-              </p>
-            </section>
-          )}
+      )}
 
+      {canSeeFull && (
+        <>
           <section className="mt-6 grid gap-3 sm:grid-cols-3">
             <Stat
               label="Exams completed"
@@ -190,24 +258,53 @@ export default async function ProfilePage({
               }
             />
             <Stat
-              label="Total attempts"
-              value={profile._count.exams.toLocaleString()}
+              label="Member since"
+              value={profile.createdAt.toLocaleDateString()}
             />
           </section>
 
-          {profile.profileMedia.length > 0 && (
+          {groupMemberships.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                Public groups
+              </h2>
+              <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                {groupMemberships.map((m) => (
+                  <li key={m.group.id}>
+                    <Link
+                      href={`/community/groups/${m.group.id}`}
+                      className="block rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-cyan-700/60"
+                    >
+                      <div className="text-sm font-semibold">🌐 {m.group.name}</div>
+                      {m.group.description && (
+                        <p className="mt-0.5 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">
+                          {m.group.description}
+                        </p>
+                      )}
+                      <div className="mt-1 text-[11px] text-zinc-500">
+                        {m.group._count.members} member
+                        {m.group._count.members === 1 ? "" : "s"}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {mediaItems.length > 0 && (
             <section className="mt-8">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
                 Gallery
               </h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {profile.profileMedia.map((m) => (
+                {mediaItems.map((m) => (
                   <figure
                     key={m.id}
                     className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
                   >
                     {m.kind === "video" ? (
-                      // eslint-disable-next-line jsx-a11y/media-has-caption
+                      /* eslint-disable-next-line jsx-a11y/media-has-caption */
                       <video
                         src={m.url}
                         controls
@@ -216,7 +313,7 @@ export default async function ProfilePage({
                         className="aspect-video w-full bg-zinc-100 object-cover dark:bg-zinc-800"
                       />
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={m.url}
                         alt={m.caption ?? ""}
