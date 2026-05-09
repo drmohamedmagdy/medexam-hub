@@ -152,7 +152,8 @@ export default async function AdminUserDetailPage({
           {payments.length === 0 ? (
             <div className="p-6 text-center text-sm text-zinc-500">No payments.</div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[40rem] text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
                 <tr>
                   <th className="px-4 py-3 text-start">Date</th>
@@ -188,6 +189,7 @@ export default async function AdminUserDetailPage({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </section>

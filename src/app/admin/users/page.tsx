@@ -114,7 +114,8 @@ export default async function AdminUsersPage({
         {users.length === 0 ? (
           <div className="p-8 text-center text-sm text-zinc-500">No users match.</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[48rem] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
               <tr>
                 <th className="px-4 py-3 text-start">User</th>
@@ -166,6 +167,7 @@ export default async function AdminUsersPage({
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

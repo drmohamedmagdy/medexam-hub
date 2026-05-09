@@ -186,23 +186,31 @@ export default async function ProfilePage({
               <>
                 <Link
                   href={`/u/${profile.id}/edit`}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:px-4"
+                  aria-label="Edit profile"
+                  title="Edit profile"
                 >
-                  Edit profile
+                  <span className="sm:hidden">✏️</span>
+                  <span className="hidden sm:inline">Edit profile</span>
                 </Link>
                 <Link
                   href={`/u/${profile.id}/content`}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-300 sm:px-4"
+                  aria-label="My content"
                   title="Manage gallery, files, and articles"
                 >
-                  📁 My content
+                  <span aria-hidden>📁</span>
+                  <span className="hidden sm:inline">My content</span>
                 </Link>
                 <Link
                   href={`/u/${profile.id}/friends`}
-                  className="relative inline-flex items-center gap-1.5 rounded-md border border-purple-600 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 dark:border-purple-500 dark:bg-purple-950/40 dark:text-purple-300"
+                  className="relative inline-flex items-center gap-1.5 rounded-md border border-purple-600 bg-purple-50 px-3 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 dark:border-purple-500 dark:bg-purple-950/40 dark:text-purple-300 sm:px-4"
+                  aria-label={`Friends (${friendCount})`}
                   title="See your friends and pending requests"
                 >
-                  👥 Friends ({friendCount})
+                  <span aria-hidden>👥</span>
+                  <span className="hidden sm:inline">Friends ({friendCount})</span>
+                  <span className="sm:hidden">{friendCount}</span>
                   {pendingIncomingCount > 0 && (
                     <span className="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
                       {pendingIncomingCount > 99 ? "99+" : pendingIncomingCount}
@@ -211,7 +219,7 @@ export default async function ProfilePage({
                 </Link>
                 <Link
                   href="/messages"
-                  className="relative inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="relative inline-flex items-center gap-2 rounded-md border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 sm:px-4"
                   aria-label={
                     unreadMessages > 0
                       ? `Messages (${unreadMessages} unread)`
@@ -223,7 +231,7 @@ export default async function ProfilePage({
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                     <polyline points="22,6 12,13 2,6" />
                   </svg>
-                  Messages
+                  <span className="hidden sm:inline">Messages</span>
                   {unreadMessages > 0 && (
                     <span className="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
                       {unreadMessages > 99 ? "99+" : unreadMessages}
@@ -232,10 +240,12 @@ export default async function ProfilePage({
                 </Link>
                 <Link
                   href="/u"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 sm:px-4"
+                  aria-label="Explore profiles"
                   title="Find other users"
                 >
-                  🔎 Explore profiles
+                  <span aria-hidden>🔎</span>
+                  <span className="hidden sm:inline">Explore profiles</span>
                 </Link>
               </>
             ) : me ? (

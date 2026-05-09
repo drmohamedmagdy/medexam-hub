@@ -101,7 +101,8 @@ export default async function AdminCreditsPage() {
           What users get from the platform and from their referrals.
         </p>
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[44rem] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
               <tr>
                 <th className="px-4 py-3 text-start">Plan</th>
@@ -134,6 +135,7 @@ export default async function AdminCreditsPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
         <p className="mt-3 text-xs text-zinc-500">
           Welcome bonus is awarded once on signup. Referral commission is awarded once per referee
@@ -146,7 +148,8 @@ export default async function AdminCreditsPage() {
         <h2 className="text-lg font-semibold">Redemption rates</h2>
         <p className="mt-1 text-sm text-zinc-500">What users can spend credits on.</p>
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[44rem] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
               <tr>
                 <th className="px-4 py-3 text-start">Redemption</th>
@@ -182,6 +185,7 @@ export default async function AdminCreditsPage() {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 
@@ -233,7 +237,8 @@ export default async function AdminCreditsPage() {
           {topReferrers.length === 0 ? (
             <div className="p-6 text-center text-sm text-zinc-500">No referral commissions yet.</div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[40rem] text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
                 <tr>
                   <th className="px-4 py-3 text-start">User</th>
@@ -270,6 +275,7 @@ export default async function AdminCreditsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </section>
