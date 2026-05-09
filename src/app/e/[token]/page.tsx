@@ -8,10 +8,13 @@ export const metadata = { title: "Shared exam — MedExam Hub" };
 
 export default async function SharedExamLandingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { token } = await params;
+  const [{ token }, sp] = await Promise.all([params, searchParams]);
+  const errorKind = sp.error;
 
   const exam = await prisma.exam.findUnique({
     where: { shareToken: token },
@@ -105,6 +108,26 @@ export default async function SharedExamLandingPage({
             {exam._count.sharedAttempts === 1 ? "attempt" : "attempts"} so far —
             think you can top them?
           </p>
+        )}
+
+        {errorKind === "quota" && (
+          <div className="mt-5 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            <p className="font-semibold">Not enough questions left this month</p>
+            <p className="mt-1 text-xs">
+              You don&apos;t have enough remaining questions on your plan to
+              take this {exam.numQuestions}-question exam. Upgrade your plan
+              for more, or wait until next month.
+            </p>
+          </div>
+        )}
+        {errorKind === "plan_limit" && (
+          <div className="mt-5 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            <p className="font-semibold">Exam too large for your plan</p>
+            <p className="mt-1 text-xs">
+              This exam has {exam.numQuestions} questions, but your current
+              plan only allows shorter exams. Upgrade to take it.
+            </p>
+          </div>
         )}
 
         <div className="mt-7 border-t border-zinc-200 pt-5 dark:border-slate-800">

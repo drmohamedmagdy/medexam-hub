@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ExamStatus } from "@/generated/prisma/client";
+import { getMonthlyQuestionsUsage, recordQuestionsUsed } from "@/lib/quota";
+import { PLAN_LIMITS } from "@/lib/plans";
 
 export type ShareState =
   | { ok: true; token: string; url: string }
@@ -108,6 +110,20 @@ export async function startSharedExamAction(formData: FormData): Promise<void> {
     redirect(`/exam/${existing.id}`);
   }
 
+  // Quota check: forks reuse pre-generated questions so they don't burn
+  // Claude tokens, but they do count toward the taker's monthly question
+  // budget. Without this, free / Basic users could take unlimited shared
+  // exams. If the taker is short on quota, bounce them to the share page
+  // with an explanatory error.
+  const planCfg = PLAN_LIMITS[user.plan];
+  if (master.numQuestions > planCfg.maxQuestionsPerExam) {
+    redirect(`/e/${token}?error=plan_limit`);
+  }
+  const usage = await getMonthlyQuestionsUsage(user.id, user.plan);
+  if (master.numQuestions > usage.remaining) {
+    redirect(`/e/${token}?error=quota`);
+  }
+
   // Fresh fork. Status READY → user starts taking immediately.
   const fork = await prisma.exam.create({
     data: {
@@ -137,6 +153,11 @@ export async function startSharedExamAction(formData: FormData): Promise<void> {
     },
     select: { id: true },
   });
+
+  // Consume the taker's monthly question quota (matches createExamAction's
+  // upfront-debit pattern). recordQuestionsUsed also drains the perpetual
+  // bonus pool when the user goes over their plan cap.
+  await recordQuestionsUsed(user.id, master.numQuestions);
 
   redirect(`/exam/${fork.id}`);
 }
