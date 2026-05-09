@@ -137,6 +137,13 @@ export default async function ProfilePage({
                     </span>
                   )}
                 </Link>
+                <Link
+                  href="/u"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  title="Find other users"
+                >
+                  🔎 Explore profiles
+                </Link>
               </>
             ) : me ? (
               <OpenMessageButton userId={profile.id} />
