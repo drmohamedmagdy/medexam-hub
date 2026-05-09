@@ -1,7 +1,21 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 const PHONE = "201226218004";
 const PREFILL = "Hi! I have a question about MedExam Hub.";
 
 export default function WhatsAppButton() {
+  const pathname = usePathname() ?? "";
+  // Hide the WhatsApp button on exam-taking surfaces — it sits in the
+  // bottom-right and was visually colliding with the Submit button on
+  // mobile, blocking taps. Also hide on the shared-exam landing for a
+  // cleaner first impression.
+  const hide =
+    /^\/exam\/[^/]+($|\/(?!new$))/.test(pathname) ||
+    pathname.startsWith("/e/");
+  if (hide) return null;
+
   const url = `https://wa.me/${PHONE}?text=${encodeURIComponent(PREFILL)}`;
   return (
     <a
