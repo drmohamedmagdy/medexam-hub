@@ -673,7 +673,7 @@ const ar = {
       PRO: { label: "احترافي", description: "للمرشحين للامتحانات الذين يحتاجون إلى حجم وأسئلة من ملفات.",
         features: ["كل ما في الخطة الأساسية", "50 امتحانًا شهريًا (حتى 1,500 سؤال)", "حتى 30 سؤالاً لكل امتحان", "رفع حتى 6 ملفات شهريًا", "تنزيل الامتحانات المكتملة كملف PDF"] },
       PREMIUM: { label: "متميز", description: "للأخصائيين والاستشاريين والمعلمين.",
-        features: ["كل ما في الخطة الاحترافية", "100 امتحان شهريًا (حتى 5,000 سؤال)", "حتى 50 سؤالاً لكل امتحان", "رفع حتى 15 ملفًا شهريًا", "تحليلات متقدمة", "تنزيل الامتحانات المكتملة كملف PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["كل ما في الخطة الاحترافية", "100 امتحان شهريًا (حتى 5,000 سؤال)", "حتى 50 سؤالاً لكل امتحان", "رفع حتى 15 ملفًا شهريًا", "تحليلات متقدمة", "تنزيل الامتحانات المكتملة كملف PDF"] }, RESEARCHER: { label: "الباحث", description: "خدمة مخصّصة للبحث والإحصاء بالذكاء الاصطناعي — البروتوكولات، الرسائل، المخطوطات، المراجعات المنهجية، و17 اختبارًا إحصائيًا مع تصدير Word وPDF.", features: ["5 مشاريع بحثية شهريًا", "25 تحليلًا إحصائيًا شهريًا", "25 ملفًا للرفع شهريًا", "ادفع بالنقاط لتمديد أي حد (رصيد دائم متجدّد)", "500 سؤال امتحان شهريًا", "تصدير Word + PDF مع رسوم بيانية مدمجة"] },
     },
   },
 };
@@ -737,7 +737,7 @@ const fr = {
       PRO: { label: "Pro", description: "Pour les candidats qui ont besoin de volume et de questions à partir de fichiers.",
         features: ["Tout ce qui est inclus dans Basique", "50 examens IA par mois (jusqu'à 1 500 questions)", "Jusqu'à 30 questions par examen", "Téléverser jusqu'à 6 fichiers / mois", "Télécharger les examens en PDF"] },
       PREMIUM: { label: "Premium", description: "Pour les spécialistes, consultants et formateurs.",
-        features: ["Tout ce qui est inclus dans Pro", "100 examens IA par mois (jusqu'à 5 000 questions)", "Jusqu'à 50 questions par examen", "Téléverser jusqu'à 15 fichiers / mois", "Analyses avancées", "Télécharger les examens en PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Tout ce qui est inclus dans Pro", "100 examens IA par mois (jusqu'à 5 000 questions)", "Jusqu'à 50 questions par examen", "Téléverser jusqu'à 15 fichiers / mois", "Analyses avancées", "Télécharger les examens en PDF"] }, RESEARCHER: { label: "Chercheur", description: "Service dédié IA Recherche & Statistiques — protocoles, thèses, manuscrits, revues systématiques et 17 tests statistiques avec export Word + PDF.", features: ["5 projets de recherche par mois", "25 analyses statistiques par mois", "25 téléversements de fichiers par mois", "Payez en crédits pour augmenter toute limite (cagnotte permanente)", "500 questions d'examen par mois", "Exports Word + PDF avec graphiques intégrés"] },
     },
   },
 };
@@ -801,7 +801,7 @@ const es = {
       PRO: { label: "Pro", description: "Para candidatos a exámenes que necesitan volumen y preguntas desde archivos.",
         features: ["Todo lo de Básico", "50 exámenes IA al mes (hasta 1,500 preguntas)", "Hasta 30 preguntas por examen", "Subir hasta 6 archivos / mes", "Descargar exámenes en PDF"] },
       PREMIUM: { label: "Premium", description: "Para especialistas, consultores y educadores.",
-        features: ["Todo lo de Pro", "100 exámenes IA al mes (hasta 5,000 preguntas)", "Hasta 50 preguntas por examen", "Subir hasta 15 archivos / mes", "Analítica avanzada", "Descargar exámenes en PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Todo lo de Pro", "100 exámenes IA al mes (hasta 5,000 preguntas)", "Hasta 50 preguntas por examen", "Subir hasta 15 archivos / mes", "Analítica avanzada", "Descargar exámenes en PDF"] }, RESEARCHER: { label: "Investigador", description: "Servicio dedicado de IA para Investigación y Estadística — protocolos, tesis, manuscritos, revisiones sistemáticas y 17 pruebas estadísticas con exportación Word + PDF.", features: ["5 proyectos de investigación al mes", "25 análisis estadísticos al mes", "25 subidas de archivos al mes", "Paga con créditos para ampliar cualquier límite (saldo permanente)", "500 preguntas de examen al mes", "Exportación Word + PDF con gráficos integrados"] },
     },
   },
 };
@@ -865,7 +865,7 @@ const de = {
       PRO: { label: "Pro", description: "Für Prüfungskandidaten mit hohem Volumen und Datei-Fragen.",
         features: ["Alles aus Basic", "50 KI-Prüfungen pro Monat (bis 1.500 Fragen)", "Bis zu 30 Fragen pro Prüfung", "Bis zu 6 Datei-Uploads / Monat", "Prüfungen als PDF herunterladen"] },
       PREMIUM: { label: "Premium", description: "Für Fachärzte, Consultants und Lehrende.",
-        features: ["Alles aus Pro", "100 KI-Prüfungen pro Monat (bis 5.000 Fragen)", "Bis zu 50 Fragen pro Prüfung", "Bis zu 15 Datei-Uploads / Monat", "Erweiterte Analytik", "Prüfungen als PDF herunterladen"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Alles aus Pro", "100 KI-Prüfungen pro Monat (bis 5.000 Fragen)", "Bis zu 50 Fragen pro Prüfung", "Bis zu 15 Datei-Uploads / Monat", "Erweiterte Analytik", "Prüfungen als PDF herunterladen"] }, RESEARCHER: { label: "Forscher", description: "Dedizierter KI-Service für Forschung & Statistik — Protokolle, Thesen, Manuskripte, systematische Reviews und 17 statistische Tests mit Word- + PDF-Export.", features: ["5 Forschungsprojekte pro Monat", "25 statistische Analysen pro Monat", "25 Datei-Uploads pro Monat", "Zahle mit Credits, um jedes Limit zu erweitern (dauerhafter Aufstockungspool)", "500 Prüfungsfragen pro Monat", "Word- + PDF-Exports mit eingebetteten Diagrammen"] },
     },
   },
 };
@@ -929,7 +929,7 @@ const it = {
       PRO: { label: "Pro", description: "Per chi prepara esami con volume e domande da file.",
         features: ["Tutto del piano Basic", "50 esami IA al mese (fino a 1.500 domande)", "Fino a 30 domande per esame", "Carica fino a 6 file / mese", "Scarica gli esami in PDF"] },
       PREMIUM: { label: "Premium", description: "Per specialisti, consulenti ed educatori.",
-        features: ["Tutto del piano Pro", "100 esami IA al mese (fino a 5.000 domande)", "Fino a 50 domande per esame", "Carica fino a 15 file / mese", "Analitica avanzata", "Scarica gli esami in PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Tutto del piano Pro", "100 esami IA al mese (fino a 5.000 domande)", "Fino a 50 domande per esame", "Carica fino a 15 file / mese", "Analitica avanzata", "Scarica gli esami in PDF"] }, RESEARCHER: { label: "Ricercatore", description: "Servizio dedicato di IA per Ricerca e Statistica — protocolli, tesi, manoscritti, revisioni sistematiche e 17 test statistici con esportazione Word + PDF.", features: ["5 progetti di ricerca al mese", "25 analisi statistiche al mese", "25 caricamenti di file al mese", "Paga con crediti per estendere qualsiasi limite (saldo permanente)", "500 domande d'esame al mese", "Esportazione Word + PDF con grafici integrati"] },
     },
   },
 };
@@ -993,7 +993,7 @@ const pt = {
       PRO: { label: "Pro", description: "Para candidatos que precisam de volume e questões a partir de arquivos.",
         features: ["Tudo do Básico", "50 exames IA por mês (até 1.500 questões)", "Até 30 questões por exame", "Upload de até 6 arquivos / mês", "Baixar exames em PDF"] },
       PREMIUM: { label: "Premium", description: "Para especialistas, consultores e educadores.",
-        features: ["Tudo do Pro", "100 exames IA por mês (até 5.000 questões)", "Até 50 questões por exame", "Upload de até 15 arquivos / mês", "Análise avançada", "Baixar exames em PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Tudo do Pro", "100 exames IA por mês (até 5.000 questões)", "Até 50 questões por exame", "Upload de até 15 arquivos / mês", "Análise avançada", "Baixar exames em PDF"] }, RESEARCHER: { label: "Pesquisador", description: "Serviço dedicado de IA para Pesquisa e Estatística — protocolos, teses, manuscritos, revisões sistemáticas e 17 testes estatísticos com exportação Word + PDF.", features: ["5 projetos de pesquisa por mês", "25 análises estatísticas por mês", "25 uploads de arquivos por mês", "Pague com créditos para estender qualquer limite (saldo permanente)", "500 questões de exame por mês", "Exportação Word + PDF com gráficos integrados"] },
     },
   },
 };
@@ -1057,7 +1057,7 @@ const tr = {
       PRO: { label: "Pro", description: "Hacme ve dosya tabanlı sorulara ihtiyaç duyan adaylar için.",
         features: ["Basic'teki her şey", "Ayda 50 YZ sınavı (en fazla 1.500 soru)", "Sınav başına en fazla 30 soru", "Ayda en fazla 6 dosya yükleme", "Sınavları PDF olarak indir"] },
       PREMIUM: { label: "Premium", description: "Uzmanlar, danışmanlar ve eğitmenler için.",
-        features: ["Pro'daki her şey", "Ayda 100 YZ sınavı (en fazla 5.000 soru)", "Sınav başına en fazla 50 soru", "Ayda en fazla 15 dosya yükleme", "Gelişmiş analizler", "Sınavları PDF olarak indir"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["Pro'daki her şey", "Ayda 100 YZ sınavı (en fazla 5.000 soru)", "Sınav başına en fazla 50 soru", "Ayda en fazla 15 dosya yükleme", "Gelişmiş analizler", "Sınavları PDF olarak indir"] }, RESEARCHER: { label: "Araştırmacı", description: "Özel YZ Araştırma ve İstatistik servisi — protokoller, tezler, makaleler, sistematik incelemeler ve 17 istatistiksel test, Word + PDF dışa aktarma ile.", features: ["Ayda 5 araştırma projesi", "Ayda 25 istatistiksel analiz", "Ayda 25 dosya yükleme", "Herhangi bir limiti genişletmek için kredi öde (kalıcı yükleme havuzu)", "Ayda 500 sınav sorusu", "Gömülü grafiklerle Word + PDF dışa aktarma"] },
     },
   },
 };
@@ -1121,7 +1121,7 @@ const ur = {
       PRO: { label: "پرو", description: "حجم اور فائل پر مبنی سوالات کی ضرورت رکھنے والے امیدواروں کے لیے۔",
         features: ["بیسک میں موجود سب کچھ", "ماہانہ 50 AI امتحانات (1,500 سوالات تک)", "فی امتحان 30 سوالات تک", "ماہانہ 6 فائلز تک اپ لوڈ", "مکمل امتحانات کو PDF میں ڈاؤن لوڈ کریں"] },
       PREMIUM: { label: "پریمیم", description: "تخصصین، مشیرین اور معلمین کے لیے۔",
-        features: ["پرو میں موجود سب کچھ", "ماہانہ 100 AI امتحانات (5,000 سوالات تک)", "فی امتحان 50 سوالات تک", "ماہانہ 15 فائلز تک اپ لوڈ", "اعلیٰ تجزیات", "مکمل امتحانات کو PDF میں ڈاؤن لوڈ کریں"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["پرو میں موجود سب کچھ", "ماہانہ 100 AI امتحانات (5,000 سوالات تک)", "فی امتحان 50 سوالات تک", "ماہانہ 15 فائلز تک اپ لوڈ", "اعلیٰ تجزیات", "مکمل امتحانات کو PDF میں ڈاؤن لوڈ کریں"] }, RESEARCHER: { label: "محقق", description: "AI ریسرچ اور شماریات کی خصوصی سروس — پروٹوکول، تھیسس، مضامین، منظم جائزے، اور 17 شماریاتی ٹیسٹ Word + PDF ایکسپورٹ کے ساتھ۔", features: ["ماہانہ 5 ریسرچ پراجیکٹس", "ماہانہ 25 شماریاتی تجزیات", "ماہانہ 25 فائلز اپ لوڈ", "کسی بھی حد کو بڑھانے کے لیے کریڈٹس سے ادائیگی کریں (مستقل ٹاپ اپ پول)", "ماہانہ 500 امتحانی سوالات", "Word + PDF ایکسپورٹ شامل چارٹس کے ساتھ"] },
     },
   },
 };
@@ -1185,7 +1185,7 @@ const fa = {
       PRO: { label: "حرفه‌ای", description: "برای داوطلبان آزمونی که به حجم و سؤالات از فایل نیاز دارند.",
         features: ["تمام امکانات پایه", "۵۰ آزمون هوش مصنوعی در ماه (تا ۱٬۵۰۰ سؤال)", "حداکثر ۳۰ سؤال در هر آزمون", "بارگذاری تا ۶ فایل در ماه", "دانلود آزمون‌های کامل‌شده به PDF"] },
       PREMIUM: { label: "پریمیوم", description: "برای متخصصان، مشاوران و آموزشگران.",
-        features: ["تمام امکانات حرفه‌ای", "۱۰۰ آزمون هوش مصنوعی در ماه (تا ۵٬۰۰۰ سؤال)", "حداکثر ۵۰ سؤال در هر آزمون", "بارگذاری تا ۱۵ فایل در ماه", "تحلیل پیشرفته", "دانلود آزمون‌های کامل‌شده به PDF"] }, RESEARCHER: { label: "Researcher", description: "Dedicated AI Research & Statistics service — protocols, theses, manuscripts, systematic reviews, and 17 statistical tests with Word + PDF export.", features: ["5 research projects / month", "25 statistical analyses / month", "25 file uploads / month", "Pay credits to extend any limit (perpetual top-up pool)", "500 exam questions / month", "Word + PDF exports with embedded charts"] },
+        features: ["تمام امکانات حرفه‌ای", "۱۰۰ آزمون هوش مصنوعی در ماه (تا ۵٬۰۰۰ سؤال)", "حداکثر ۵۰ سؤال در هر آزمون", "بارگذاری تا ۱۵ فایل در ماه", "تحلیل پیشرفته", "دانلود آزمون‌های کامل‌شده به PDF"] }, RESEARCHER: { label: "پژوهشگر", description: "سرویس اختصاصی هوش مصنوعی پژوهش و آمار — پروتکل‌ها، پایان‌نامه‌ها، مقالات، مرورهای نظام‌مند و ۱۷ آزمون آماری با خروجی Word + PDF.", features: ["۵ پروژه پژوهشی در ماه", "۲۵ تحلیل آماری در ماه", "۲۵ بارگذاری فایل در ماه", "با اعتبار، هر سقفی را افزایش دهید (استخر شارژ دائمی)", "۵۰۰ سؤال آزمون در ماه", "خروجی Word + PDF با نمودارهای جاسازی‌شده"] },
     },
   },
 };
@@ -1688,12 +1688,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "متوسط الدرجة", acrossCompleted: "عبر الامتحانات المكتملة",
       recentExams: "أحدث الامتحانات", noExams: "لا توجد امتحانات بعد.", generateFirst: "أنشئ أول امتحان لك",
       status: { generating: "قيد الإنشاء", ready: "جاهز", inProgress: "قيد التنفيذ", completed: "مكتمل", failed: "فشل" },
-      guideHeadings: { FREE: "ابدأ هنا", BASIC: "استفد من الخطة الأساسية", PRO: "نصائح Pro", PREMIUM: "أدوات Premium", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "ابدأ هنا", BASIC: "استفد من الخطة الأساسية", PRO: "نصائح Pro", PREMIUM: "أدوات Premium", RESEARCHER: "أدوات الباحث" },
       guideTips: {
         FREE: ["اختر صيغة الامتحان (USMLE، MRCS، MRCP، الزمالة المصرية، Prometric…) لتتوافق الأسئلة مع شكل الامتحان الفعلي.", "النسخة المجانية امتحان واحد شهريًا بحد أقصى 10 أسئلة. ارقِ إلى Basic للحصول على 15 امتحانًا شهريًا.", "استخدم وضع التدريب للتعلم — تظهر الشروح بعد كل إجابة."],
         BASIC: ["لديك {monthlyExams} امتحانات شهريًا. وزّعها على عدة تخصصات أو ركّز على تخصص واحد للتعمق.", "بدّل إلى وضع الامتحان (المؤقت مفعّل) لمحاكاة الاختبار الحقيقي.", "تحتاج المزيد؟ Pro يضيف رفع الملفات — أنشئ أسئلة من ملاحظاتك أو الإرشادات."],
         PRO: ["{monthlyExams} امتحان شهريًا، حتى {maxQ} سؤالاً لكل امتحان — كافٍ للتدريب اليومي.", "حصة رفع الملفات: {files} ملفات شهريًا.", "تابع مواضيعك الضعيفة في لوحة التحكم وأنشئ امتحانات تستهدفها."],
-        PREMIUM: ["{monthlyExams} امتحان شهريًا حتى {maxQ} سؤالاً — مثالي لاستعداد البورد.", "{files} ملف يمكن رفعه شهريًا.", "تحليلات متقدمة ستظهر دقتك حسب الموضوع وخطط مراجعة موصى بها."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["{monthlyExams} امتحان شهريًا حتى {maxQ} سؤالاً — مثالي لاستعداد البورد.", "{files} ملف يمكن رفعه شهريًا.", "تحليلات متقدمة ستظهر دقتك حسب الموضوع وخطط مراجعة موصى بها."], RESEARCHER: ["مشاريع بحث وتحليلات إحصائية بلا حدود على البيانات المرفوعة — ركّز على رسالتك أو ورقتك.", "الذكاء الاصطناعي يولّد المقدمة والطرق والنتائج والمناقشة... وأنت تضبط النتيجة.", "نفّذ أيًا من 17 اختبارًا إحصائيًا؛ صدّر إلى Word مع رسوم بيانية مدمجة."],
       },
     },
     dashboardExtras: {
@@ -1791,12 +1791,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "Score moyen", acrossCompleted: "sur les examens complétés",
       recentExams: "Examens récents", noExams: "Aucun examen pour le moment.", generateFirst: "Créez votre premier examen",
       status: { generating: "génération", ready: "prêt", inProgress: "en cours", completed: "complété", failed: "échec" },
-      guideHeadings: { FREE: "Pour commencer", BASIC: "Tirer le meilleur de Basique", PRO: "Astuces Pro", PREMIUM: "Boîte à outils Premium", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "Pour commencer", BASIC: "Tirer le meilleur de Basique", PRO: "Astuces Pro", PREMIUM: "Boîte à outils Premium", RESEARCHER: "Boîte à outils Chercheur" },
       guideTips: {
         FREE: ["Choisissez le format d'examen (USMLE, MRCS, MRCP, Fellowship égyptien, Prometric…) pour que les questions ressemblent à l'examen réel.", "L'essai gratuit donne 1 examen/mois jusqu'à 10 questions. Passez à Basique pour 15 examens/mois.", "Utilisez le mode Entraînement pour apprendre — les explications apparaissent après chaque réponse."],
         BASIC: ["Vous avez {monthlyExams} examens par mois. Répartissez-les entre spécialités ou concentrez-vous sur une.", "Passez en mode Examen (chrono activé) pour simuler les conditions réelles.", "Besoin de plus ? Pro ajoute le téléversement de fichiers — générez des questions à partir de vos notes."],
         PRO: ["{monthlyExams} examens par mois, jusqu'à {maxQ} questions chacun — parfait pour l'entraînement quotidien.", "Quota de fichiers : {files} fichiers par mois.", "Suivez vos sujets faibles dans le tableau de bord et regénérez des examens ciblés."],
-        PREMIUM: ["{monthlyExams} examens par mois jusqu'à {maxQ} questions — idéal pour la préparation aux boards.", "{files} téléversements de fichiers par mois.", "Les analyses avancées montreront la précision par sujet et un plan de révision recommandé."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["{monthlyExams} examens par mois jusqu'à {maxQ} questions — idéal pour la préparation aux boards.", "{files} téléversements de fichiers par mois.", "Les analyses avancées montreront la précision par sujet et un plan de révision recommandé."], RESEARCHER: ["Projets de recherche et analyses statistiques illimités sur vos données — concentrez-vous sur votre thèse ou article.", "L'IA génère Introduction, Méthodes, Résultats, Discussion, etc. ; vous ajustez.", "Exécutez l'un des 17 tests statistiques ; exportez en Word avec graphiques intégrés."],
       },
     },
     dashboardExtras: {
@@ -1894,12 +1894,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "Puntaje promedio", acrossCompleted: "en exámenes completados",
       recentExams: "Exámenes recientes", noExams: "Aún no hay exámenes.", generateFirst: "Crea tu primer examen",
       status: { generating: "generando", ready: "listo", inProgress: "en curso", completed: "completado", failed: "fallido" },
-      guideHeadings: { FREE: "Empezar", BASIC: "Aprovecha Básico", PRO: "Consejos Pro", PREMIUM: "Herramientas Premium", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "Empezar", BASIC: "Aprovecha Básico", PRO: "Consejos Pro", PREMIUM: "Herramientas Premium", RESEARCHER: "Herramientas del Investigador" },
       guideTips: {
         FREE: ["Elige el formato de examen (USMLE, MRCS, MRCP, Fellowship Egipcio, Prometric…) para que las preguntas se parezcan al real.", "La prueba gratuita es 1 examen al mes con hasta 10 preguntas. Mejora a Básico para 15 exámenes al mes.", "Usa el modo Práctica para aprender — las explicaciones aparecen tras cada respuesta."],
         BASIC: ["Tienes {monthlyExams} exámenes al mes. Distribúyelos entre especialidades o concéntrate en una.", "Cambia al modo Examen (con cronómetro) para simular condiciones reales.", "¿Más allá de Básico? Pro añade subida de archivos — genera preguntas desde tus apuntes."],
         PRO: ["{monthlyExams} exámenes al mes, hasta {maxQ} preguntas cada uno — ideal para la práctica diaria.", "Cuota de archivos: {files} archivos al mes.", "Sigue tus temas débiles en el panel y regenera exámenes enfocados."],
-        PREMIUM: ["{monthlyExams} exámenes al mes hasta {maxQ} preguntas — ideal para preparación de boards.", "{files} subidas de archivos al mes.", "Analítica avanzada mostrará precisión por tema y planes de repaso recomendados."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["{monthlyExams} exámenes al mes hasta {maxQ} preguntas — ideal para preparación de boards.", "{files} subidas de archivos al mes.", "Analítica avanzada mostrará precisión por tema y planes de repaso recomendados."], RESEARCHER: ["Proyectos de investigación y análisis estadísticos ilimitados sobre tus datos — céntrate en tu tesis o artículo.", "La IA genera Introducción, Métodos, Resultados, Discusión, etc.; tú ajustas.", "Ejecuta cualquiera de las 17 pruebas estadísticas; exporta a Word con gráficos integrados."],
       },
     },
     dashboardExtras: {
@@ -1997,12 +1997,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "Durchschnittsnote", acrossCompleted: "über abgeschlossene Prüfungen",
       recentExams: "Letzte Prüfungen", noExams: "Noch keine Prüfungen.", generateFirst: "Erstellen Sie Ihre erste Prüfung",
       status: { generating: "wird erstellt", ready: "bereit", inProgress: "läuft", completed: "abgeschlossen", failed: "fehlgeschlagen" },
-      guideHeadings: { FREE: "Erste Schritte", BASIC: "Basic optimal nutzen", PRO: "Pro-Tipps", PREMIUM: "Premium-Werkzeuge", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "Erste Schritte", BASIC: "Basic optimal nutzen", PRO: "Pro-Tipps", PREMIUM: "Premium-Werkzeuge", RESEARCHER: "Forscher-Werkzeuge" },
       guideTips: {
         FREE: ["Wählen Sie das Prüfungsformat (USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric…), damit Fragen zur echten Prüfung passen.", "Kostenlose Testversion: 1 Prüfung pro Monat mit bis zu 10 Fragen. Upgraden Sie auf Basic für 15 Prüfungen pro Monat.", "Übungsmodus zum Lernen — Erklärungen erscheinen nach jeder Antwort."],
         BASIC: ["Sie haben {monthlyExams} Prüfungen pro Monat. Verteilen Sie sie auf Fachgebiete oder vertiefen Sie eines.", "Wechseln Sie in den Prüfungsmodus (Timer an) zur echten Simulation.", "Mehr nötig? Pro fügt Datei-Upload hinzu — Fragen aus Ihren Notizen generieren."],
         PRO: ["{monthlyExams} Prüfungen pro Monat, bis zu {maxQ} Fragen je — genug für tägliches Üben.", "Datei-Upload: {files} Dateien pro Monat.", "Verfolgen Sie schwache Themen im Dashboard und erstellen Sie zielgerichtete Prüfungen."],
-        PREMIUM: ["{monthlyExams} Prüfungen pro Monat bis zu {maxQ} Fragen — ideal für Board-Vorbereitung.", "{files} Datei-Uploads pro Monat.", "Erweiterte Analytik zeigt Genauigkeit pro Thema und empfohlene Wiederholungspläne."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["{monthlyExams} Prüfungen pro Monat bis zu {maxQ} Fragen — ideal für Board-Vorbereitung.", "{files} Datei-Uploads pro Monat.", "Erweiterte Analytik zeigt Genauigkeit pro Thema und empfohlene Wiederholungspläne."], RESEARCHER: ["Unbegrenzte Forschungsprojekte und statistische Analysen auf hochgeladenen Daten — Fokus auf deine These oder Publikation.", "Die KI generiert Einleitung, Methoden, Ergebnisse, Diskussion usw.; du verfeinerst.", "Führe einen der 17 statistischen Tests aus; exportiere als Word mit eingebetteten Diagrammen."],
       },
     },
     dashboardExtras: {
@@ -2100,12 +2100,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "Punteggio medio", acrossCompleted: "su esami completati",
       recentExams: "Esami recenti", noExams: "Ancora nessun esame.", generateFirst: "Crea il tuo primo esame",
       status: { generating: "creazione", ready: "pronto", inProgress: "in corso", completed: "completato", failed: "fallito" },
-      guideHeadings: { FREE: "Per iniziare", BASIC: "Sfrutta al meglio Basic", PRO: "Consigli Pro", PREMIUM: "Strumenti Premium", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "Per iniziare", BASIC: "Sfrutta al meglio Basic", PRO: "Consigli Pro", PREMIUM: "Strumenti Premium", RESEARCHER: "Strumenti Ricercatore" },
       guideTips: {
         FREE: ["Scegli il formato d'esame (USMLE, MRCS, MRCP, Fellowship Egiziano, Prometric…) per avere domande coerenti con l'esame reale.", "La prova gratuita è 1 esame al mese fino a 10 domande. Passa a Basic per 15 esami al mese.", "Usa la modalità Pratica per imparare — le spiegazioni compaiono dopo ogni risposta."],
         BASIC: ["Hai {monthlyExams} esami al mese. Distribuiscili tra specialità o concentrati su una.", "Passa alla modalità Esame (timer attivo) per simulare condizioni reali.", "Hai bisogno di più? Pro aggiunge il caricamento file — genera domande dai tuoi appunti."],
         PRO: ["{monthlyExams} esami al mese, fino a {maxQ} domande ciascuno — perfetto per la pratica quotidiana.", "Quota file: {files} file al mese.", "Monitora gli argomenti deboli nella dashboard e rigenera esami mirati."],
-        PREMIUM: ["{monthlyExams} esami al mese fino a {maxQ} domande — ideale per la preparazione ai board.", "{files} caricamenti file al mese.", "L'analitica avanzata mostrerà l'accuratezza per argomento e piani di ripasso."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["{monthlyExams} esami al mese fino a {maxQ} domande — ideale per la preparazione ai board.", "{files} caricamenti file al mese.", "L'analitica avanzata mostrerà l'accuratezza per argomento e piani di ripasso."], RESEARCHER: ["Progetti di ricerca e analisi statistiche illimitate sui tuoi dati — concentrati sulla tua tesi o sul tuo articolo.", "L'IA genera Introduzione, Metodi, Risultati, Discussione ecc.; tu rifinisci.", "Esegui uno qualsiasi dei 17 test statistici; esporta in Word con grafici integrati."],
       },
     },
     dashboardExtras: {
@@ -2203,12 +2203,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "Pontuação média", acrossCompleted: "em exames concluídos",
       recentExams: "Exames recentes", noExams: "Ainda sem exames.", generateFirst: "Crie seu primeiro exame",
       status: { generating: "gerando", ready: "pronto", inProgress: "em andamento", completed: "concluído", failed: "falhou" },
-      guideHeadings: { FREE: "Começando", BASIC: "Aproveite o Básico", PRO: "Dicas Pro", PREMIUM: "Ferramentas Premium", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "Começando", BASIC: "Aproveite o Básico", PRO: "Dicas Pro", PREMIUM: "Ferramentas Premium", RESEARCHER: "Ferramentas do Pesquisador" },
       guideTips: {
         FREE: ["Escolha o formato (USMLE, MRCS, MRCP, Fellowship Egípcio, Prometric…) para que as questões coincidam com o exame real.", "Teste grátis: 1 exame por mês com até 10 questões. Mude para Básico para 15 exames/mês.", "Use o modo Prática para aprender — explicações aparecem após cada resposta."],
         BASIC: ["Você tem {monthlyExams} exames por mês. Distribua entre especialidades ou foque numa.", "Mude para o modo Exame (com cronômetro) para simular o teste real.", "Precisa de mais? Pro adiciona upload de arquivos — gere questões a partir das suas anotações."],
         PRO: ["{monthlyExams} exames por mês, até {maxQ} questões cada — bom para prática diária.", "Cota de arquivos: {files} arquivos por mês.", "Acompanhe áreas fracas no painel e regenere exames focados nelas."],
-        PREMIUM: ["{monthlyExams} exames por mês até {maxQ} questões — ideal para preparar boards.", "{files} uploads de arquivos por mês.", "Análise avançada mostrará precisão por tema e planos de revisão recomendados."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["{monthlyExams} exames por mês até {maxQ} questões — ideal para preparar boards.", "{files} uploads de arquivos por mês.", "Análise avançada mostrará precisão por tema e planos de revisão recomendados."], RESEARCHER: ["Projetos de pesquisa e análises estatísticas ilimitadas em seus dados — foque na sua tese ou artigo.", "A IA gera Introdução, Métodos, Resultados, Discussão etc.; você refina.", "Execute qualquer um dos 17 testes estatísticos; exporte para Word com gráficos integrados."],
       },
     },
     dashboardExtras: {
@@ -2306,12 +2306,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "Ortalama puan", acrossCompleted: "tamamlanan sınavlarda",
       recentExams: "Son sınavlar", noExams: "Henüz sınav yok.", generateFirst: "İlk sınavını oluştur",
       status: { generating: "oluşturuluyor", ready: "hazır", inProgress: "devam ediyor", completed: "tamamlandı", failed: "başarısız" },
-      guideHeadings: { FREE: "Başlangıç", BASIC: "Basic'ten en iyi şekilde yararlan", PRO: "Pro ipuçları", PREMIUM: "Premium araçlar", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "Başlangıç", BASIC: "Basic'ten en iyi şekilde yararlan", PRO: "Pro ipuçları", PREMIUM: "Premium araçlar", RESEARCHER: "Araştırmacı araç seti" },
       guideTips: {
         FREE: ["Sınav formatını seçin (USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric…) — sorular gerçek sınavla eşleşsin.", "Ücretsiz deneme ayda 1 sınav, en fazla 10 soru. Basic'e geçerek ayda 15 sınav alın.", "Öğrenmek için Pratik modunu kullanın — her yanıttan sonra açıklamalar görünür."],
         BASIC: ["Ayda {monthlyExams} sınavınız var. Uzmanlıklara yayın veya bir alana odaklanın.", "Gerçek sınav koşullarını simüle etmek için Sınav moduna (zamanlayıcı açık) geçin.", "Daha fazlası mı? Pro dosya yüklemeyi ekler — kendi notlarınızdan sorular üretin."],
         PRO: ["Ayda {monthlyExams} sınav, her biri en fazla {maxQ} soru — günlük pratik için bol bol.", "Dosya kotanız: ayda {files} dosya.", "Panodan zayıf konuları takip edin ve hedefli sınavlar üretin."],
-        PREMIUM: ["Ayda {monthlyExams} sınav, en fazla {maxQ} soru — board hazırlığı için ideal.", "Ayda {files} dosya yükleme.", "Gelişmiş analizler konuya göre doğruluğu ve önerilen tekrar planını gösterecek."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["Ayda {monthlyExams} sınav, en fazla {maxQ} soru — board hazırlığı için ideal.", "Ayda {files} dosya yükleme.", "Gelişmiş analizler konuya göre doğruluğu ve önerilen tekrar planını gösterecek."], RESEARCHER: ["Yüklenen verilerde sınırsız araştırma projesi ve istatistiksel analiz — tezin veya makalen üzerine odaklan.", "YZ Giriş, Yöntem, Sonuçlar, Tartışma vb. üretir; sen ince ayar yaparsın.", "17 istatistiksel testten herhangi birini çalıştır; gömülü grafiklerle Word olarak dışa aktar."],
       },
     },
     dashboardExtras: {
@@ -2409,12 +2409,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "اوسط اسکور", acrossCompleted: "مکمل امتحانات میں",
       recentExams: "حالیہ امتحانات", noExams: "ابھی تک کوئی امتحان نہیں۔", generateFirst: "اپنا پہلا امتحان بنائیں",
       status: { generating: "بنایا جا رہا ہے", ready: "تیار", inProgress: "جاری ہے", completed: "مکمل", failed: "ناکام" },
-      guideHeadings: { FREE: "آغاز کریں", BASIC: "Basic سے بھرپور فائدہ اٹھائیں", PRO: "Pro نکات", PREMIUM: "Premium ٹولز", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "آغاز کریں", BASIC: "Basic سے بھرپور فائدہ اٹھائیں", PRO: "Pro نکات", PREMIUM: "Premium ٹولز", RESEARCHER: "محقق کا ٹول کٹ" },
       guideTips: {
         FREE: ["امتحانی نوع منتخب کریں (USMLE، MRCS، MRCP، مصری فیلوشپ، Prometric…) تاکہ سوالات حقیقی امتحان سے میل کھائیں۔", "مفت آزمائش ماہانہ 1 امتحان، 10 سوالات تک ہے۔ Basic پر اپ گریڈ کرکے ماہانہ 15 امتحانات حاصل کریں۔", "سیکھنے کے لیے مشق موڈ استعمال کریں — ہر جواب کے بعد تشریحات ظاہر ہوتی ہیں۔"],
         BASIC: ["آپ کے پاس ماہانہ {monthlyExams} امتحانات ہیں۔ تخصصات میں تقسیم کریں یا ایک پر گہرا فوکس کریں۔", "حقیقی امتحان کی نقل کے لیے امتحان موڈ (ٹائمر آن) پر سوئچ کریں۔", "مزید چاہیے؟ Pro فائل اپ لوڈ شامل کرتا ہے — اپنے نوٹس سے سوالات بنائیں۔"],
         PRO: ["ماہانہ {monthlyExams} امتحانات، ہر ایک میں {maxQ} سوالات تک — روزانہ مشق کے لیے کافی۔", "فائل اپ لوڈ حد: ماہانہ {files} فائلیں۔", "ڈیش بورڈ پر اپنی کمزور چیزیں ٹریک کریں اور ان پر مرکوز امتحانات دوبارہ بنائیں۔"],
-        PREMIUM: ["ماہانہ {monthlyExams} امتحانات حد سے زیادہ {maxQ} سوالات — بورڈ کی تیاری کے لیے مثالی۔", "ماہانہ {files} فائل اپ لوڈز۔", "اعلیٰ تجزیات موضوع کے حساب سے درستگی اور تجویز کردہ نظر ثانی کے منصوبے دکھائیں گے۔"], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["ماہانہ {monthlyExams} امتحانات حد سے زیادہ {maxQ} سوالات — بورڈ کی تیاری کے لیے مثالی۔", "ماہانہ {files} فائل اپ لوڈز۔", "اعلیٰ تجزیات موضوع کے حساب سے درستگی اور تجویز کردہ نظر ثانی کے منصوبے دکھائیں گے۔"], RESEARCHER: ["اپلوڈ کردہ ڈیٹا پر لامحدود ریسرچ پراجیکٹس اور شماریاتی تجزیات — اپنے تھیسس یا مضمون پر توجہ دیں۔", "AI تعارف، طریقے، نتائج، بحث وغیرہ تیار کرتا ہے؛ آپ بہتری کرتے ہیں۔", "17 شماریاتی ٹیسٹس میں سے کوئی بھی چلائیں؛ شامل چارٹس کے ساتھ Word میں ایکسپورٹ کریں۔"],
       },
     },
     dashboardExtras: {
@@ -2512,12 +2512,12 @@ const EXTRAS: Record<Locale, Extras> = {
       averageScore: "میانگین نمره", acrossCompleted: "در آزمون‌های تکمیل‌شده",
       recentExams: "آزمون‌های اخیر", noExams: "هنوز آزمونی نیست.", generateFirst: "اولین آزمون خود را بسازید",
       status: { generating: "در حال ساخت", ready: "آماده", inProgress: "در جریان", completed: "تکمیل‌شده", failed: "ناموفق" },
-      guideHeadings: { FREE: "شروع به کار", BASIC: "بهره‌گیری از پلن پایه", PRO: "نکات حرفه‌ای", PREMIUM: "ابزارهای پریمیوم", RESEARCHER: "Researcher toolkit" },
+      guideHeadings: { FREE: "شروع به کار", BASIC: "بهره‌گیری از پلن پایه", PRO: "نکات حرفه‌ای", PREMIUM: "ابزارهای پریمیوم", RESEARCHER: "ابزار پژوهشگر" },
       guideTips: {
         FREE: ["قالب آزمون را انتخاب کنید (USMLE، MRCS، MRCP، فلوشیپ مصری، Prometric…) تا سؤالات با آزمون واقعی شما هم‌خوان باشد.", "آزمایش رایگان ماهی ۱ آزمون با حداکثر ۱۰ سؤال است. به پایه ارتقا دهید تا ماهی ۱۵ آزمون داشته باشید.", "از حالت تمرین برای یادگیری استفاده کنید — توضیحات پس از هر پاسخ ظاهر می‌شوند."],
         BASIC: ["شما ماهی {monthlyExams} آزمون دارید. بین تخصص‌ها پخش کنید یا روی یکی متمرکز شوید.", "برای شبیه‌سازی شرایط واقعی، حالت آزمون (تایمر روشن) را انتخاب کنید.", "بیشتر می‌خواهید؟ پلن حرفه‌ای امکان آپلود فایل را اضافه می‌کند — از یادداشت‌های خود سؤال بسازید."],
         PRO: ["ماهی {monthlyExams} آزمون، تا {maxQ} سؤال در هر کدام — مناسب تمرین روزانه.", "سهمیهٔ آپلود فایل: ماهی {files} فایل.", "موضوعات ضعیف خود را در داشبورد دنبال کنید و آزمون‌های هدفمند بسازید."],
-        PREMIUM: ["ماهی {monthlyExams} آزمون، حداکثر {maxQ} سؤال — ایده‌آل برای آماده‌سازی بُرد.", "ماهی {files} آپلود فایل.", "تحلیل پیشرفته دقت بر اساس موضوع و برنامه‌های مرور پیشنهادی را نشان می‌دهد."], RESEARCHER: ["Unlimited research projects + statistical analyses on uploaded data — focus on your thesis or paper.", "AI generates Introduction, Methods, Results, Discussion etc.; you fine-tune.", "Run any of 17 statistical tests; export Word with embedded charts."],
+        PREMIUM: ["ماهی {monthlyExams} آزمون، حداکثر {maxQ} سؤال — ایده‌آل برای آماده‌سازی بُرد.", "ماهی {files} آپلود فایل.", "تحلیل پیشرفته دقت بر اساس موضوع و برنامه‌های مرور پیشنهادی را نشان می‌دهد."], RESEARCHER: ["پروژه‌های پژوهشی نامحدود و تحلیل‌های آماری روی داده‌های بارگذاری‌شده — روی پایان‌نامه یا مقاله‌تان تمرکز کنید.", "هوش مصنوعی مقدمه، روش‌ها، نتایج، بحث و... را تولید می‌کند؛ شما تنظیم می‌کنید.", "هر یک از ۱۷ آزمون آماری را اجرا کنید؛ به Word با نمودارهای جاسازی‌شده خروجی بگیرید."],
       },
     },
     dashboardExtras: {
