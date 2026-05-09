@@ -92,9 +92,10 @@ export default async function RootLayout({
                 aria-label="MedExam Hub — back to home"
                 className="flex items-center gap-3 transition hover:opacity-90"
               >
-                {/* Wrapper gives the logo a soft white card in dark mode
-                    so its dark-blue brain illustration stays legible. */}
-                <span className="inline-flex items-center justify-center rounded-md dark:bg-white/95 dark:p-1">
+                {/* Wrapper gives the logo a clearly visible white card
+                    in dark mode so its dark-blue brain illustration
+                    doesn't blend into the slate header. */}
+                <span className="inline-flex items-center justify-center rounded-lg dark:bg-white dark:p-1.5 dark:shadow-sm dark:ring-1 dark:ring-white/30">
                   <Image
                     src="/logo.webp"
                     alt=""

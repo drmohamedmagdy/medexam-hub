@@ -81,7 +81,10 @@ export default async function Home() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
               {tH.badge}
             </span>
-            <h1 className="mt-4 max-w-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent dark:from-cyan-300 dark:via-sky-300 dark:to-indigo-300 sm:text-5xl lg:text-6xl">
+            {/* Light mode keeps the brand gradient. Dark mode uses solid
+                white so we never end up with a dark-on-dark heading
+                because of a browser's color-management quirks. */}
+            <h1 className="mt-4 max-w-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent dark:bg-none dark:text-white dark:[-webkit-text-fill-color:white] sm:text-5xl lg:text-6xl">
               {tH.title}
             </h1>
             <p className="mt-4 max-w-xl text-base text-zinc-600 dark:text-slate-300 sm:mt-5 sm:text-lg">
@@ -420,7 +423,7 @@ export default async function Home() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-2xl font-bold tracking-tight text-transparent dark:from-cyan-300 dark:to-sky-300 sm:text-3xl">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-2xl font-bold tracking-tight text-transparent dark:bg-none dark:text-white dark:[-webkit-text-fill-color:white] sm:text-3xl">
         {value}
       </div>
       <div className="mt-0.5 text-xs font-medium text-zinc-600 dark:text-slate-400 sm:text-sm">
