@@ -64,6 +64,7 @@ export default async function ProfilePage({
     groupMemberships,
     pendingIncomingCount,
     articles,
+    friendCount,
   ] = await Promise.all([
     canSeeFull
       ? prisma.exam.count({
@@ -157,6 +158,12 @@ export default async function ProfilePage({
           createdAt: Date;
           imageUrl: string | null;
         }>),
+    prisma.friendship.count({
+      where: {
+        status: "accepted",
+        OR: [{ userAId: profile.id }, { userBId: profile.id }],
+      },
+    }),
   ]);
 
   const galleryItems = mediaItems.filter(
@@ -208,6 +215,18 @@ export default async function ProfilePage({
                   📁 My content
                 </Link>
                 <Link
+                  href={`/u/${profile.id}/friends`}
+                  className="relative inline-flex items-center gap-1.5 rounded-md border border-purple-600 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 dark:border-purple-500 dark:bg-purple-950/40 dark:text-purple-300"
+                  title="See your friends and pending requests"
+                >
+                  👥 Friends ({friendCount})
+                  {pendingIncomingCount > 0 && (
+                    <span className="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                      {pendingIncomingCount > 99 ? "99+" : pendingIncomingCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
                   href="/messages"
                   className="relative inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
                   aria-label={
@@ -240,6 +259,15 @@ export default async function ProfilePage({
               <>
                 <OpenMessageButton userId={profile.id} />
                 <FriendButtons targetUserId={profile.id} state={friendship} />
+                {friendship === "friends" && (
+                  <Link
+                    href={`/u/${profile.id}/friends`}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-purple-600 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 dark:border-purple-500 dark:bg-purple-950/40 dark:text-purple-300"
+                    title="See their friends"
+                  >
+                    👥 Friends ({friendCount})
+                  </Link>
+                )}
               </>
             ) : (
               <Link
