@@ -607,14 +607,46 @@ function FormatPicker({
               </label>
               {checked && (
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={counts[it.value]}
-                    onChange={(e) => setCount(it.value, Number(e.target.value))}
-                    className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  />
+                  {/* Explicit −/+ buttons. Mobile browsers don't render
+                      the native number-spinner, so without these the
+                      input is keyboard-only on phones. Visible on every
+                      screen so the UX is consistent. */}
+                  <div className="inline-flex items-center rounded-md border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCount(it.value, (counts[it.value] || 0) - 1)
+                      }
+                      disabled={counts[it.value] <= 1}
+                      aria-label="Decrease"
+                      className="grid h-9 w-9 place-items-center text-lg font-semibold text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min={1}
+                      max={100}
+                      value={counts[it.value]}
+                      onChange={(e) =>
+                        setCount(it.value, Number(e.target.value))
+                      }
+                      className="w-12 border-x border-zinc-300 bg-transparent px-1 py-1.5 text-center text-sm focus:outline-none focus:ring-0 dark:border-zinc-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCount(it.value, (counts[it.value] || 0) + 1)
+                      }
+                      disabled={counts[it.value] >= 100}
+                      aria-label="Increase"
+                      className="grid h-9 w-9 place-items-center text-lg font-semibold text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    >
+                      +
+                    </button>
+                  </div>
                   <span className="text-xs text-zinc-500">questions</span>
                 </div>
               )}
