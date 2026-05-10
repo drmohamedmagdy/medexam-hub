@@ -9,6 +9,7 @@ const ORDER: Locale[] = LOCALES;
 export default function LanguageSwitcher({ current }: { current: Locale }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,13 +26,22 @@ export default function LanguageSwitcher({ current }: { current: Locale }) {
       return;
     }
     setPending(true);
+    setError(null);
     try {
       const res = await fetch("/api/locale", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locale }),
       });
-      if (res.ok) window.location.reload();
+      if (res.ok) {
+        window.location.reload();
+        return;
+      }
+      setError("Couldn't change language. Please try again.");
+    } catch {
+      // Network blip — don't escalate to the route-segment error
+      // boundary. Show an inline message instead so the page survives.
+      setError("Couldn't reach the server. Please try again.");
     } finally {
       setPending(false);
     }
@@ -68,6 +78,11 @@ export default function LanguageSwitcher({ current }: { current: Locale }) {
               {current === l && <span aria-hidden>✓</span>}
             </button>
           ))}
+          {error && (
+            <p className="border-t border-zinc-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-zinc-700 dark:bg-red-950 dark:text-red-300">
+              {error}
+            </p>
+          )}
         </div>
       )}
     </div>
