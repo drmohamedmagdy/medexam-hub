@@ -98,6 +98,9 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
           initialToken={exam.shareToken}
           initialUrl={shareUrl}
           attemptCount={attemptCount}
+          initialExpiresAt={exam.shareExpiresAt}
+          initialMaxTakers={exam.shareMaxTakers}
+          initialTimeLimitSec={exam.shareTimeLimitSec}
         />
       )}
 

@@ -377,6 +377,13 @@ model Exam {
   // Share link (the master exam can be taken by other users — questions
   // are copied to a fork Exam owned by each taker). Only set on the master.
   shareToken     String?    @unique
+  // Owner-controlled gates on the share link. All optional — null = no
+  // limit. Time limit, when set, overrides the master's own timeLimitSec
+  // on forked attempts so the creator can leave their original timing
+  // alone while imposing a fresh timer on takers.
+  shareExpiresAt    DateTime?
+  shareMaxTakers    Int?
+  shareTimeLimitSec Int?
   // When the user takes someone else's shared exam, this points back at
   // the master so the creator can see all attempts ranked.
   sharedFromId   String?

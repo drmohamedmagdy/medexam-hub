@@ -73,6 +73,9 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             initialToken={exam.shareToken}
             initialUrl={shareUrl}
             attemptCount={attemptCount}
+            initialExpiresAt={exam.shareExpiresAt}
+            initialMaxTakers={exam.shareMaxTakers}
+            initialTimeLimitSec={exam.shareTimeLimitSec}
           />
         </div>
       )}

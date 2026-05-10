@@ -27,6 +27,9 @@ export default async function SharedExamLandingPage({
       questionFormat: true,
       numQuestions: true,
       timeLimitSec: true,
+      shareExpiresAt: true,
+      shareMaxTakers: true,
+      shareTimeLimitSec: true,
       userId: true,
       createdAt: true,
       user: { select: { name: true, email: true } },
@@ -34,6 +37,14 @@ export default async function SharedExamLandingPage({
     },
   });
   if (!exam) notFound();
+
+  const isExpired =
+    !!exam.shareExpiresAt && exam.shareExpiresAt.getTime() < Date.now();
+  const seatsTaken = exam._count.sharedAttempts;
+  const isFull =
+    !!exam.shareMaxTakers && seatsTaken >= exam.shareMaxTakers;
+  // Per-attempt timer for the taker: share override beats master timer.
+  const effectiveTimeLimitSec = exam.shareTimeLimitSec ?? exam.timeLimitSec;
 
   const me = await getCurrentUser();
 
@@ -82,12 +93,40 @@ export default async function SharedExamLandingPage({
           <Stat
             label="Time limit"
             value={
-              exam.timeLimitSec
-                ? `${Math.round(exam.timeLimitSec / 60)} min`
+              effectiveTimeLimitSec
+                ? `${Math.round(effectiveTimeLimitSec / 60)} min`
                 : "Untimed"
             }
           />
         </dl>
+
+        {(exam.shareExpiresAt || exam.shareMaxTakers) && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+            {exam.shareExpiresAt && (
+              <span
+                className={`rounded-full px-2.5 py-1 ${
+                  isExpired
+                    ? "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200"
+                    : "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                }`}
+              >
+                {isExpired ? "Expired" : "Available until"}{" "}
+                {exam.shareExpiresAt.toLocaleDateString()}
+              </span>
+            )}
+            {exam.shareMaxTakers && (
+              <span
+                className={`rounded-full px-2.5 py-1 ${
+                  isFull
+                    ? "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200"
+                    : "bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200"
+                }`}
+              >
+                {seatsTaken} / {exam.shareMaxTakers} seats taken
+              </span>
+            )}
+          </div>
+        )}
 
         {(exam.specialty || exam.examType) && (
           <p className="mt-4 text-xs text-zinc-500">
@@ -129,9 +168,33 @@ export default async function SharedExamLandingPage({
             </p>
           </div>
         )}
+        {errorKind === "expired" && (
+          <div className="mt-5 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+            <p className="font-semibold">This share link has expired</p>
+            <p className="mt-1 text-xs">
+              The creator set an expiry date that has now passed. Ask them to
+              extend the link if you still want to take the exam.
+            </p>
+          </div>
+        )}
+        {errorKind === "full" && (
+          <div className="mt-5 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+            <p className="font-semibold">All seats are taken</p>
+            <p className="mt-1 text-xs">
+              The creator capped this share at {exam.shareMaxTakers} candidates
+              and that limit has been reached.
+            </p>
+          </div>
+        )}
 
         <div className="mt-7 border-t border-zinc-200 pt-5 dark:border-slate-800">
-          {me ? (
+          {isExpired || isFull ? (
+            <div className="rounded-md border border-zinc-300 bg-zinc-100 p-3 text-center text-sm text-zinc-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {isExpired
+                ? "This link is no longer accepting attempts."
+                : `Capped at ${exam.shareMaxTakers} candidates — all taken.`}
+            </div>
+          ) : me ? (
             <form action={startSharedExamAction}>
               <input type="hidden" name="token" value={token} />
               <button
