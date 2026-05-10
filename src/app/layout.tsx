@@ -228,12 +228,18 @@ export default async function RootLayout({
         <main className="flex-1">{children}</main>
         <footer className="border-t border-zinc-200 pb-24 dark:border-slate-800/60 sm:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-xs text-zinc-500 sm:px-6 sm:flex-row sm:justify-between">
-            <p className="text-center sm:text-start">{t.footer.disclaimer}</p>
+            <div className="text-center sm:text-start">
+              <p>{t.footer.disclaimer}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-zinc-400 dark:text-slate-500">
+                <span aria-hidden>📍</span> Cairo, Egypt
+              </p>
+            </div>
             <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
               <Link href="/about" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.about}</Link>
               <Link href="/contact" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.contact}</Link>
               <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.privacy}</Link>
               <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.terms}</Link>
+              <Link href="/refund" className="hover:text-zinc-900 dark:hover:text-zinc-100">Refund policy</Link>
               <Link href="/disclaimer" className="hover:text-zinc-900 dark:hover:text-zinc-100">{t.footer.medicalDisclaimer}</Link>
             </nav>
           </div>
