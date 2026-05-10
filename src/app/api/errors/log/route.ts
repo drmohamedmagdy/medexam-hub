@@ -4,6 +4,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { logError } from "@/lib/error-logger";
 import { rateLimit, clientIp, tooManyRequests } from "@/lib/rate-limit";
 
+const TRANSIENT_NETWORK_RE =
+  /failed to fetch|load failed|networkerror|connection appears to be offline|network request failed/i;
+
 const Schema = z.object({
   message: z.string().min(1).max(2000),
   stack: z.string().max(8000).optional(),
@@ -28,6 +31,12 @@ export async function POST(req: NextRequest) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) {
     return Response.json({ ok: false }, { status: 400 });
+  }
+  // Defence-in-depth: even if a client somehow bypasses error.tsx's
+  // filter (older deploy, custom client, etc.) we drop these here.
+  // They're user-environment blips, not anything we can act on.
+  if (TRANSIENT_NETWORK_RE.test(parsed.data.message)) {
+    return Response.json({ ok: true, skipped: "transient" });
   }
   await logError({
     message: parsed.data.message,

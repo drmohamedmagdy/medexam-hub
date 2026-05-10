@@ -2,6 +2,9 @@
 
 import { useEffect } from "react";
 
+const TRANSIENT_NETWORK_RE =
+  /failed to fetch|load failed|networkerror|connection appears to be offline|network request failed/i;
+
 // global-error wraps the root layout itself, so it must define <html>
 // and <body>. Triggers when an error is thrown during the layout's own
 // render — i.e. when even error.tsx (which lives under the layout) is
@@ -14,6 +17,12 @@ export default function GlobalError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
+    if (error.message && TRANSIENT_NETWORK_RE.test(error.message)) {
+      // Skip persistent logging for user-network blips.
+      // eslint-disable-next-line no-console
+      console.warn("[GlobalError] transient network error:", error.message);
+      return;
+    }
     const route =
       typeof window !== "undefined" ? window.location.pathname : null;
     fetch("/api/errors/log", {
