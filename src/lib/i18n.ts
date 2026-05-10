@@ -541,7 +541,7 @@ const en = {
   home: {
     badge: "Built for doctors, residents & medical students",
     title: "Pass your next exam faster.",
-    subtitle: "Stop wasting time on low-yield content. AI-generated, exam-level MCQs for USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric and more — in 10 languages, at any difficulty, with explanations and learning points.",
+    subtitle: "You don't lack knowledge — you lack time. Generate exam-level MCQs in 30 seconds for USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric and more. 10 languages, any difficulty, with explanations and learning points.",
     ctaStart: "Start your first AI exam in 30 seconds — Free",
     ctaPlans: "See plans from {price} EGP/mo",
     trustLine: "41 exam formats · 10 languages · 7 difficulty levels · 20+ specialties",

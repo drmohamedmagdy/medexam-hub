@@ -10,6 +10,10 @@ type Item = {
   label: string;
   emphasis?: "primary" | "admin" | "muted";
   color?: NavColor;
+  /** Group label — items sharing a section render under a single header. */
+  section?: string;
+  /** Pin to the sticky bottom block (e.g. Sign In / Register). */
+  pinned?: boolean;
 };
 
 export default function MobileNav({
@@ -36,6 +40,31 @@ export default function MobileNav({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Split into pinned (sticky bottom block) and the scrolling body. The
+  // body is grouped by `section` while preserving the order each section
+  // first appeared.
+  const pinned = items.filter((i) => i.pinned);
+  const body = items.filter((i) => !i.pinned);
+  const sectionOrder: string[] = [];
+  const grouped = new Map<string, Item[]>();
+  for (const it of body) {
+    const key = it.section ?? "";
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+      sectionOrder.push(key);
+    }
+    grouped.get(key)!.push(it);
+  }
+
+  function classFor(it: Item): string {
+    if (it.emphasis === "primary") {
+      return "bg-blue-600 text-white hover:bg-blue-700 shadow-sm";
+    }
+    if (it.emphasis === "admin") return NAV_COLOR_MOBILE.amber;
+    if (it.color) return NAV_COLOR_MOBILE[it.color];
+    return "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800";
+  }
 
   return (
     <>
@@ -68,8 +97,8 @@ export default function MobileNav({
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto border-b border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="absolute inset-x-0 top-0 flex max-h-[100dvh] flex-col border-b border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
               <span className="font-semibold">Menu</span>
               <button
                 type="button"
@@ -83,32 +112,34 @@ export default function MobileNav({
                 </svg>
               </button>
             </div>
-            <nav className="flex flex-col gap-2 p-3">
-              {items.map((it) => {
-                let cls: string;
-                if (it.emphasis === "primary") {
-                  cls = "bg-blue-600 text-white hover:bg-blue-700 shadow-sm";
-                } else if (it.emphasis === "admin") {
-                  cls = NAV_COLOR_MOBILE.amber;
-                } else if (it.color) {
-                  cls = NAV_COLOR_MOBILE[it.color];
-                } else {
-                  cls =
-                    "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800";
-                }
+            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+              {sectionOrder.map((sec) => {
+                const group = grouped.get(sec)!;
                 return (
-                  <Link
-                    key={it.href}
-                    href={it.href}
-                    onClick={() => setOpen(false)}
-                    className={`rounded-lg px-4 py-3 text-base font-medium transition ${cls}`}
-                  >
-                    {it.label}
-                  </Link>
+                  <div key={sec || "default"} className="flex flex-col gap-1.5">
+                    {sec && (
+                      <h3 className="mt-3 px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+                        {sec}
+                      </h3>
+                    )}
+                    {group.map((it) => (
+                      <Link
+                        key={it.href}
+                        href={it.href}
+                        onClick={() => setOpen(false)}
+                        className={`rounded-lg px-4 py-3 text-base font-medium transition ${classFor(it)}`}
+                      >
+                        {it.label}
+                      </Link>
+                    ))}
+                  </div>
                 );
               })}
               {signedIn && (
-                <form action={logoutAction} className="mt-1 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+                <form
+                  action={logoutAction}
+                  className="mt-3 border-t border-zinc-200 pt-2 dark:border-zinc-800"
+                >
                   <button
                     type="submit"
                     className="w-full rounded-lg px-4 py-3 text-start text-base font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -118,6 +149,22 @@ export default function MobileNav({
                 </form>
               )}
             </nav>
+            {pinned.length > 0 && (
+              <div className="border-t border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/95">
+                <div className="flex flex-col gap-2">
+                  {pinned.map((it) => (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      onClick={() => setOpen(false)}
+                      className={`rounded-lg px-4 py-3 text-center text-base font-semibold transition ${classFor(it)}`}
+                    >
+                      {it.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

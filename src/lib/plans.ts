@@ -18,6 +18,18 @@ export type PlanLimits = {
 // is shown with a strikethrough next to the discounted price.
 export const PROMO_DISCOUNT_PCT = 50 as const;
 
+// When the promo countdown should hit 00:00:00. Read from env so the team
+// can extend the campaign without a redeploy. Falls back to 7 days from
+// the deploy time so previews still show a live timer locally.
+export function promoEndsAt(): Date {
+  const raw = process.env.PROMO_ENDS_AT;
+  if (raw) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+}
+
 function discount(price: number): number {
   if (PROMO_DISCOUNT_PCT <= 0 || price === 0) return price;
   return Math.round(price * (1 - PROMO_DISCOUNT_PCT / 100));

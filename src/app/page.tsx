@@ -2,7 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { SPECIALTIES } from "@/lib/specialties";
 import { EXAM_TYPE_GROUPS } from "@/lib/exam-types";
-import { PLAN_LIMITS, PROMO_DISCOUNT_PCT } from "@/lib/plans";
+import { PLAN_LIMITS, PROMO_DISCOUNT_PCT, promoEndsAt } from "@/lib/plans";
+import PromoCountdownBanner from "@/components/PromoCountdownBanner";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { getCurrentUser } from "@/lib/auth";
 import { resolveIntroVideo } from "@/lib/intro-video";
@@ -28,20 +29,14 @@ export default async function Home() {
 
   return (
     <div className="pb-20 sm:pb-0">
-      {/* PROMO STRIP — full-width, eye-catching, only when discount is on */}
+      {/* PROMO STRIP — live countdown for urgency. Only renders while
+          PROMO_DISCOUNT_PCT > 0; the banner self-hides when the timer
+          hits zero. */}
       {PROMO_DISCOUNT_PCT > 0 && (
-        <Link
-          href="/plans"
-          className="block bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 text-amber-950 transition hover:from-amber-300 hover:via-orange-300 hover:to-amber-300"
-        >
-          <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-2 text-center text-xs font-semibold sm:text-sm">
-            <span aria-hidden>🎉</span>
-            <span>
-              Limited-time {PROMO_DISCOUNT_PCT}% OFF on all plans —{" "}
-              <span className="underline underline-offset-2">claim it →</span>
-            </span>
-          </div>
-        </Link>
+        <PromoCountdownBanner
+          discountPct={PROMO_DISCOUNT_PCT}
+          endsAtIso={promoEndsAt().toISOString()}
+        />
       )}
 
       {/* HERO */}
@@ -101,9 +96,17 @@ export default async function Home() {
               <HeroDemoButton video={introVideo} label="Watch demo (60s)" />
               <Link
                 href="/plans"
-                className="rounded-full border border-zinc-300 bg-white/70 px-6 py-3.5 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white/70 px-6 py-3.5 text-center text-base font-medium backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
               >
-                {tH.ctaPlans.replace("{price}", String(PLAN_LIMITS.BASIC.priceMonthly))}
+                <span>See plans from</span>
+                {PLAN_LIMITS.BASIC.originalPriceMonthly && (
+                  <span className="text-sm text-zinc-400 line-through">
+                    {PLAN_LIMITS.BASIC.originalPriceMonthly}
+                  </span>
+                )}
+                <span className="font-semibold">
+                  {PLAN_LIMITS.BASIC.priceMonthly} EGP/mo
+                </span>
               </Link>
             </div>
             <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-slate-400 lg:justify-start">
@@ -378,6 +381,87 @@ export default async function Home() {
             searchPlaceholder={tHE.specialtiesSearch}
             noResultsLabel={tHE.specialtiesNoResults}
           />
+        </div>
+      </section>
+
+      {/* FAQ — answers the questions support keeps fielding. Use native
+          <details> for free progressive disclosure with no JS state. */}
+      <section className="px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
+            Frequently asked questions
+          </h2>
+          <p className="mt-2 text-center text-sm text-zinc-600 dark:text-slate-400">
+            Quick answers to what people ask before signing up.
+          </p>
+          <div className="mt-8 space-y-3">
+            {[
+              {
+                q: "Is there a free tier?",
+                a: "Yes. The Free plan includes 2 AI-generated exams per month with up to 10 questions each, plus 1 file upload, no credit card required. Upgrade anytime.",
+              },
+              {
+                q: "What exams and specialties does it cover?",
+                a: "USMLE, MRCS, MRCP, Egyptian Fellowship, Prometric, PLAB, AMC, MBBS, and more — across 20+ specialties. Pick the format and difficulty; the AI matches the style of the real exam.",
+              },
+              {
+                q: "Can I generate questions from my own notes?",
+                a: "Yes. Upload a PDF, DOCX, TXT, MD, or CSV and the AI will generate exam-level questions from the content. File-upload limits depend on your plan.",
+              },
+              {
+                q: "What languages are supported?",
+                a: "10 languages: English, Arabic, French, Spanish, German, Italian, Portuguese, Turkish, Urdu, and Persian. Universal medical acronyms (ECG, NSTEMI, etc.) stay in their canonical form.",
+              },
+              {
+                q: "How does the spaced-repetition review work?",
+                a: "Every wrong MCQ or true-false answer is automatically saved to your review queue. Drill it on a spaced schedule (Again / Hard / Good / Easy) so missed concepts come back instead of being forgotten after the exam.",
+              },
+              {
+                q: "Can I share an exam with my colleagues or students?",
+                a: "Yes. Generate a share link, set an optional expiry date, candidate cap, or per-attempt time limit, and you'll see every taker's score on a leaderboard.",
+              },
+              {
+                q: "What payment methods do you accept?",
+                a: "All payments are processed securely by Paymob — Vodafone Cash and Instapay. We never see or store your card or wallet number.",
+              },
+              {
+                q: "Can I cancel? Do you offer refunds?",
+                a: "Yes to both. Cancel anytime — you keep access until the end of your billing cycle. Refunds within 7 days of payment if you've used less than 10% of your monthly quota; full policy on the Refund page.",
+              },
+              {
+                q: "Is my study history private?",
+                a: "Yes. Your exams, files, and answers are private to your account. Profiles default to friends-only for the social side; you control who sees what.",
+              },
+            ].map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-blue-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:hover:border-cyan-700/60 sm:p-5"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold sm:text-base">
+                  <span>{item.q}</span>
+                  <span
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-zinc-100 text-lg font-medium leading-none transition group-open:rotate-45 dark:bg-slate-800"
+                    aria-hidden
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-slate-300">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs text-zinc-500 dark:text-slate-400">
+            Still curious?{" "}
+            <Link
+              href="/contact"
+              className="font-medium text-blue-600 hover:underline dark:text-cyan-400"
+            >
+              Drop us a message
+            </Link>
+            .
+          </p>
         </div>
       </section>
 
