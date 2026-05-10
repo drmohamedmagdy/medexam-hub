@@ -16,10 +16,12 @@ export type EmailCategory =
   | "community_digest"
   | "public_group_announcement"
   | "public_group_post"
-  | "review_reminder";
+  | "review_reminder"
+  | "friend_request";
 
 const VERIFY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour — short window for password reset
+const FRIEND_ACTION_TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 // Branded sender. Requires medexamhub.org to be verified in Resend's dashboard
 // (SPF + DKIM TXT records added at Namecheap → Advanced DNS). Until then, set
@@ -741,6 +743,92 @@ export function communityDigestEmail(args: {
       </p>
       <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
       <p style="font-size:11px; color:#888;">You can turn these emails off any time from your account settings.</p>
+    `),
+  };
+}
+
+// ---------- Friend-request action tokens ----------
+//
+// Token binds the recipient (rid) and sender (sid) of a friend request,
+// plus an expiry. Possessing the token (i.e. having access to the
+// recipient's inbox) authorises one-click Accept or Decline from the
+// email body — no separate login round-trip required.
+
+export function makeFriendActionToken(
+  recipientId: string,
+  senderId: string
+): string {
+  const body = Buffer.from(
+    JSON.stringify({
+      rid: recipientId,
+      sid: senderId,
+      exp: Date.now() + FRIEND_ACTION_TOKEN_TTL_MS,
+    })
+  ).toString("base64url");
+  const sig = createHmac("sha256", getSecret())
+    .update("friend:" + body)
+    .digest("base64url");
+  return `${body}.${sig}`;
+}
+
+export function verifyFriendActionToken(
+  token: string
+): { recipientId: string; senderId: string } | null {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
+  const expected = createHmac("sha256", getSecret())
+    .update("friend:" + body)
+    .digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (typeof parsed.rid !== "string") return null;
+    if (typeof parsed.sid !== "string") return null;
+    if (typeof parsed.exp !== "number" || parsed.exp < Date.now()) return null;
+    return { recipientId: parsed.rid, senderId: parsed.sid };
+  } catch {
+    return null;
+  }
+}
+
+export function friendRequestEmail(args: {
+  recipientName: string | null;
+  recipientId: string;
+  senderName: string;
+  senderEmail: string;
+  senderId: string;
+  message: string | null;
+}): { subject: string; html: string } {
+  const greet = args.recipientName
+    ? `Hi ${escape(args.recipientName.split(" ")[0])},`
+    : "Hi there,";
+  const url = appBaseUrl();
+  const token = makeFriendActionToken(args.recipientId, args.senderId);
+  const acceptUrl = `${url}/friends/respond?token=${encodeURIComponent(token)}&action=accept`;
+  const declineUrl = `${url}/friends/respond?token=${encodeURIComponent(token)}&action=reject`;
+  const profileUrl = `${url}/u/${args.senderId}`;
+  const noteBlock = args.message
+    ? `<blockquote style="margin:14px 0;padding:10px 14px;border-left:3px solid #cbd5e1;background:#f8fafc;color:#334155;font-size:14px;">${escape(args.message)}</blockquote>`
+    : "";
+
+  return {
+    subject: `${args.senderName} sent you a friend request`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p><strong>${escape(args.senderName)}</strong> wants to connect with you on MedExam Hub.</p>
+      ${noteBlock}
+      <p style="margin-top:18px;">
+        <a href="${acceptUrl}" style="display:inline-block;background:#059669;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;margin-right:8px;">✓ Accept</a>
+        <a href="${declineUrl}" style="display:inline-block;border:1px solid #cbd5e1;color:#334155;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Decline</a>
+      </p>
+      <p style="font-size:13px;color:#666;margin-top:18px;">
+        Or open <a href="${profileUrl}" style="color:#2563eb;">${escape(args.senderName)}'s profile</a> to decide later.
+      </p>
+      <p style="font-size:11px;color:#888;">Once you accept, you'll see each other's gallery, files, articles, and groups.</p>
+      ${unsubFooter(args.recipientId, "reminders")}
     `),
   };
 }

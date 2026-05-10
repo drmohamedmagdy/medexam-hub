@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { pair } from "@/lib/friendship";
 import { createNotification } from "@/lib/notifications";
+import { sendEmail, friendRequestEmail } from "@/lib/email";
 
 export type FriendActionState =
   | { ok: true }
@@ -36,7 +37,13 @@ export async function sendFriendRequestAction(
 
   const target = await prisma.user.findUnique({
     where: { id: parsed.data.targetUserId },
-    select: { id: true, name: true, email: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      emailReminders: true,
+      emailVerifiedAt: true,
+    },
   });
   if (!target) return { ok: false, error: "User not found." };
 
@@ -84,6 +91,30 @@ export async function sendFriendRequestAction(
       : "Open their profile to accept or decline.",
     href: `/u/${me.id}`,
   });
+
+  // Email the recipient with one-click Accept / Decline buttons.
+  // Skip when they've opted out of reminder emails or haven't
+  // verified their address yet — both are explicit signals not to
+  // contact them.
+  if (target.emailReminders && target.emailVerifiedAt) {
+    const tpl = friendRequestEmail({
+      recipientName: target.name,
+      recipientId: target.id,
+      senderName,
+      senderEmail: me.email,
+      senderId: me.id,
+      message: parsed.data.message || null,
+    });
+    void sendEmail({
+      toUserId: target.id,
+      toEmail: target.email,
+      subject: tpl.subject,
+      category: "friend_request",
+      html: tpl.html,
+    }).catch(() => {
+      // Notification was already created — email is best-effort.
+    });
+  }
 
   revalidatePath(`/u/${me.id}`);
   revalidatePath(`/u/${target.id}`);
