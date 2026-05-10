@@ -232,6 +232,17 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     return { error: msg };
   }
 
+  // Log if the AI still came short of the requested total after the
+  // batched generator's retry + top-up. With BATCH_SIZE=10 + top-up
+  // this should be vanishingly rare; if it ever shows up in the error
+  // log it means OpenAI is misbehaving and we want to know.
+  if (questions.length < effectiveTotal) {
+    console.warn(
+      `[createExamAction] shortfall: requested ${effectiveTotal}, got ${questions.length}`,
+      { examId: exam.id }
+    );
+  }
+
   await prisma.$transaction([
     ...questions.map((q, i) =>
       prisma.question.create({

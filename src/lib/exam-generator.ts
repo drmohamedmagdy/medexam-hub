@@ -150,6 +150,111 @@ const SHORT_NOTES_JSON_SCHEMA = {
 const McqExamSchema = z.object({ questions: z.array(McqQuestionSchema).min(1) });
 const ShortNotesExamSchema = z.object({ questions: z.array(ShortNotesQuestionSchema).min(1) });
 
+// GPT-4o-mini reliably returns exactly N questions when N ≤ ~10, and
+// starts dropping one (or rarely two) at higher counts. Splitting a
+// 20-question request into 2 parallel batches of 10 both halves the
+// wall-clock time AND fixes the off-by-one delivery issue.
+const BATCH_SIZE = 10;
+
+function splitCount(n: number, max: number): number[] {
+  if (n <= 0) return [];
+  if (n <= max) return [n];
+  const batches: number[] = [];
+  let remaining = n;
+  while (remaining > 0) {
+    const chunk = Math.min(max, remaining);
+    batches.push(chunk);
+    remaining -= chunk;
+  }
+  // Balance the last batch so we don't get e.g. [10, 10, 1] — prefer
+  // [7, 7, 7] for 21. Smaller, more even chunks reliably deliver.
+  const total = n;
+  const k = batches.length;
+  const even = Math.ceil(total / k);
+  if (even <= max) {
+    const out: number[] = [];
+    let left = total;
+    for (let i = 0; i < k; i++) {
+      const c = i === k - 1 ? left : Math.min(even, left);
+      out.push(c);
+      left -= c;
+    }
+    return out;
+  }
+  return batches;
+}
+
+/**
+ * Single-format generation that splits large requests into parallel
+ * sub-batches and tops up any shortfall. The single OpenAI call inside
+ * `generateSingleFormat` is the bottleneck on time AND the source of
+ * "asked for 20, got 19" drops — capping each call at BATCH_SIZE
+ * questions makes both behave.
+ */
+async function generateSingleFormatBatched(
+  input: GenerateExamInput
+): Promise<GeneratedQuestion[]> {
+  const target = input.numQuestions;
+  if (target <= BATCH_SIZE) {
+    return generateSingleFormat(input);
+  }
+
+  const counts = splitCount(target, BATCH_SIZE);
+  const results = await Promise.all(
+    counts.map(async (count) => {
+      try {
+        return await generateSingleFormat({ ...input, numQuestions: count });
+      } catch (err) {
+        // Single retry per batch — the same retry-once policy as the
+        // mixed-format path.
+        const reason = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[exam-generator] sub-batch of ${count} failed once (${reason}); retrying`
+        );
+        return generateSingleFormat({ ...input, numQuestions: count });
+      }
+    })
+  );
+
+  let combined = results.flat();
+
+  // Top-up if total still short — happens occasionally when one batch
+  // returns N-1. One small follow-up call closes the gap.
+  if (combined.length < target) {
+    const missing = target - combined.length;
+    try {
+      const topup = await generateSingleFormat({
+        ...input,
+        numQuestions: missing,
+      });
+      combined = combined.concat(topup);
+      // Dedupe by trimmed prompt in case the top-up regenerated an
+      // already-seen question. Rare with the temperature we use, but
+      // cheap to guard against.
+      const seen = new Set<string>();
+      const deduped: GeneratedQuestion[] = [];
+      for (const q of combined) {
+        const key = q.prompt.trim().toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(q);
+      }
+      combined = deduped;
+    } catch (err) {
+      console.warn(
+        `[exam-generator] top-up call for ${missing} missing questions failed`,
+        err
+      );
+      // Fall through with whatever we have — the caller logs the
+      // shortfall but still gets a usable exam.
+    }
+  }
+
+  // Slice to exact requested count in case the AI over-delivered on
+  // any batch (rare but possible).
+  return combined.slice(0, target);
+}
+
 export async function generateExam(input: GenerateExamInput): Promise<GeneratedQuestion[]> {
   // Mixed-format exam: explicit per-format counts. Dispatch one API call
   // per non-zero entry and concatenate in canonical order.
@@ -165,10 +270,9 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
     .sort((a, b) => FORMAT_ORDER.indexOf(a.format) - FORMAT_ORDER.indexOf(b.format));
 
   if (batches.length > 1) {
-    // Run each format in parallel. If a single batch fails (Zod validation
-    // mismatch, transient OpenAI hiccup, etc.) retry it once sequentially —
-    // mixed exams rolled three rolls of the AI dice and the failure rate
-    // multiplies, so a single retry per batch is worth the few extra seconds.
+    // Run each format in parallel; each format itself uses the batched
+    // generator above so a "20 MCQ + 10 T/F" mix runs as 3 parallel
+    // sub-calls instead of 2 big ones.
     const results = await Promise.all(
       batches.map(async (b) => {
         const args = {
@@ -178,20 +282,12 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
           numQuestions: b.count,
         };
         try {
-          return await generateSingleFormat(args);
+          return await generateSingleFormatBatched(args);
         } catch (err) {
           const reason = err instanceof Error ? err.message : String(err);
-          console.warn(
-            `[exam-generator] ${b.format} batch failed once (${reason}); retrying`
+          throw new Error(
+            `Couldn't generate the ${b.format} portion (${b.count} questions): ${reason}`
           );
-          try {
-            return await generateSingleFormat(args);
-          } catch (err2) {
-            const reason2 = err2 instanceof Error ? err2.message : String(err2);
-            throw new Error(
-              `Couldn't generate the ${b.format} portion (${b.count} questions): ${reason2}`
-            );
-          }
         }
       })
     );
@@ -200,7 +296,7 @@ export async function generateExam(input: GenerateExamInput): Promise<GeneratedQ
 
   const single = batches[0]?.format ?? input.questionFormat;
   const count = batches[0]?.count ?? input.numQuestions;
-  return generateSingleFormat({
+  return generateSingleFormatBatched({
     ...input,
     formatBatches: undefined,
     questionFormat: single,
