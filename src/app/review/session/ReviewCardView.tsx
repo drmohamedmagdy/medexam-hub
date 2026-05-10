@@ -1,14 +1,40 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { gradeReviewCardAction } from "@/app/actions/review";
 import { applyGrade, formatNextDue, type ReviewGrade } from "@/lib/spaced-repetition";
 
 type Option = { id: string; text: string };
 
+// Per-form button. useFormStatus only sees the form it's nested inside,
+// so each grade form has its own pending indicator.
+function GradeSubmitButton({
+  className,
+  label,
+  nextLabel,
+}: {
+  className: string;
+  label: string;
+  nextLabel: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={`flex w-full flex-col items-center rounded-md px-3 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60 ${className}`}
+    >
+      <span>{pending ? "…" : label}</span>
+      <span className="text-[10px] font-normal text-white/80">{nextLabel}</span>
+    </button>
+  );
+}
+
 export default function ReviewCardView({
   card,
   question,
+  specialty,
 }: {
   card: {
     id: string;
@@ -29,9 +55,9 @@ export default function ReviewCardView({
     learningPoint: string | null;
     modelAnswer: string | null;
   };
+  specialty?: string | null;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const [submitting, setSubmitting] = useState<ReviewGrade | null>(null);
 
   // Preview what each grade would do, so the user can see the next interval
   // without committing first.
@@ -142,27 +168,17 @@ export default function ReviewCardView({
             {grades.map((g) => {
               const next = applyGrade(previewSnapshot, g);
               return (
-                <form
-                  key={g}
-                  action={async (fd) => {
-                    setSubmitting(g);
-                    await gradeReviewCardAction(fd);
-                  }}
-                >
+                <form key={g} action={gradeReviewCardAction}>
                   <input type="hidden" name="cardId" value={card.id} />
                   <input type="hidden" name="grade" value={g} />
-                  <button
-                    type="submit"
-                    disabled={submitting !== null}
-                    className={`flex w-full flex-col items-center rounded-md px-3 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60 ${gradeColors[g]}`}
-                  >
-                    <span>
-                      {submitting === g ? "…" : gradeLabels[g]}
-                    </span>
-                    <span className="text-[10px] font-normal text-white/80">
-                      {formatNextDue(next.intervalDays)}
-                    </span>
-                  </button>
+                  {specialty && (
+                    <input type="hidden" name="specialty" value={specialty} />
+                  )}
+                  <GradeSubmitButton
+                    className={gradeColors[g]}
+                    label={gradeLabels[g]}
+                    nextLabel={formatNextDue(next.intervalDays)}
+                  />
                 </form>
               );
             })}

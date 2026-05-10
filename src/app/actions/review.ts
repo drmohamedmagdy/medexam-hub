@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { applyGrade, type ReviewGrade } from "@/lib/spaced-repetition";
@@ -9,15 +10,29 @@ import { applyGrade, type ReviewGrade } from "@/lib/spaced-repetition";
 const GradeSchema = z.object({
   cardId: z.string().min(1).max(80),
   grade: z.enum(["again", "hard", "good", "easy"]),
+  // Optional — preserves the specialty filter across the auto-advance
+  // to the next card. Empty string treated the same as missing.
+  specialty: z.string().max(120).optional().or(z.literal("")),
 });
+
+function nextSessionUrl(specialty: string | null | undefined): string {
+  return specialty
+    ? `/review/session?specialty=${encodeURIComponent(specialty)}`
+    : "/review/session";
+}
 
 export async function gradeReviewCardAction(formData: FormData): Promise<void> {
   const user = await requireUser();
   const parsed = GradeSchema.safeParse({
     cardId: formData.get("cardId"),
     grade: formData.get("grade"),
+    specialty: String(formData.get("specialty") ?? "").trim(),
   });
-  if (!parsed.success) return;
+  // Even if validation fails, send the user back to the session so
+  // they don't get stuck on a stale card. The grade just won't apply.
+  if (!parsed.success) {
+    redirect(nextSessionUrl(null));
+  }
 
   const card = await prisma.reviewCard.findUnique({
     where: { id: parsed.data.cardId },
@@ -31,7 +46,9 @@ export async function gradeReviewCardAction(formData: FormData): Promise<void> {
       lapses: true,
     },
   });
-  if (!card || card.userId !== user.id) return;
+  if (!card || card.userId !== user.id) {
+    redirect(nextSessionUrl(parsed.data.specialty || null));
+  }
 
   const update = applyGrade(
     {
@@ -67,6 +84,8 @@ export async function gradeReviewCardAction(formData: FormData): Promise<void> {
   ]);
 
   revalidatePath("/review");
-  revalidatePath("/review/session");
   revalidatePath("/review/stats");
+  // Auto-advance to the next due card. The session page will pick the
+  // next one (or render the "all caught up" state) on first hit.
+  redirect(nextSessionUrl(parsed.data.specialty || null));
 }

@@ -159,6 +159,7 @@ export default async function ReviewSessionPage({
             learningPoint: card.question.learningPoint,
             modelAnswer: card.question.modelAnswer,
           }}
+          specialty={specialtyFilter}
         />
       </div>
     </div>
