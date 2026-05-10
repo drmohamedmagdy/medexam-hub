@@ -61,7 +61,21 @@ export default async function AdminUserDetailPage({
       <Link href="/admin/users" className="text-sm text-zinc-500 hover:text-blue-600">
         &larr; Back to users
       </Link>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight">{user.name ?? user.email}</h1>
+      <h1 className="mt-3 flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
+        <span>{user.name ?? user.email}</span>
+        {user.emailVerifiedAt ? (
+          <span
+            className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+            title={`Verified ${user.emailVerifiedAt.toLocaleString()}`}
+          >
+            ✓ Verified
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+            ⚠ Unverified
+          </span>
+        )}
+      </h1>
       <p className="mt-1 text-sm text-zinc-500">{user.email}</p>
 
       {/* User summary */}

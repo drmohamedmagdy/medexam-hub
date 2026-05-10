@@ -9,11 +9,17 @@ const PAGE_SIZE = 100;
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; plan?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    plan?: string;
+    page?: string;
+    verified?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
   const planFilter = sp.plan;
+  const verifiedFilter = sp.verified; // "yes" | "no" | undefined
   const pageNum = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
   const where: Parameters<typeof prisma.user.findMany>[0] extends infer P
@@ -30,8 +36,10 @@ export default async function AdminUsersPage({
   if (planFilter && ["FREE", "BASIC", "PRO", "PREMIUM", "RESEARCHER"].includes(planFilter)) {
     where.plan = planFilter as "FREE" | "BASIC" | "PRO" | "PREMIUM" | "RESEARCHER";
   }
+  if (verifiedFilter === "yes") where.emailVerifiedAt = { not: null };
+  if (verifiedFilter === "no") where.emailVerifiedAt = null;
 
-  const [total, users] = await Promise.all([
+  const [total, users, verifiedCount, unverifiedCount] = await Promise.all([
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
@@ -45,10 +53,15 @@ export default async function AdminUsersPage({
         plan: true,
         planExpiresAt: true,
         planCancelledAt: true,
+        emailVerifiedAt: true,
         createdAt: true,
         _count: { select: { exams: true } },
       },
     }),
+    // Global verified counts (ignore filters) so admin always sees the
+    // platform-wide split regardless of the current view.
+    prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
+    prisma.user.count({ where: { emailVerifiedAt: null } }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -60,6 +73,7 @@ export default async function AdminUsersPage({
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (planFilter) params.set("plan", planFilter);
+    if (verifiedFilter) params.set("verified", verifiedFilter);
     if (p > 1) params.set("page", String(p));
     const qs = params.toString();
     return qs ? `/admin/users?${qs}` : "/admin/users";
@@ -73,6 +87,11 @@ export default async function AdminUsersPage({
           ? "No users"
           : `Showing ${startIdx}–${endIdx} of ${total}`}
         {totalPages > 1 && ` · page ${safePage} of ${totalPages}`}
+      </p>
+      <p className="mt-1 text-xs text-zinc-500">
+        Verified: <strong className="text-emerald-700 dark:text-emerald-400">{verifiedCount}</strong>
+        {" · "}
+        Unverified: <strong className="text-amber-700 dark:text-amber-400">{unverifiedCount}</strong>
       </p>
 
       <form className="mt-6 flex flex-wrap items-center gap-2 text-sm">
@@ -93,6 +112,15 @@ export default async function AdminUsersPage({
           <option value="PRO">Pro</option>
           <option value="PREMIUM">Premium</option>
           <option value="RESEARCHER">Researcher</option>
+        </select>
+        <select
+          name="verified"
+          defaultValue={verifiedFilter ?? ""}
+          className="rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+        >
+          <option value="">Email status</option>
+          <option value="yes">Verified</option>
+          <option value="no">Unverified</option>
         </select>
         {/* Filter changes always reset back to page 1 — leave the page
             field out so the form submission lands on /admin/users?q=…&plan=… */}
@@ -115,11 +143,12 @@ export default async function AdminUsersPage({
           <div className="p-8 text-center text-sm text-zinc-500">No users match.</div>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[48rem] text-sm">
+          <table className="w-full min-w-[60rem] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/30">
               <tr>
                 <th className="px-4 py-3 text-start">User</th>
                 <th className="px-4 py-3 text-start">Plan</th>
+                <th className="px-4 py-3 text-start">Email</th>
                 <th className="px-4 py-3 text-end">Exams</th>
                 <th className="px-4 py-3 text-start">Joined</th>
                 <th className="px-4 py-3 text-start">Plan status</th>
@@ -156,6 +185,20 @@ export default async function AdminUsersPage({
                       <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium dark:bg-zinc-800">
                         {PLAN_LIMITS[u.plan].label}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.emailVerifiedAt ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          title={`Verified ${u.emailVerifiedAt.toLocaleDateString()}`}
+                        >
+                          ✓ Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                          ⚠ Unverified
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-end font-mono">{u._count.exams}</td>
                     <td className="px-4 py-3 text-xs text-zinc-500">
