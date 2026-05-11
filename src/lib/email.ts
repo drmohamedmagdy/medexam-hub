@@ -145,6 +145,17 @@ function htmlToText(html: string): string {
     .trim();
 }
 
+// Resend errors that are worth retrying. "Unable to fetch data" is
+// what Resend returns when its upstream MTA momentarily can't be
+// reached — it's transient and a retry usually succeeds. "Too many
+// requests" is rate-limit; a short pause + retry clears it.
+const RETRYABLE_ERROR_RE =
+  /unable to fetch data|the request could not be resolved|too many requests|rate limit|connection.*reset|fetch failed|service unavailable|gateway/i;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: string }> {
   const resend = getResend();
   const from = process.env.EMAIL_FROM || FROM_DEFAULT;
@@ -162,50 +173,55 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
     return { ok: false, error: "RESEND_API_KEY not set" };
   }
 
-  try {
-    const { error } = await resend.emails.send({
-      from,
-      replyTo: REPLY_TO,
-      to: [args.toEmail],
-      subject: args.subject,
-      html: args.html,
-      text: htmlToText(args.html),
-      headers: unsubscribeHeaders(args.toUserId, args.category),
-    });
-    if (error) {
-      await prisma.emailLog.create({
-        data: {
-          userId: args.toUserId,
-          toEmail: args.toEmail,
-          subject: args.subject,
-          category: args.category,
-          error: error.message ?? String(error),
-        },
-      });
-      return { ok: false, error: error.message ?? "Resend error" };
+  const payload = {
+    from,
+    replyTo: REPLY_TO,
+    to: [args.toEmail],
+    subject: args.subject,
+    html: args.html,
+    text: htmlToText(args.html),
+    headers: unsubscribeHeaders(args.toUserId, args.category),
+  };
+
+  // Up to 3 attempts with backoff. Critical emails (password reset,
+  // verification) absolutely have to land; the few seconds of extra
+  // latency is the right tradeoff against locking a user out.
+  const MAX_ATTEMPTS = 3;
+  let lastError: string | null = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const { error } = await resend.emails.send(payload);
+      if (!error) {
+        await prisma.emailLog.create({
+          data: {
+            userId: args.toUserId,
+            toEmail: args.toEmail,
+            subject: args.subject,
+            category: args.category,
+          },
+        });
+        return { ok: true };
+      }
+      lastError = error.message ?? String(error);
+      if (!RETRYABLE_ERROR_RE.test(lastError) || attempt === MAX_ATTEMPTS) break;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "send failed";
+      if (!RETRYABLE_ERROR_RE.test(lastError) || attempt === MAX_ATTEMPTS) break;
     }
-    await prisma.emailLog.create({
-      data: {
-        userId: args.toUserId,
-        toEmail: args.toEmail,
-        subject: args.subject,
-        category: args.category,
-      },
-    });
-    return { ok: true };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "send failed";
-    await prisma.emailLog.create({
-      data: {
-        userId: args.toUserId,
-        toEmail: args.toEmail,
-        subject: args.subject,
-        category: args.category,
-        error: msg,
-      },
-    });
-    return { ok: false, error: msg };
+    // Exponential backoff: 800ms, 2000ms before attempts 2 and 3.
+    await sleep(attempt === 1 ? 800 : 2000);
   }
+
+  await prisma.emailLog.create({
+    data: {
+      userId: args.toUserId,
+      toEmail: args.toEmail,
+      subject: args.subject,
+      category: args.category,
+      error: lastError ?? "send failed",
+    },
+  });
+  return { ok: false, error: lastError ?? "send failed" };
 }
 
 // ---------- Templates ----------
@@ -539,10 +555,12 @@ export function verificationEmail(
 
 /**
  * Send the same template to many users without tripping Resend's
- * per-second rate limit. Resend's default tier allows ~2 req/sec, paid
- * tiers ~10 req/sec — we dispatch a small batch in parallel, wait, then
- * dispatch the next, so deliveries stay in line and the EmailLog rows
- * record real-world successes/failures rather than rate-limit errors.
+ * per-second rate limit. Resend's current limit is 5 req/sec — sending
+ * 8 in parallel (the old default) routinely overshot and produced 72
+ * rate-limit failures in a single broadcast. New defaults stay
+ * comfortably under: 4 in parallel, 1100ms between batches → ~3.6
+ * req/sec sustained. sendEmail itself also retries 429s up to 3 times
+ * with backoff, so even a transient overshoot recovers cleanly.
  *
  * Returns counts so callers / logs can reason about reach.
  */
@@ -551,7 +569,7 @@ export async function sendBatch(
   build: (r: { id: string; email: string }) => Omit<SendArgs, "toUserId" | "toEmail">,
   opts: { batchSize?: number; delayMs?: number } = {}
 ): Promise<{ attempted: number; sent: number; failed: number }> {
-  const batchSize = opts.batchSize ?? 8;
+  const batchSize = opts.batchSize ?? 4;
   const delayMs = opts.delayMs ?? 1100;
 
   let sent = 0;
