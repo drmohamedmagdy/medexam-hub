@@ -433,5 +433,11 @@ export async function submitExamAction(formData: FormData): Promise<void> {
     }
   })();
 
+  // If this exam was a block of a mock exam, route to the mock break /
+  // next-block page instead of the regular results screen.
+  if (exam!.mockExamId) {
+    redirect(`/mock/${exam!.mockExamId}/break?just=${examId}`);
+  }
+
   redirect(`/exam/${examId}/results`);
 }

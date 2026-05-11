@@ -137,6 +137,7 @@ model User {
 
   studyNotes      StudyNote[]
   tutorChats      TutorChat[]
+  mockExams       MockExam[]
 }
 
 model ProfileMedia {
@@ -391,14 +392,42 @@ model Exam {
   // the master so the creator can see all attempts ranked.
   sharedFromId   String?
 
+  // When this exam is one block of a multi-block mock exam, points back
+  // at the parent MockExam + records the block position (0-indexed).
+  mockExamId     String?
+  blockIndex     Int?
+
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions    Question[]
   sourceFile   FileUpload? @relation(fields: [sourceFileId], references: [id], onDelete: SetNull)
   sharedFrom   Exam?       @relation("ExamShares", fields: [sharedFromId], references: [id], onDelete: Cascade)
   sharedAttempts Exam[]    @relation("ExamShares")
+  mockExam     MockExam?   @relation(fields: [mockExamId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([sharedFromId])
+  @@index([mockExamId, blockIndex])
+}
+
+// Multi-block timed exam simulation. Each block is a regular Exam row
+// tagged with mockExamId + blockIndex, so existing take/grade UI is
+// reused — the MockExam just sequences them and stores break timing.
+model MockExam {
+  id                String   @id @default(cuid())
+  userId            String
+  templateId        String
+  templateLabel     String
+  // "in_progress" | "completed" | "abandoned"
+  status            String   @default("in_progress")
+  currentBlockIndex Int      @default(0)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exams Exam[]
+
+  @@index([userId, status])
 }
 
 model FileUpload {
