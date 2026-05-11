@@ -51,6 +51,7 @@ export default async function RootLayout({
     ? [
         // Main study actions — what the user opens the app to do.
         { href: "/exam/new", label: t.nav.generate, emphasis: "primary", section: "Study" },
+        { href: "/notes", label: "📝 Study notes", color: "violet", section: "Study" },
         { href: "/review", label: "📚 Review", color: "amber", section: "Study" },
         { href: "/dashboard", label: t.nav.dashboard, color: "blue", section: "Study" },
         // Content libraries.
@@ -202,6 +203,9 @@ export default async function RootLayout({
                 </Link>
                 <Link href="/dashboard" className={`${pill} ${NAV_COLOR_DESKTOP.blue}`}>
                   {t.nav.dashboard}
+                </Link>
+                <Link href="/notes" className={`${pill} ${NAV_COLOR_DESKTOP.violet}`}>
+                  📝 Notes
                 </Link>
                 <Link href="/review" className={`${pill} ${NAV_COLOR_DESKTOP.amber}`}>
                   📚 Review
