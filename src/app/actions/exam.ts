@@ -213,6 +213,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       formatBatches: isMixed ? merged : undefined,
       difficulty: input.difficulty,
       numQuestions: effectiveTotal,
+      withImages: Boolean(input.withImages),
     });
   } catch (e) {
     // Log the full reason to Vercel for triage; the user sees a friendlier
@@ -274,33 +275,47 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
 
   // Image generation: run in parallel for every question that came
   // back with an imageDescription, but only when the exam was created
-  // with withImages=true. We don't await this — the exam is already
-  // READY without images, and images stream in as the AI returns
-  // them. If image generation fails for any one question, the rest
-  // proceed and the question just has no image.
+  // with withImages=true. AWAIT this — on Vercel serverless the
+  // function can stop executing as soon as the action returns, killing
+  // any unawaited background work. The user opted in via the checkbox
+  // (which says "Adds about 10–30 seconds") so paying that latency
+  // here is the correct tradeoff vs returning an imageless exam.
   if (input.withImages) {
     const questionRows = createdQuestions.filter(
       (r): r is Awaited<ReturnType<typeof prisma.question.create>> =>
         typeof r === "object" && r !== null && "id" in r && "imageDescription" in r
     );
-    void Promise.all(
-      questionRows
-        .filter((q) => q.imageDescription && q.imageDescription.trim().length > 5)
-        .map(async (q) => {
-          const result = await generateQuestionImage(q.imageDescription!);
-          if (!result) return;
-          try {
-            await prisma.question.update({
-              where: { id: q.id },
-              data: { imageUrl: result.url, imagePathname: result.pathname },
-            });
-          } catch {
-            // Swallow — image is best-effort.
-          }
-        })
-    ).catch(() => {
-      // best-effort
-    });
+    const withDesc = questionRows.filter(
+      (q) => q.imageDescription && q.imageDescription.trim().length > 5
+    );
+    console.log(
+      `[createExamAction] image gen: ${withDesc.length} of ${questionRows.length} questions have a description`
+    );
+    const results = await Promise.allSettled(
+      withDesc.map(async (q) => {
+        const result = await generateQuestionImage(q.imageDescription!);
+        if (!result) {
+          console.warn(`[createExamAction] image gen returned null for q=${q.id}`);
+          return false;
+        }
+        try {
+          await prisma.question.update({
+            where: { id: q.id },
+            data: { imageUrl: result.url, imagePathname: result.pathname },
+          });
+          return true;
+        } catch (e) {
+          console.warn(`[createExamAction] failed to persist image url`, e);
+          return false;
+        }
+      })
+    );
+    const ok = results.filter(
+      (r) => r.status === "fulfilled" && r.value === true
+    ).length;
+    console.log(
+      `[createExamAction] image gen completed: ${ok}/${withDesc.length} succeeded`
+    );
   }
 
   // Quota is consumed at generation time based on the number of questions

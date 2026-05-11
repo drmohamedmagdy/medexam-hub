@@ -75,6 +75,12 @@ export type GenerateExamInput = {
   formatBatches?: { format: QuestionFormat; count: number }[];
   difficulty: Difficulty;
   numQuestions: number;
+  /**
+   * When true, ask the AI to fill in imageDescription on questions
+   * that would meaningfully benefit from an illustration. Caller
+   * generates the actual image afterwards using that description.
+   */
+  withImages?: boolean;
 };
 
 const FORMAT_ORDER: QuestionFormat[] = ["MCQ", "TRUE_FALSE", "SHORT_NOTES"];
@@ -419,6 +425,19 @@ async function generateSingleFormat(
   lines.push(`Difficulty: ${input.difficulty} — ${guidance}`);
   lines.push(`Number of questions: ${input.numQuestions}`);
   lines.push(...formatInstructions[format]);
+
+  if (input.withImages) {
+    lines.push(
+      "IMAGE GENERATION ENABLED. For each question, decide whether an illustration would meaningfully help a student answer it — clinical photos (ulcers, rashes, jaundice, joint deformities), anatomy diagrams, ECG strips, lab trend graphs, radiograph findings, dermatology lesions, histology slides, surgical scenes, etc. " +
+        "When yes, set `imageDescription` to a short (≤200 character) concrete visual description suitable as an image-generator prompt — e.g. \"Non-healing plantar foot ulcer with surrounding erythema in a 62-year-old diabetic patient, top-down view\" or \"12-lead ECG showing inferior ST elevation with reciprocal changes in I and aVL\". " +
+        "When an image would NOT meaningfully help (pure recall, mechanism, pharmacology, definitions), set `imageDescription` to null. " +
+        "Aim for an image on roughly 40–70% of questions where the topic is visual; less when the topic is abstract."
+    );
+  } else {
+    lines.push(
+      "Set `imageDescription` to null on every question — image generation is disabled for this exam."
+    );
+  }
 
   if (input.sourceText) {
     lines.push(
