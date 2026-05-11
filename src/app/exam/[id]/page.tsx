@@ -10,6 +10,8 @@ type QuestionForClient = {
   prompt: string;
   format: "MCQ" | "TRUE_FALSE" | "SHORT_NOTES";
   options: { id: string; text: string }[];
+  imageUrl: string | null;
+  imageDescription: string | null;
 };
 
 export default async function ExamPage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,6 +45,8 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
     prompt: q.prompt,
     format: q.format,
     options: JSON.parse(q.optionsJson) as { id: string; text: string }[],
+    imageUrl: q.imageUrl,
+    imageDescription: q.imageDescription,
   }));
 
   // Share UI shows on the master exam only — not on forks taken by

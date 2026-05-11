@@ -249,6 +249,10 @@ export async function startSharedExamAction(formData: FormData): Promise<void> {
           explanation: q.explanation,
           learningPoint: q.learningPoint,
           modelAnswer: q.modelAnswer,
+          // Re-use the master's image URLs verbatim — Vercel Blob URLs are
+          // public so takers can fetch them directly, no copy needed.
+          imageUrl: q.imageUrl,
+          imageDescription: q.imageDescription,
         })),
       },
     },

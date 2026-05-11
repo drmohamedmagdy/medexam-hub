@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { generateExam } from "@/lib/exam-generator";
+import { generateQuestionImage } from "@/lib/question-image";
 import { getMonthlyQuestionsUsage, recordQuestionsUsed } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { Difficulty, ExamMode, ExamStatus, QuestionFormat } from "@/generated/prisma/client";
@@ -32,6 +33,7 @@ const NewExamSchema = z
     mode: z.nativeEnum(ExamMode),
     numQuestions: z.coerce.number().int().min(1).max(100),
     timeLimitMin: z.coerce.number().int().min(0).max(240).optional(),
+    withImages: z.coerce.boolean().optional(),
   })
   .refine(
     (d) => Boolean(d.specialty) || Boolean(d.examType) || Boolean(d.sourceFileId),
@@ -55,6 +57,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     mode: formData.get("mode"),
     numQuestions: formData.get("numQuestions"),
     timeLimitMin: formData.get("timeLimitMin") || undefined,
+    withImages: formData.get("withImages") === "on" || formData.get("withImages") === "true",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -168,6 +171,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       status: ExamStatus.GENERATING,
       numQuestions: effectiveTotal,
       timeLimitSec: input.timeLimitMin ? input.timeLimitMin * 60 : null,
+      withImages: Boolean(input.withImages),
     },
   });
 
@@ -243,7 +247,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     );
   }
 
-  await prisma.$transaction([
+  const createdQuestions = await prisma.$transaction([
     ...questions.map((q, i) =>
       prisma.question.create({
         data: {
@@ -258,6 +262,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
           modelAnswer: q.modelAnswer ?? null,
           explanation: q.explanation,
           learningPoint: q.learningPoint ?? null,
+          imageDescription: q.imageDescription ?? null,
         },
       })
     ),
@@ -266,6 +271,37 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       data: { status: ExamStatus.READY, numQuestions: questions.length },
     }),
   ]);
+
+  // Image generation: run in parallel for every question that came
+  // back with an imageDescription, but only when the exam was created
+  // with withImages=true. We don't await this — the exam is already
+  // READY without images, and images stream in as the AI returns
+  // them. If image generation fails for any one question, the rest
+  // proceed and the question just has no image.
+  if (input.withImages) {
+    const questionRows = createdQuestions.filter(
+      (r): r is Awaited<ReturnType<typeof prisma.question.create>> =>
+        typeof r === "object" && r !== null && "id" in r && "imageDescription" in r
+    );
+    void Promise.all(
+      questionRows
+        .filter((q) => q.imageDescription && q.imageDescription.trim().length > 5)
+        .map(async (q) => {
+          const result = await generateQuestionImage(q.imageDescription!);
+          if (!result) return;
+          try {
+            await prisma.question.update({
+              where: { id: q.id },
+              data: { imageUrl: result.url, imagePathname: result.pathname },
+            });
+          } catch {
+            // Swallow — image is best-effort.
+          }
+        })
+    ).catch(() => {
+      // best-effort
+    });
+  }
 
   // Quota is consumed at generation time based on the number of questions
   // the AI actually produced (which may be slightly less than requested).

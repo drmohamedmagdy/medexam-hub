@@ -113,6 +113,15 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
                 key={q.id}
                 className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
               >
+                {q.imageUrl && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={q.imageUrl}
+                    alt={q.imageDescription ?? ""}
+                    className="mb-4 max-h-96 w-full rounded-lg border border-zinc-200 object-contain dark:border-zinc-700"
+                    loading="lazy"
+                  />
+                )}
                 <p className="text-sm font-medium">
                   <span className="text-zinc-500">Q{i + 1}.</span> {q.prompt}
                 </p>
@@ -161,6 +170,15 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
               key={q.id}
               className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
             >
+              {q.imageUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={q.imageUrl}
+                  alt={q.imageDescription ?? ""}
+                  className="mb-4 max-h-96 w-full rounded-lg border border-zinc-200 object-contain dark:border-zinc-700"
+                  loading="lazy"
+                />
+              )}
               <div className="flex items-start justify-between gap-4">
                 <p className="text-sm font-medium">
                   <span className="text-zinc-500">Q{i + 1}.</span> {q.prompt}

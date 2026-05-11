@@ -397,6 +397,12 @@ model Exam {
   mockExamId     String?
   blockIndex     Int?
 
+  // When true, the AI generates an illustrative image per question
+  // where it would help (clinical photo, anatomy diagram, etc.) using
+  // OpenAI's image_generation tool. Off by default — image generation
+  // costs ~$0.04 per image so it's an explicit opt-in.
+  withImages     Boolean    @default(false)
+
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions    Question[]
   sourceFile   FileUpload? @relation(fields: [sourceFileId], references: [id], onDelete: SetNull)
@@ -479,6 +485,13 @@ model Question {
   selectedText  String?
   // Auto-graded for MCQ/TF; null for SHORT_NOTES (self-assessed).
   isCorrect     Boolean?
+
+  // Optional AI-generated illustration. Vercel Blob URL + pathname for
+  // delete; the description doubles as alt text and as context for the
+  // tutor chat so the AI can talk about the image without re-analysing.
+  imageUrl         String?
+  imagePathname    String?
+  imageDescription String?
 
   exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
   reviewCards   ReviewCard[]

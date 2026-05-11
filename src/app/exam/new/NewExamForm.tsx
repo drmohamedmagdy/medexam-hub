@@ -460,6 +460,24 @@ export default function NewExamForm({
           />
         </Field>
 
+        <label className="mt-2 flex items-start gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-800/40">
+          <input
+            type="checkbox"
+            name="withImages"
+            className="mt-0.5 h-4 w-4"
+          />
+          <span className="min-w-0">
+            <span className="block font-medium">
+              🖼️ Generate illustrative images
+            </span>
+            <span className="block text-xs text-zinc-500">
+              Adds AI-generated clinical photos / ECGs / diagrams to questions
+              that benefit from them. Adds about 10–30 seconds to generation
+              and costs a few cents per image.
+            </span>
+          </span>
+        </label>
+
         <Field label={labels.questionLanguage}>
           <select
             name="language"

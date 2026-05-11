@@ -19,6 +19,11 @@ const McqQuestionSchema = z.object({
   correctId: z.string().min(1).max(16),
   explanation: z.string().min(10),
   learningPoint: z.string().nullable().optional(),
+  // When the AI thinks the question benefits from an illustration
+  // (clinical photo, ECG, anatomy diagram, lab graph etc.), it puts a
+  // short visual description here. We only use this when the exam was
+  // created with withImages=true.
+  imageDescription: z.string().max(400).nullable().optional(),
 });
 
 const ShortNotesQuestionSchema = z.object({
@@ -26,6 +31,7 @@ const ShortNotesQuestionSchema = z.object({
   modelAnswer: z.string().min(20),
   explanation: z.string().min(10),
   learningPoint: z.string().nullable().optional(),
+  imageDescription: z.string().max(400).nullable().optional(),
 });
 
 export type GeneratedQuestion = {
@@ -42,6 +48,10 @@ export type GeneratedQuestion = {
   // Common
   explanation: string;
   learningPoint?: string | null;
+  // Optional — set by the AI when an illustration would meaningfully
+  // help. Caller can ignore this when the exam wasn't requested with
+  // images enabled.
+  imageDescription?: string | null;
 };
 
 export type Audience = "MEDICAL" | "PARAMEDICAL" | "NONMEDICAL";
@@ -116,8 +126,13 @@ const MCQ_JSON_SCHEMA = {
           correctId: { type: "string", description: "Must match one option id" },
           explanation: { type: "string" },
           learningPoint: { type: ["string", "null"] },
+          imageDescription: {
+            type: ["string", "null"],
+            description:
+              "If an illustration would meaningfully help (clinical photo, ECG, anatomy diagram, lab graph etc.), a short ≤200-char visual description. Otherwise null.",
+          },
         },
-        required: ["prompt", "options", "correctId", "explanation", "learningPoint"],
+        required: ["prompt", "options", "correctId", "explanation", "learningPoint", "imageDescription"],
       },
     },
   },
@@ -139,8 +154,13 @@ const SHORT_NOTES_JSON_SCHEMA = {
           modelAnswer: { type: "string" },
           explanation: { type: "string" },
           learningPoint: { type: ["string", "null"] },
+          imageDescription: {
+            type: ["string", "null"],
+            description:
+              "If an illustration would meaningfully help, a short ≤200-char visual description. Otherwise null.",
+          },
         },
-        required: ["prompt", "modelAnswer", "explanation", "learningPoint"],
+        required: ["prompt", "modelAnswer", "explanation", "learningPoint", "imageDescription"],
       },
     },
   },
@@ -455,6 +475,7 @@ async function generateSingleFormat(
       modelAnswer: q.modelAnswer,
       explanation: q.explanation,
       learningPoint: q.learningPoint ?? null,
+      imageDescription: q.imageDescription ?? null,
     }));
   }
 
@@ -481,5 +502,6 @@ async function generateSingleFormat(
     correctId: q.correctId,
     explanation: q.explanation,
     learningPoint: q.learningPoint ?? null,
+    imageDescription: q.imageDescription ?? null,
   }));
 }

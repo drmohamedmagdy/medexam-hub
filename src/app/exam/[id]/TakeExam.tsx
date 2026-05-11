@@ -10,6 +10,8 @@ type Question = {
   prompt: string;
   format: QuestionFormat;
   options: { id: string; text: string }[];
+  imageUrl?: string | null;
+  imageDescription?: string | null;
 };
 
 export default function TakeExam({
@@ -227,6 +229,15 @@ export default function TakeExam({
       </div>
 
       <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:mt-8 sm:p-6">
+        {q.imageUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={q.imageUrl}
+            alt={q.imageDescription ?? "Illustrative image for this question"}
+            className="mb-4 max-h-96 w-full rounded-lg border border-zinc-200 object-contain dark:border-zinc-700"
+            loading="lazy"
+          />
+        )}
         <p className="text-base leading-relaxed">{q.prompt}</p>
 
         {q.format === "TRUE_FALSE" ? (
