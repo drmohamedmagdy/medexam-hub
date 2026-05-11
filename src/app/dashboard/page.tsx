@@ -5,6 +5,7 @@ import { getMonthlyQuestionsUsage } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { getDailyGoal, getQuestionsAnsweredToday, getStudyStreak } from "@/lib/streak";
 import { getAchievementProgress, tierColor } from "@/lib/achievements";
+import { getAnalyticsSummary, pickWeakAreas } from "@/lib/analytics";
 import UpgradeBanner from "@/components/UpgradeBanner";
 import VerifyEmailBanner from "@/components/VerifyEmailBanner";
 import WelcomeToast from "@/components/WelcomeToast";
@@ -23,24 +24,27 @@ export default async function DashboardPage({
   const t = getTranslations(locale);
   const dx = t.dashboardExtras;
 
-  const [usage, exams, streak, todayCount, achievementsList, reviewDueCount] = await Promise.all([
-    getMonthlyQuestionsUsage(user.id, user.plan),
-    prisma.exam.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true, title: true, specialty: true, examType: true, difficulty: true,
-        status: true, numQuestions: true, scorePct: true, createdAt: true, submittedAt: true,
-      },
-    }),
-    getStudyStreak(user.id),
-    getQuestionsAnsweredToday(user.id),
-    getAchievementProgress(user.id, user.achievements),
-    prisma.reviewCard.count({
-      where: { userId: user.id, due: { lte: new Date() } },
-    }),
-  ]);
+  const [usage, exams, streak, todayCount, achievementsList, reviewDueCount, analytics] =
+    await Promise.all([
+      getMonthlyQuestionsUsage(user.id, user.plan),
+      prisma.exam.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true, title: true, specialty: true, examType: true, difficulty: true,
+          status: true, numQuestions: true, scorePct: true, createdAt: true, submittedAt: true,
+        },
+      }),
+      getStudyStreak(user.id),
+      getQuestionsAnsweredToday(user.id),
+      getAchievementProgress(user.id, user.achievements),
+      prisma.reviewCard.count({
+        where: { userId: user.id, due: { lte: new Date() } },
+      }),
+      getAnalyticsSummary(user.id),
+    ]);
+  const weakAreas = pickWeakAreas(analytics.bySpecialty, 3);
   const dailyGoal = getDailyGoal(user.plan);
   const dailyPct = dailyGoal === 0 ? 0 : Math.min(100, Math.round((todayCount / dailyGoal) * 100));
   const recentUnlocked = achievementsList.filter((a) => a.unlocked).slice(0, 4);
@@ -130,6 +134,65 @@ export default async function DashboardPage({
             Start →
           </span>
         </Link>
+      )}
+
+      {weakAreas.length > 0 && (
+        <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 sm:p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold">
+              🎯 Where to focus next
+            </h2>
+            <span className="text-xs text-zinc-500">
+              Topics with lowest accuracy across at least 2 exams
+            </span>
+          </div>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+            {weakAreas.map((b) => {
+              const pct = Math.round(b.accuracy);
+              const tone =
+                pct < 50
+                  ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30"
+                  : pct < 75
+                    ? "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+                    : "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30";
+              const accent =
+                pct < 50
+                  ? "text-red-700 dark:text-red-300"
+                  : pct < 75
+                    ? "text-amber-700 dark:text-amber-300"
+                    : "text-emerald-700 dark:text-emerald-300";
+              return (
+                <li key={b.key}>
+                  <Link
+                    href={`/exam/new?specialty=${encodeURIComponent(b.key)}`}
+                    className={`flex h-full flex-col justify-between gap-2 rounded-xl border p-3 transition hover:translate-y-[-1px] ${tone}`}
+                  >
+                    <div>
+                      <div className="text-sm font-semibold">{b.key}</div>
+                      <div className={`mt-1 text-2xl font-bold tracking-tight ${accent}`}>
+                        {pct}%
+                      </div>
+                      <div className="text-[11px] text-zinc-500">
+                        {b.questionCount} question{b.questionCount === 1 ? "" : "s"} across {b.examCount} exam{b.examCount === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <span className={`text-xs font-semibold ${accent}`}>
+                      Drill this →
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-3 text-right">
+            <Link
+              href="/analytics"
+              className="text-xs font-medium text-blue-600 hover:underline dark:text-cyan-400"
+            >
+              See full analytics →
+            </Link>
+          </div>
+        </section>
       )}
 
       {/* QUICK ACTIONS — visual entry points sized for thumb-tap */}

@@ -6,6 +6,7 @@ import { canExportPdf } from "@/lib/plans";
 import PrintPdfButton from "./PrintPdfButton";
 import ScoreCelebration from "./ScoreCelebration";
 import ShareExamCard from "./ShareExamCard";
+import TutorChatPanel from "./TutorChatPanel";
 import Confetti from "@/components/Confetti";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -147,6 +148,8 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
                     </p>
                   )}
                 </div>
+
+                <TutorChatPanel questionId={q.id} />
               </li>
             );
           }
@@ -207,6 +210,8 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
                   </p>
                 )}
               </div>
+
+              <TutorChatPanel questionId={q.id} />
             </li>
           );
         })}
