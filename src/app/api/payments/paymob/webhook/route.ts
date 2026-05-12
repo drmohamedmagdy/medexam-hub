@@ -57,6 +57,20 @@ export async function POST(req: NextRequest) {
   // normalise here so verifyWebhookHmac sees the right shape.
   const txn = (body.obj as Record<string, unknown>) ?? body;
 
+  // Paymob sends different callback types to the same endpoint (TRANSACTION,
+  // SUBSCRIPTION, etc.). We only handle TRANSACTION here — ack anything
+  // else with 200 so they stop retrying but don't run plan side-effects.
+  if (typeof body.type === "string" && body.type !== "TRANSACTION") {
+    return Response.json({ ok: true, note: `ignored type=${body.type}` });
+  }
+
+  // 3DS-pending transactions arrive with success=false, pending=true. The
+  // "final" callback comes after the user completes 3DS. Don't mark FAILED
+  // on the pending one — wait for the real verdict.
+  if (txn.pending === true) {
+    return Response.json({ ok: true, note: "pending — waiting for final callback" });
+  }
+
   if (!verifyWebhookHmac(txn, hmac)) {
     // Fail closed — log and reject. We DON'T mark anything as paid on
     // an unverified callback; a forged request would unlock plans.
