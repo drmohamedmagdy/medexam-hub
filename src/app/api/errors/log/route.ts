@@ -7,6 +7,13 @@ import { rateLimit, clientIp, tooManyRequests } from "@/lib/rate-limit";
 const TRANSIENT_NETWORK_RE =
   /failed to fetch|load failed|networkerror|connection appears to be offline|network request failed/i;
 
+// Server actions are re-keyed on every deploy. Tabs that were open across
+// a deploy throw this exact message on submit; client-side error.tsx
+// auto-reloads, but defence-in-depth: drop it server-side too so it
+// doesn't fill /admin/errors after every release.
+const STALE_ACTION_RE =
+  /server action .* was not found on the server|failed to find server action/i;
+
 const Schema = z.object({
   message: z.string().min(1).max(2000),
   stack: z.string().max(8000).optional(),
@@ -37,6 +44,9 @@ export async function POST(req: NextRequest) {
   // They're user-environment blips, not anything we can act on.
   if (TRANSIENT_NETWORK_RE.test(parsed.data.message)) {
     return Response.json({ ok: true, skipped: "transient" });
+  }
+  if (STALE_ACTION_RE.test(parsed.data.message)) {
+    return Response.json({ ok: true, skipped: "stale-action" });
   }
   await logError({
     message: parsed.data.message,

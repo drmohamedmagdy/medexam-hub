@@ -18,6 +18,18 @@ function isTransientNetworkError(message: string | undefined | null): boolean {
   return TRANSIENT_NETWORK_RE.test(message);
 }
 
+// Next.js 16: when a new build is deployed, the IDs Next assigns to server
+// actions change. Any tab that was open before the deploy still references
+// the old IDs, so submitting (e.g. the promo apply or pay button) throws
+// "Server Action … was not found on the server." A hard reload pulls the
+// new build and resolves it.
+const STALE_ACTION_RE = /server action .* was not found on the server|failed to find server action/i;
+
+function isStaleServerAction(message: string | undefined | null): boolean {
+  if (!message) return false;
+  return STALE_ACTION_RE.test(message);
+}
+
 // Route-segment error boundary. Wraps every page that lives under the
 // root layout so a thrown error renders this fallback instead of a
 // blank "page couldn't load" surface. The button calls unstable_retry
@@ -30,8 +42,20 @@ export default function RouteError({
   unstable_retry: () => void;
 }) {
   const transient = isTransientNetworkError(error.message);
+  const stale = isStaleServerAction(error.message);
 
   useEffect(() => {
+    // Stale server action = user had a tab open across a deploy. Force
+    // a full reload to pull the new build's action IDs. Don't log it
+    // either — it's expected behaviour every time we deploy.
+    if (stale) {
+      // eslint-disable-next-line no-console
+      console.warn("[RouteError] stale server action — auto-reloading");
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+      return;
+    }
     // Skip the persistent log for transient network errors — they're
     // user-environment blips, not server-side issues we can act on.
     if (transient) {
@@ -58,7 +82,37 @@ export default function RouteError({
     });
     // eslint-disable-next-line no-console
     console.error("[RouteError]", error);
-  }, [error, transient]);
+  }, [error, transient, stale]);
+
+  if (stale) {
+    // Brief placeholder while the auto-reload from the effect kicks in.
+    // If something blocks the reload (e.g. a misbehaving extension), the
+    // button below is the manual fallback.
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center sm:py-24">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-blue-100 text-2xl text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+          🔄
+        </div>
+        <h1 className="mt-5 text-2xl font-bold tracking-tight">
+          Page was updated
+        </h1>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          Refreshing to pick up the latest version…
+        </p>
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") window.location.reload();
+            }}
+            className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Refresh now
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (transient) {
     return (
