@@ -138,6 +138,18 @@ export async function POST(req: Request) {
         externalOrderId: order.id,
         billing: { firstName, lastName, email: user.email, phoneNumber: phone },
         redirectUrl: `${baseUrl}/payment/return`,
+        // Force the webhook URL per-call instead of relying on what's
+        // saved on the Paymob integration — Vercel logs show callbacks
+        // never reach our endpoint, suggesting the integration's saved
+        // URL isn't being used. Passing it explicitly overrides any
+        // dashboard misconfiguration.
+        notificationUrl: `${baseUrl}/api/payments/paymob/webhook`,
+      });
+      console.log("[checkout] intention created", {
+        orderId: order.id,
+        intentionId: intention.intentionId,
+        amountCents,
+        notificationUrl: `${baseUrl}/api/payments/paymob/webhook`,
       });
       return NextResponse.json({ url: intention.checkoutUrl });
     } catch (e) {

@@ -145,6 +145,12 @@ export async function createPaymentIntention(
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
+    console.error("[paymob-intention] API call failed", {
+      status: res.status,
+      body: errText.slice(0, 500),
+      integrationIds,
+      externalOrderId: args.externalOrderId,
+    });
     throw new Error(`Paymob intention failed (${res.status}): ${errText.slice(0, 300)}`);
   }
   const data = (await res.json()) as {
@@ -154,6 +160,15 @@ export async function createPaymentIntention(
   if (!data.client_secret) {
     throw new Error("Paymob response missing client_secret");
   }
+  // Log a redacted summary so we can verify in Vercel logs which integration
+  // IDs we actually sent (catch the "test ID in live mode" failure mode).
+  console.log("[paymob-intention] created", {
+    intentionId: data.id,
+    integrationIds,
+    amountCents: args.amountCents,
+    notificationUrl: args.notificationUrl,
+    redirectUrl: args.redirectUrl,
+  });
 
   const checkoutUrl = `https://accept.paymob.com/unifiedcheckout/?publicKey=${encodeURIComponent(publicKey)}&clientSecret=${encodeURIComponent(data.client_secret)}`;
 
