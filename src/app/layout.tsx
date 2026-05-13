@@ -6,7 +6,7 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import InstallPrompt from "@/components/InstallPrompt";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import MobileNav from "@/components/MobileNav";
 import NotificationBell from "@/components/NotificationBell";
@@ -359,7 +359,7 @@ export default async function RootLayout({
           </div>
         </footer>
         <WhatsAppButton />
-        <InstallPrompt />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
