@@ -139,7 +139,6 @@ export default async function CheckoutPage({
 
           <CheckoutForm
             plan={plan}
-            priceMonthly={cfg.priceMonthly}
             t={t}
           />
 

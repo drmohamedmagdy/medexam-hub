@@ -91,6 +91,13 @@ export async function validatePromoCode(args: {
   code: string;
   plan: Exclude<Plan, "FREE">;
   userId: string;
+  /**
+   * Override the price the promo discounts. Defaults to the plan's monthly
+   * price × 100, but multi-month checkouts pass the cycle total so the
+   * promo applies to the full bundle. The applicability rules (plan
+   * whitelist, usage caps) are unchanged.
+   */
+  baseCents?: number;
 }): Promise<PromoValidation> {
   const normalized = normalizeCode(args.code);
   if (!normalized) {
@@ -140,7 +147,7 @@ export async function validatePromoCode(args: {
   }
 
   const cfg = PLAN_LIMITS[args.plan];
-  const originalCents = cfg.priceMonthly * 100;
+  const originalCents = args.baseCents ?? cfg.priceMonthly * 100;
   const finalCents = calculateFinalCents(promo, originalCents);
 
   if (finalCents < 0 || originalCents <= 0) {

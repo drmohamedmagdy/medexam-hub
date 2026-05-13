@@ -5,12 +5,15 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PAYMOB_LINKS, newCheckoutToken } from "@/lib/paymob";
 import { createPaymentIntention, isPaymobConfigured } from "@/lib/paymob-intention";
-import { PLAN_LIMITS } from "@/lib/plans";
+import { PLAN_LIMITS, priceForCycle, isBillingCycle, type BillingCycle } from "@/lib/plans";
 import { validatePromoCode } from "@/lib/promo";
 
 const Body = z.object({
   plan: z.enum(["BASIC", "PRO", "PREMIUM", "RESEARCHER"]),
   promoCode: z.string().max(40).nullable().optional(),
+  // Number of months the customer is buying. Defaults to 1 (monthly).
+  // Validated against the BILLING_CYCLES whitelist below.
+  durationMonths: z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)]).optional(),
 });
 
 const CHECKOUT_COOKIE = "mxh_checkout";
@@ -22,8 +25,14 @@ export async function POST(req: Request) {
   if (!parsed.success) return new NextResponse("Invalid request", { status: 400 });
 
   const { plan, promoCode } = parsed.data;
+  const months: BillingCycle = isBillingCycle(parsed.data.durationMonths)
+    ? parsed.data.durationMonths
+    : 1;
   const cfg = PLAN_LIMITS[plan];
-  const originalCents = cfg.priceMonthly * 100;
+  const cyclePrice = priceForCycle(plan, months);
+  // For the order, originalCents is the pre-promo cycle total. Promos still
+  // apply on top of the cycle discount.
+  const originalCents = cyclePrice.total * 100;
 
   // Re-validate the promo on the server. NEVER trust the client's claimed price.
   let amountCents = originalCents;
@@ -36,6 +45,9 @@ export async function POST(req: Request) {
       code: promoCode,
       plan,
       userId: user.id,
+      // Promo validation works off monthly price; for multi-month cycles
+      // we apply the same percent discount to the cycle total below.
+      baseCents: originalCents,
     });
     if (!validation.ok) {
       return NextResponse.json(
@@ -55,6 +67,7 @@ export async function POST(req: Request) {
       plan,
       amountCents,
       currency: "EGP",
+      durationMonths: months,
       promoCodeId: promoId,
       promoCodeUsed: promoCodeStored,
       originalCents: promoId ? originalCents : null,

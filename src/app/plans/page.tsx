@@ -131,6 +131,11 @@ export default async function PlansPage() {
                 ) : (
                   <UpgradeButton plan={plan} label={t.plans.upgrade} />
                 )}
+                {cfg.priceMonthly > 0 && !isCurrent && plan !== "RESEARCHER" && (
+                  <p className="mt-2 text-center text-[11px] text-emerald-700 dark:text-emerald-400">
+                    💰 Save up to 25% with annual billing
+                  </p>
+                )}
               </div>
             </div>
           );

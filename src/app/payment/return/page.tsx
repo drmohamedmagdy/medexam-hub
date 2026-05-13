@@ -71,7 +71,8 @@ export default async function PaymentReturnPage({
     const now = new Date();
     const isRenewalSamePlan = user.plan === order.plan && user.planExpiresAt && user.planExpiresAt > now;
     const baseDate = isRenewalSamePlan ? user.planExpiresAt! : now;
-    const expiresAt = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const months = order.durationMonths || 1;
+    const expiresAt = new Date(baseDate.getTime() + months * 30 * 24 * 60 * 60 * 1000);
     const startedAt = isRenewalSamePlan ? user.planStartedAt ?? now : now;
 
     await prisma.$transaction([
@@ -113,7 +114,8 @@ export default async function PaymentReturnPage({
         {cfg.maxQuestionsPerExam} questions per exam.
       </p>
       <p className="mt-1 text-xs text-zinc-500">
-        Active for 30 days. Renew before {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}.
+        Active for {order.durationMonths} {order.durationMonths === 1 ? "month" : "months"}. Renew before{" "}
+        {new Date(Date.now() + (order.durationMonths || 1) * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link href="/exam/new" className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700">

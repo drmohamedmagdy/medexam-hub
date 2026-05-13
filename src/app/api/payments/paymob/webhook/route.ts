@@ -26,7 +26,7 @@ import { topupByKind } from "@/lib/topups";
  *   5. Always return 200 so Paymob doesn't retry endlessly.
  */
 
-const PLAN_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
 function yearMonthOf(d: Date): string {
   const y = d.getUTCFullYear();
@@ -205,7 +205,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: true, note: "topup granted" });
   }
 
-  // Plan purchase / renewal.
+  // Plan purchase / renewal. Duration is whatever the customer paid for
+  // (1, 3, 6, or 12 months); we multiply 30 days × N to extend the window.
   const isRenewalSamePlan =
     paymentOrder.user.plan === paymentOrder.plan &&
     paymentOrder.user.planExpiresAt &&
@@ -213,7 +214,8 @@ export async function POST(req: NextRequest) {
   const baseDate = isRenewalSamePlan
     ? paymentOrder.user.planExpiresAt!
     : now;
-  const expiresAt = new Date(baseDate.getTime() + PLAN_DURATION_MS);
+  const months = paymentOrder.durationMonths || 1;
+  const expiresAt = new Date(baseDate.getTime() + months * ONE_MONTH_MS);
   const startedAt = isRenewalSamePlan
     ? paymentOrder.user.planStartedAt ?? now
     : now;
@@ -244,7 +246,7 @@ export async function POST(req: NextRequest) {
     category: "system",
     emoji: "✅",
     title: `Payment confirmed — you're on the ${PLAN_LIMITS[paymentOrder.plan].label} plan`,
-    body: `Your ${methodLabel(paymentOrder.paymentMethod)} payment of ${(paymentOrder.amountCents / 100).toLocaleString()} EGP was verified. Your plan is active for 30 days.`,
+    body: `Your ${methodLabel(paymentOrder.paymentMethod)} payment of ${(paymentOrder.amountCents / 100).toLocaleString()} EGP was verified. Your plan is active for ${months} ${months === 1 ? "month" : "months"}.`,
     href: "/account/subscription",
   });
 

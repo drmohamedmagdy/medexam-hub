@@ -1,8 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import type { Plan } from "@/generated/prisma/client";
-import { formatPrice } from "@/lib/plans";
+import {
+  BILLING_CYCLES,
+  formatPrice,
+  priceForCycle,
+  type BillingCycle,
+} from "@/lib/plans";
 import type { Translations } from "@/lib/i18n";
 import { applyPromoAction, type PromoApplyState } from "@/app/actions/promo";
 
@@ -17,13 +22,12 @@ type CheckoutT = Translations["checkout"];
 
 export default function CheckoutForm({
   plan,
-  priceMonthly,
   t,
 }: {
   plan: Plan;
-  priceMonthly: number;
   t: CheckoutT;
 }) {
+  const [months, setMonths] = useState<BillingCycle>(1);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
@@ -42,7 +46,18 @@ export default function CheckoutForm({
     });
   }
 
-  const finalAmount = promo ? promo.finalCents / 100 : priceMonthly;
+  const cycles = useMemo(
+    () => BILLING_CYCLES.map((m) => priceForCycle(plan, m)),
+    [plan]
+  );
+  const selectedCycle = cycles.find((c) => c.months === months) ?? cycles[0];
+
+  // Promo discount percentage gets re-applied on top of the cycle price.
+  const promoPct = promo
+    ? promo.discountCents / Math.max(1, promo.originalCents)
+    : 0;
+  const finalCents = Math.round(selectedCycle.total * 100 * (1 - promoPct));
+  const finalAmount = Math.round(finalCents / 100);
   const effectivePromoCode = promo?.code ?? (promoInput.trim() || null);
 
   async function handlePay() {
@@ -52,7 +67,11 @@ export default function CheckoutForm({
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, promoCode: effectivePromoCode }),
+        body: JSON.stringify({
+          plan,
+          promoCode: effectivePromoCode,
+          durationMonths: months,
+        }),
       });
       if (!res.ok) {
         setError(`Couldn't start checkout: ${await res.text()}`);
@@ -73,6 +92,24 @@ export default function CheckoutForm({
 
   return (
     <div className="mt-6 space-y-5">
+      {/* Billing cycle picker */}
+      <fieldset>
+        <legend className="text-sm font-medium">Choose billing period</legend>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {cycles.map((c) => (
+            <CycleOption
+              key={c.months}
+              months={c.months}
+              total={c.total}
+              perMonth={c.perMonth}
+              savingsPct={c.savingsPct}
+              checked={c.months === months}
+              onSelect={() => setMonths(c.months)}
+            />
+          ))}
+        </div>
+      </fieldset>
+
       {/* Promo code */}
       <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
         {promo ? (
@@ -82,9 +119,7 @@ export default function CheckoutForm({
                 {t.promoApplied.replace("{code}", promo.code)}
               </p>
               <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                {t.promoSavings
-                  .replace("{save}", (promo.discountCents / 100).toLocaleString())
-                  .replace("{total}", (promo.finalCents / 100).toLocaleString())}
+                {Math.round(promoPct * 100)}% off applied to your selected period
               </p>
             </div>
             <button
@@ -137,7 +172,7 @@ export default function CheckoutForm({
         )}
       </div>
 
-      {/* Single Paymob CTA — user picks Card or Wallet on Paymob's page */}
+      {/* Total + Paymob CTA */}
       <div className="space-y-4">
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
           <div className="flex items-start gap-3">
@@ -153,6 +188,13 @@ export default function CheckoutForm({
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800/40">
+          <span className="text-zinc-600 dark:text-zinc-400">
+            Total for {months} {months === 1 ? "month" : "months"}
+          </span>
+          <span className="font-semibold">{formatPrice(finalAmount)}</span>
         </div>
 
         <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-400">
@@ -175,5 +217,53 @@ export default function CheckoutForm({
         </button>
       </div>
     </div>
+  );
+}
+
+function CycleOption({
+  months,
+  total,
+  perMonth,
+  savingsPct,
+  checked,
+  onSelect,
+}: {
+  months: BillingCycle;
+  total: number;
+  perMonth: number;
+  savingsPct: number;
+  checked: boolean;
+  onSelect: () => void;
+}) {
+  const label =
+    months === 1
+      ? "Monthly"
+      : months === 12
+        ? "Annual"
+        : `${months} months`;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={checked}
+      className={`relative flex flex-col items-start gap-1 rounded-lg border-2 px-3 py-3 text-left transition ${
+        checked
+          ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600 dark:bg-blue-950"
+          : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+      }`}
+    >
+      {savingsPct > 0 && (
+        <span className="absolute -top-2 right-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+          −{savingsPct}%
+        </span>
+      )}
+      <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        {label}
+      </span>
+      <span className="text-base font-semibold">{total.toLocaleString()} EGP</span>
+      <span className="text-[11px] text-zinc-500">
+        {perMonth.toLocaleString()} EGP / month
+      </span>
+    </button>
   );
 }

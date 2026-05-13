@@ -671,6 +671,9 @@ model PaymentOrder {
   //   "STATS_ANALYSIS"   — adds topupAmount to stats_analyses pool
   topupKind       String?
   topupAmount     Int           @default(1)
+  // How many months of plan access this order grants. 1 for monthly, 3/6/12
+  // for the multi-month discounted bundles. Ignored for top-up orders.
+  durationMonths  Int           @default(1)
   createdAt       DateTime      @default(now())
   paidAt          DateTime?
 
