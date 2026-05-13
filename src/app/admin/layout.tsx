@@ -17,6 +17,7 @@ export default async function AdminLayout({
           <nav className="-mx-1 flex min-w-0 flex-1 items-center gap-3 overflow-x-auto px-1 text-sm sm:gap-4">
             <AdminLink href="/admin">Overview</AdminLink>
             <AdminLink href="/admin/users">Users</AdminLink>
+            <AdminLink href="/admin/revenue">Revenue</AdminLink>
             <AdminLink href="/admin/payments">Payments</AdminLink>
             <AdminLink href="/admin/exams">Exams</AdminLink>
             <AdminLink href="/admin/promos">Promos</AdminLink>

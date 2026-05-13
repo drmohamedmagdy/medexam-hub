@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { listPosts } from "./blog/posts";
 
 const BASE = "https://medexamhub.org";
 
@@ -20,6 +21,8 @@ const STATIC_ROUTES: Array<{
   { path: "/courses", changeFrequency: "weekly", priority: 0.8 },
   { path: "/research", changeFrequency: "weekly", priority: 0.7 },
   { path: "/community", changeFrequency: "daily", priority: 0.7 },
+  { path: "/blog", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/qotd", changeFrequency: "daily", priority: 0.8 },
   { path: "/about", changeFrequency: "monthly", priority: 0.5 },
   { path: "/contact", changeFrequency: "yearly", priority: 0.4 },
   { path: "/refund", changeFrequency: "yearly", priority: 0.3 },
@@ -51,6 +54,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.85,
+    });
+  }
+
+  // Blog posts — pull from the registry so adding a post in posts.ts
+  // immediately surfaces in the sitemap on next build.
+  for (const post of listPosts()) {
+    entries.push({
+      url: `${BASE}/blog/${post.slug}`,
+      lastModified: new Date(post.date),
+      changeFrequency: "monthly",
+      priority: 0.7,
     });
   }
 

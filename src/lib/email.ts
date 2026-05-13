@@ -8,6 +8,9 @@ export type EmailCategory =
   | "verification"
   | "password_reset"
   | "payment_receipt"
+  | "abandoned_cart"
+  | "qotd"
+  | "year_in_review"
   | "renewal_7d"
   | "renewal_1d"
   | "expired"
@@ -388,6 +391,36 @@ export function paymentReceiptEmail(args: {
       <p style="font-size:12px;color:#6b7280;margin-top:24px;">
         Keep this email — the linked invoice above is printable as a PDF. MedExam Hub, Cairo, Egypt. Contact <a href="mailto:info@medexamhub.org" style="color:#2563eb;">info@medexamhub.org</a> for refund requests (see our <a href="${url}/refund" style="color:#2563eb;">refund policy</a>).
       </p>
+    `),
+  };
+}
+
+export function abandonedCartEmail(args: {
+  name: string | null;
+  userId: string;
+  planLabel: string;
+  amountEgp: number;
+  durationMonths: number;
+  resumeUrl: string;
+}): { subject: string; html: string } {
+  const greet = args.name ? `Hi ${escape(args.name.split(" ")[0])},` : "Hi there,";
+  const durationLabel =
+    args.durationMonths === 1
+      ? "monthly"
+      : args.durationMonths === 12
+        ? "annual"
+        : `${args.durationMonths}-month`;
+  return {
+    subject: `Finish your ${args.planLabel} upgrade — just one tap left`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>You were almost there — your <strong>${escape(args.planLabel)}</strong> ${durationLabel} plan upgrade is waiting at the payment page.</p>
+      <p>Total: <strong>${args.amountEgp.toLocaleString()} EGP</strong></p>
+      <p>
+        <a href="${args.resumeUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Resume checkout →</a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;">Card and mobile-wallet (Vodafone Cash / Etisalat / Orange) both work — pick whichever's easier.</p>
+      ${unsubFooter(args.userId, "reminders")}
     `),
   };
 }

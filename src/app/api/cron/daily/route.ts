@@ -7,11 +7,13 @@ import {
   expiredEmail,
   expiredGrace1dEmail,
   expiredGrace7dEmail,
+  abandonedCartEmail,
   reengagementEmail,
   communityDigestEmail,
   reviewReminderEmail,
 } from "@/lib/email";
 import type { Plan } from "@/generated/prisma/client";
+import { ensureTodaysQuestion } from "@/lib/daily-question";
 
 /**
  * Daily cron triggered by Vercel Cron at 09:00 UTC (see vercel.json).
@@ -47,11 +49,24 @@ export async function GET(req: Request) {
     downgraded: 0,
     grace1d: 0,
     grace7d: 0,
+    abandonedCart: 0,
+    qotdGenerated: false,
     reengagement: 0,
     communityDigest: 0,
     reviewReminder: 0,
     errors: 0,
   };
+
+  // Question of the Day — runs first so subsequent /qotd visitors today
+  // get a populated question. Wrapped in try/catch so an OpenAI hiccup
+  // doesn't block the rest of the cron from running.
+  try {
+    const { created } = await ensureTodaysQuestion();
+    counts.qotdGenerated = created;
+  } catch (err) {
+    console.error("[cron-daily] QOTD generation failed", err);
+    counts.errors += 1;
+  }
 
   // Helper: look up the last PAID plan a user had so the grace emails can
   // say "your BASIC plan" instead of "your former plan". Falls back to
@@ -191,6 +206,65 @@ export async function GET(req: Request) {
       html: tpl.html,
     });
     if (r.ok) counts.grace7d += 1; else counts.errors += 1;
+  }
+
+  // -- Abandoned cart recovery: PENDING orders 2-48 hours old that we
+  //    haven't yet reminded the user about. One-shot per order — we
+  //    don't want to nag if the user genuinely changed their mind.
+  //    Skipped entirely for top-up orders (manual flow, separate UX).
+  const cartWindowStart = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const cartWindowEnd = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+  const abandoned = await prisma.paymentOrder.findMany({
+    where: {
+      status: "PENDING",
+      topupKind: null,
+      abandonedReminderSentAt: null,
+      createdAt: { gte: cartWindowStart, lte: cartWindowEnd },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 200,
+    include: {
+      user: {
+        select: { id: true, email: true, name: true, emailReminders: true },
+      },
+    },
+  });
+  const baseUrl = process.env.PUBLIC_BASE_URL ?? "https://medexamhub.org";
+  for (const order of abandoned) {
+    if (!order.user.emailReminders) {
+      // Mark seen so we don't reconsider on future ticks.
+      await prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: { abandonedReminderSentAt: now },
+      });
+      continue;
+    }
+    const tpl = abandonedCartEmail({
+      name: order.user.name,
+      userId: order.user.id,
+      planLabel: PLAN_LIMITS[order.plan].label,
+      amountEgp: Math.round(order.amountCents / 100),
+      durationMonths: order.durationMonths || 1,
+      resumeUrl: `${baseUrl}/checkout/${order.plan.toLowerCase()}${
+        (order.durationMonths || 1) === 1 ? "" : `?cycle=${order.durationMonths}`
+      }`,
+    });
+    const r = await sendEmail({
+      toUserId: order.user.id,
+      toEmail: order.user.email,
+      subject: tpl.subject,
+      category: "abandoned_cart",
+      html: tpl.html,
+    });
+    if (r.ok) {
+      counts.abandonedCart += 1;
+      await prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: { abandonedReminderSentAt: now },
+      });
+    } else {
+      counts.errors += 1;
+    }
   }
 
   // -- Re-engagement: signed up >14 days ago, no exam in last 14 days,

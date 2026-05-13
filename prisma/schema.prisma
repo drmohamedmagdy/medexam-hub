@@ -142,6 +142,7 @@ model User {
   studyNotes      StudyNote[]
   tutorChats      TutorChat[]
   mockExams       MockExam[]
+  qotdAttempts    DailyQuestionAttempt[]
 }
 
 model ProfileMedia {
@@ -643,6 +644,40 @@ enum PaymentMethod {
   INSTAPAY
 }
 
+model DailyQuestion {
+  id            String         @id @default(cuid())
+  // YYYY-MM-DD in UTC. Used as a stable key so the daily cron is idempotent
+  // and the /qotd page can fetch "today" by computing the same string.
+  publishDate   String         @unique
+  specialty     String
+  difficulty    Difficulty
+  prompt        String
+  format        QuestionFormat @default(MCQ)
+  optionsJson   String
+  correctId     String
+  explanation   String
+  learningPoint String?
+  createdAt     DateTime       @default(now())
+
+  attempts      DailyQuestionAttempt[]
+}
+
+model DailyQuestionAttempt {
+  id              String        @id @default(cuid())
+  userId          String
+  dailyQuestionId String
+  selectedId      String
+  isCorrect       Boolean
+  answeredAt      DateTime      @default(now())
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question        DailyQuestion @relation(fields: [dailyQuestionId], references: [id], onDelete: Cascade)
+
+  // One attempt per user per QOTD; the page enforces this server-side too.
+  @@unique([userId, dailyQuestionId])
+  @@index([userId, answeredAt])
+}
+
 model PaymentOrder {
   id              String        @id @default(cuid())
   userId          String
@@ -679,6 +714,10 @@ model PaymentOrder {
   // How many months of plan access this order grants. 1 for monthly, 3/6/12
   // for the multi-month discounted bundles. Ignored for top-up orders.
   durationMonths  Int           @default(1)
+  // Stamped by the daily cron when we email the user a "finish your
+  // upgrade" reminder for this order. Used both to avoid re-sending and
+  // as the metric for cart-recovery analytics.
+  abandonedReminderSentAt DateTime?
   createdAt       DateTime      @default(now())
   paidAt          DateTime?
 
