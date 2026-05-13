@@ -25,9 +25,22 @@ function isTransientNetworkError(message: string | undefined | null): boolean {
 // new build and resolves it.
 const STALE_ACTION_RE = /server action .* was not found on the server|failed to find server action/i;
 
+// Same root cause, different symptom: when a new build deploys, chunk
+// filenames change. A tab that was loaded before the deploy will try
+// to lazy-load /_next/static/chunks/<old-hash>.js on navigation; that
+// 404s and Next surfaces it as "Failed to load chunk N" or
+// "ChunkLoadError". Same fix: full reload.
+const CHUNK_LOAD_RE =
+  /failed to load chunk|chunkloaderror|loading chunk \d+ failed/i;
+
 function isStaleServerAction(message: string | undefined | null): boolean {
   if (!message) return false;
   return STALE_ACTION_RE.test(message);
+}
+
+function isChunkLoadError(message: string | undefined | null): boolean {
+  if (!message) return false;
+  return CHUNK_LOAD_RE.test(message);
 }
 
 // Route-segment error boundary. Wraps every page that lives under the
@@ -43,14 +56,18 @@ export default function RouteError({
 }) {
   const transient = isTransientNetworkError(error.message);
   const stale = isStaleServerAction(error.message);
+  const chunkLoad = isChunkLoadError(error.message);
 
   useEffect(() => {
-    // Stale server action = user had a tab open across a deploy. Force
-    // a full reload to pull the new build's action IDs. Don't log it
-    // either — it's expected behaviour every time we deploy.
-    if (stale) {
+    // Both stale-server-action and chunk-load errors mean the user had a
+    // tab open across a deploy. Force a full reload to pull the new
+    // build's action IDs + chunk URLs. Don't log either — they're
+    // expected behaviour every time we deploy.
+    if (stale || chunkLoad) {
       // eslint-disable-next-line no-console
-      console.warn("[RouteError] stale server action — auto-reloading");
+      console.warn(
+        `[RouteError] ${stale ? "stale server action" : "chunk load failed"} — auto-reloading`
+      );
       if (typeof window !== "undefined") {
         window.location.reload();
       }
@@ -82,9 +99,9 @@ export default function RouteError({
     });
     // eslint-disable-next-line no-console
     console.error("[RouteError]", error);
-  }, [error, transient, stale]);
+  }, [error, transient, stale, chunkLoad]);
 
-  if (stale) {
+  if (stale || chunkLoad) {
     // Brief placeholder while the auto-reload from the effect kicks in.
     // If something blocks the reload (e.g. a misbehaving extension), the
     // button below is the manual fallback.

@@ -14,6 +14,12 @@ const TRANSIENT_NETWORK_RE =
 const STALE_ACTION_RE =
   /server action .* was not found on the server|failed to find server action/i;
 
+// Same root cause: chunk filenames change per build, so a tab open
+// across a deploy 404s on lazy-loaded chunks ("Failed to load chunk N"
+// / "ChunkLoadError"). error.tsx auto-reloads; we also drop here.
+const CHUNK_LOAD_RE =
+  /failed to load chunk|chunkloaderror|loading chunk \d+ failed/i;
+
 const Schema = z.object({
   message: z.string().min(1).max(2000),
   stack: z.string().max(8000).optional(),
@@ -47,6 +53,9 @@ export async function POST(req: NextRequest) {
   }
   if (STALE_ACTION_RE.test(parsed.data.message)) {
     return Response.json({ ok: true, skipped: "stale-action" });
+  }
+  if (CHUNK_LOAD_RE.test(parsed.data.message)) {
+    return Response.json({ ok: true, skipped: "chunk-load" });
   }
   await logError({
     message: parsed.data.message,
