@@ -41,10 +41,12 @@ const PLAN_FEATURES: Record<PaidPlan, string[]> = {
 
 export default async function CheckoutPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ plan: string }>;
+  searchParams: Promise<{ cycle?: string }>;
 }) {
-  const { plan: planSlug } = await params;
+  const [{ plan: planSlug }, sp] = await Promise.all([params, searchParams]);
   const planUpper = planSlug.toUpperCase() as Plan;
 
   if (!PAID_PLANS.includes(planUpper as PaidPlan)) redirect("/plans");
@@ -56,6 +58,14 @@ export default async function CheckoutPage({
 
   const plan = planUpper as PaidPlan;
   const cfg = PLAN_LIMITS[plan];
+
+  // Pre-select the billing cycle from ?cycle=N (set by the /plans toggle)
+  // so the customer doesn't have to re-pick what they just chose.
+  const cycleRaw = Number(sp.cycle);
+  const initialCycle =
+    cycleRaw === 1 || cycleRaw === 3 || cycleRaw === 6 || cycleRaw === 12
+      ? (cycleRaw as 1 | 3 | 6 | 12)
+      : 1;
 
   const locale = await getLocale();
   const allT = getTranslations(locale);
@@ -141,6 +151,7 @@ export default async function CheckoutPage({
             plan={plan}
             t={t}
             initialPhone={user.phone ?? ""}
+            initialCycle={initialCycle}
           />
 
           <p className="mt-6 text-xs text-zinc-500">

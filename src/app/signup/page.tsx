@@ -62,7 +62,10 @@ export default async function SignupPage({
           />
           <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
             {t.signup.haveAccount}{" "}
-            <Link href="/login" className="font-medium text-blue-600 hover:underline">
+            <Link
+              href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="font-medium text-blue-600 hover:underline"
+            >
               {t.signup.signin}
             </Link>
           </p>

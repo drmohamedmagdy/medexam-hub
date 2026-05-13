@@ -39,12 +39,14 @@ export default function CheckoutForm({
   plan,
   t,
   initialPhone,
+  initialCycle,
 }: {
   plan: Plan;
   t: CheckoutT;
   initialPhone: string;
+  initialCycle: BillingCycle;
 }) {
-  const [months, setMonths] = useState<BillingCycle>(1);
+  const [months, setMonths] = useState<BillingCycle>(initialCycle);
   const [phone, setPhone] = useState(initialPhone);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
