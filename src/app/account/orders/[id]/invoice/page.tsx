@@ -11,7 +11,7 @@ import PrintButton from "./PrintButton";
 
 function methodLabel(m: string): string {
   if (m === "CARD") return "Card (Visa / Mastercard)";
-  if (m === "VODAFONE_CASH") return "Vodafone Cash";
+  if (m === "VODAFONE_CASH") return "Mobile wallet (Vodafone Cash / Etisalat / Orange)";
   if (m === "INSTAPAY") return "Instapay";
   return m;
 }

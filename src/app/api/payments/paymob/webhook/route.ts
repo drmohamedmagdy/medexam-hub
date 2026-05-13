@@ -42,6 +42,30 @@ function methodLabel(m: PaymentMethod): string {
   return "online";
 }
 
+/**
+ * Derive our PaymentMethod enum from Paymob's `source_data.type` /
+ * `source_data.sub_type`. Paymob's vocabulary (observed in practice):
+ *   type=card                              → CARD
+ *   type=wallet, sub_type=VODAFONE_CASH    → VODAFONE_CASH
+ *   type=wallet, sub_type=ETISALAT_CASH    → VODAFONE_CASH (we don't have
+ *                                            distinct enum values for the
+ *                                            other wallets yet, all map
+ *                                            to VODAFONE_CASH for now)
+ *   type=aggregator (Instapay)             → INSTAPAY
+ *
+ * The PaymentOrder always starts as CARD by default (DB default). Without
+ * this, our invoice and admin views show "Card" even when the customer
+ * paid by wallet — confusing for both sides.
+ */
+function methodFromSourceData(source: Record<string, unknown>): PaymentMethod | null {
+  const type = typeof source.type === "string" ? source.type.toLowerCase() : "";
+  const sub = typeof source.sub_type === "string" ? source.sub_type.toUpperCase() : "";
+  if (type.includes("card")) return "CARD";
+  if (type.includes("wallet")) return "VODAFONE_CASH"; // covers all mobile wallets
+  if (type.includes("aggregator") || sub.includes("INSTAPAY")) return "INSTAPAY";
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const url = req.nextUrl;
   const hmac = url.searchParams.get("hmac") ?? "";
@@ -159,6 +183,13 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: true, note: "already paid" });
   }
 
+  // Derive the actual payment method from Paymob's transaction source_data.
+  // The order was created with a CARD default; if the customer ended up
+  // paying via wallet (or any other method) on the unified checkout, we
+  // need to reflect that on the invoice / admin view / receipt email.
+  const sourceData = (txn.source_data as Record<string, unknown>) ?? {};
+  const actualMethod = methodFromSourceData(sourceData) ?? paymentOrder.paymentMethod;
+
   const paymobOrderId = String(order.id ?? "");
   const paymobTxId = String(txn.id ?? "");
   const now = new Date();
@@ -204,6 +235,7 @@ export async function POST(req: NextRequest) {
         data: {
           status: PaymentStatus.PAID,
           paidAt: now,
+          paymentMethod: actualMethod,
           paymobOrderId: paymobOrderId || null,
           paymobTxId: paymobTxId || null,
         },
@@ -217,6 +249,7 @@ export async function POST(req: NextRequest) {
         data: {
           status: PaymentStatus.PAID,
           paidAt: now,
+          paymentMethod: actualMethod,
           paymobOrderId: paymobOrderId || null,
           paymobTxId: paymobTxId || null,
         },
@@ -263,6 +296,7 @@ export async function POST(req: NextRequest) {
       data: {
         status: PaymentStatus.PAID,
         paidAt: now,
+        paymentMethod: actualMethod,
         paymobOrderId: paymobOrderId || null,
         paymobTxId: paymobTxId || null,
       },
@@ -283,7 +317,7 @@ export async function POST(req: NextRequest) {
     category: "system",
     emoji: "✅",
     title: `Payment confirmed — you're on the ${PLAN_LIMITS[paymentOrder.plan].label} plan`,
-    body: `Your ${methodLabel(paymentOrder.paymentMethod)} payment of ${(paymentOrder.amountCents / 100).toLocaleString()} EGP was verified. Your plan is active for ${months} ${months === 1 ? "month" : "months"}.`,
+    body: `Your ${methodLabel(actualMethod)} payment of ${(paymentOrder.amountCents / 100).toLocaleString()} EGP was verified. Your plan is active for ${months} ${months === 1 ? "month" : "months"}.`,
     href: "/account/subscription",
   });
 
@@ -299,7 +333,7 @@ export async function POST(req: NextRequest) {
     paidAt: now,
     expiresAt,
     orderId: paymentOrder.id,
-    paymentMethodLabel: methodLabel(paymentOrder.paymentMethod),
+    paymentMethodLabel: methodLabel(actualMethod),
   });
   void sendEmail({
     toUserId: paymentOrder.userId,
