@@ -263,6 +263,7 @@ export default async function SubscriptionPage() {
                   <th className="px-4 py-3 text-start">{tA.colPlan}</th>
                   <th className="px-4 py-3 text-end">{tA.colAmount}</th>
                   <th className="px-4 py-3 text-end">{tA.colStatus}</th>
+                  <th className="px-4 py-3 text-end" aria-label="Invoice"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -290,6 +291,18 @@ export default async function SubscriptionPage() {
                         <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle}`}>
                           {statusLabel}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-end">
+                        {p.status === "PAID" ? (
+                          <Link
+                            href={`/account/orders/${p.id}/invoice`}
+                            className="text-xs font-medium text-blue-600 hover:underline"
+                          >
+                            Invoice
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-zinc-400">—</span>
+                        )}
                       </td>
                     </tr>
                   );

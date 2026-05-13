@@ -380,12 +380,13 @@ export function paymentReceiptEmail(args: {
         <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Plan active until</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;font-weight:600;">${args.expiresAt.toLocaleDateString()}</td></tr>
       </table>
 
-      <p>
-        <a href="${url}/account/subscription" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Manage subscription →</a>
+      <p style="margin-top:24px;">
+        <a href="${url}/account/orders/${encodeURIComponent(args.orderId)}/invoice" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;margin-inline-end:8px;">View / print invoice →</a>
+        <a href="${url}/account/subscription" style="display:inline-block;border:1px solid #d4d4d8;color:#111;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Manage subscription</a>
       </p>
 
       <p style="font-size:12px;color:#6b7280;margin-top:24px;">
-        Keep this email — it's your VAT-style receipt for the purchase. MedExam Hub, Cairo, Egypt. Contact <a href="mailto:info@medexamhub.org" style="color:#2563eb;">info@medexamhub.org</a> for refund requests or VAT invoice questions (see our <a href="${url}/refund" style="color:#2563eb;">refund policy</a>).
+        Keep this email — the linked invoice above is printable as a PDF. MedExam Hub, Cairo, Egypt. Contact <a href="mailto:info@medexamhub.org" style="color:#2563eb;">info@medexamhub.org</a> for refund requests (see our <a href="${url}/refund" style="color:#2563eb;">refund policy</a>).
       </p>
     `),
   };
