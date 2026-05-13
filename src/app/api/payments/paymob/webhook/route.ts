@@ -49,8 +49,20 @@ export async function POST(req: NextRequest) {
   try {
     body = (await req.json()) as Record<string, unknown>;
   } catch {
+    console.warn("[paymob-webhook] invalid JSON body");
     return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
   }
+
+  // Aggressive logging — most LIVE orders are getting stuck PENDING which
+  // means either Paymob isn't reaching us at all, or our HMAC check is
+  // rejecting them. Logging every inbound call lets us see in Vercel logs
+  // what actually arrived and why we did or didn't accept it.
+  console.log("[paymob-webhook] received", {
+    type: body.type,
+    hasObj: typeof body.obj === "object",
+    hmacLen: hmac.length,
+    keys: Object.keys(body).slice(0, 12),
+  });
 
   // The "obj" envelope is Paymob's standard for callback bodies — older
   // dashboards send the transaction directly; newer ones nest it. We
@@ -61,6 +73,7 @@ export async function POST(req: NextRequest) {
   // SUBSCRIPTION, etc.). We only handle TRANSACTION here — ack anything
   // else with 200 so they stop retrying but don't run plan side-effects.
   if (typeof body.type === "string" && body.type !== "TRANSACTION") {
+    console.log("[paymob-webhook] ignored non-TRANSACTION type", body.type);
     return Response.json({ ok: true, note: `ignored type=${body.type}` });
   }
 
@@ -68,18 +81,34 @@ export async function POST(req: NextRequest) {
   // "final" callback comes after the user completes 3DS. Don't mark FAILED
   // on the pending one — wait for the real verdict.
   if (txn.pending === true) {
+    console.log("[paymob-webhook] pending intermediate callback", { txnId: txn.id });
     return Response.json({ ok: true, note: "pending — waiting for final callback" });
   }
 
   if (!verifyWebhookHmac(txn, hmac)) {
     // Fail closed — log and reject. We DON'T mark anything as paid on
-    // an unverified callback; a forged request would unlock plans.
+    // an unverified callback; a forged request would unlock plans. Log
+    // every field that goes into the HMAC so we can spot what's different
+    // (Paymob may have changed the canonical field order).
+    const extras = (txn.extras as Record<string, unknown>) ?? {};
+    const ord = (txn.order as Record<string, unknown>) ?? {};
     console.warn("[paymob-webhook] HMAC verification failed", {
       txnId: txn.id,
-      receivedHmac: hmac ? `${hmac.slice(0, 8)}…` : "(none)",
+      txnSuccess: txn.success,
+      receivedHmac: hmac ? `${hmac.slice(0, 8)}…${hmac.slice(-4)}` : "(none)",
+      hmacLen: hmac.length,
+      externalOrderId:
+        (typeof extras.external_order_id === "string" && extras.external_order_id) ||
+        (typeof ord.merchant_order_id === "string" && ord.merchant_order_id) ||
+        null,
+      hmacSecretConfigured: Boolean(process.env.PAYMOB_HMAC_SECRET),
+      hmacSecretLen: process.env.PAYMOB_HMAC_SECRET?.length ?? 0,
     });
-    return Response.json({ ok: false, error: "invalid hmac" }, { status: 401 });
+    // Return 200 (not 401) so Paymob doesn't blacklist our endpoint
+    // for repeated failures. We still don't mutate state.
+    return Response.json({ ok: false, error: "invalid hmac" });
   }
+  console.log("[paymob-webhook] HMAC verified", { txnId: txn.id, success: txn.success });
 
   const success = Boolean(txn.success);
   const extras = (txn.extras as Record<string, unknown>) ?? {};

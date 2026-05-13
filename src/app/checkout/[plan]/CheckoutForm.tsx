@@ -80,14 +80,14 @@ export default function CheckoutForm({
   const finalAmount = Math.round(finalCents / 100);
   const effectivePromoCode = promo?.code ?? (promoInput.trim() || null);
 
-  const normalizedPhone = normalizePhone(phone);
-  const phoneValid = EG_PHONE_RE.test(normalizedPhone);
+  // Phone is optional. If the user types something, we try to normalise it
+  // to E.164 (+20XXXXXXXXXX) and only pass it to the API if it parses; an
+  // unparseable value is silently dropped rather than blocking checkout —
+  // we don't want the form to be a wall for international users.
+  const normalizedPhone = phone.trim() ? normalizePhone(phone) : "";
+  const phoneValid = !normalizedPhone || EG_PHONE_RE.test(normalizedPhone);
 
   async function handlePay() {
-    if (!phoneValid) {
-      setError("Please enter a valid Egyptian mobile number (11 digits starting with 01).");
-      return;
-    }
     setPending(true);
     setError(null);
     try {
@@ -98,7 +98,9 @@ export default function CheckoutForm({
           plan,
           promoCode: effectivePromoCode,
           durationMonths: months,
-          phone: normalizedPhone,
+          // Only send phone if it parsed cleanly. The backend treats it as
+          // optional and falls back to the saved User.phone if available.
+          ...(EG_PHONE_RE.test(normalizedPhone) ? { phone: normalizedPhone } : {}),
         }),
       });
       if (!res.ok) {
@@ -202,33 +204,30 @@ export default function CheckoutForm({
 
       {/* Total + Paymob CTA */}
       <div className="space-y-4">
-        {/* Phone is required — banks decline placeholder phone numbers. */}
+        {/* Phone is optional — used by Paymob for OTP and by some banks
+            for fraud checks. Customers outside Egypt can leave it blank. */}
         <div>
           <label htmlFor="phone" className="block text-sm font-medium">
-            Mobile number <span className="text-red-600">*</span>
+            Mobile number <span className="text-xs font-normal text-zinc-500">(optional)</span>
           </label>
           <p className="mt-0.5 text-xs text-zinc-500">
-            Required by the bank. Use your real number (the one tied to your card or
-            wallet) — fake numbers cause the bank to decline the payment.
+            Helps banks verify the payment. For mobile-wallet payments
+            (Vodafone Cash / Etisalat / Orange), use the number registered
+            with your wallet provider.
           </p>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-medium dark:border-zinc-700 dark:bg-zinc-800">
-              🇪🇬 +20
-            </span>
-            <input
-              id="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="1012345678"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </div>
+          <input
+            id="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="e.g. 01012345678"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="mt-2 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
           {phone && !phoneValid && (
-            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-              Enter 11 digits starting with 01 (e.g. 01012345678).
+            <p className="mt-1 text-xs text-zinc-500">
+              Egyptian format would be 11 digits starting with 01. Anything else is fine too — it just won&apos;t be auto-detected.
             </p>
           )}
         </div>
@@ -269,14 +268,10 @@ export default function CheckoutForm({
 
         <button
           onClick={handlePay}
-          disabled={pending || !phoneValid}
+          disabled={pending}
           className="w-full rounded-md bg-blue-600 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5"
         >
-          {pending
-            ? t.cardRedirecting
-            : !phoneValid
-              ? "Enter your mobile number to continue"
-              : t.cardPay.replace("{price}", formatPrice(finalAmount))}
+          {pending ? t.cardRedirecting : t.cardPay.replace("{price}", formatPrice(finalAmount))}
         </button>
       </div>
     </div>

@@ -37,16 +37,10 @@ export async function POST(req: Request) {
     ? parsed.data.durationMonths
     : 1;
 
-  // Resolve phone: prefer the value the user just typed at checkout, fall
-  // back to whatever's on their profile. Save the new one if provided so
-  // they don't have to re-enter it next time.
-  const phone = phoneInput ?? user.phone ?? null;
-  if (!phone) {
-    return NextResponse.json(
-      { error: "Phone number is required for payment. Please enter it on the checkout page." },
-      { status: 400 }
-    );
-  }
+  // Phone is optional. If the customer typed one, save it for next time and
+  // pass it through to Paymob. Otherwise we fall back to whatever's on their
+  // profile, then to an empty string — Paymob still accepts the intention.
+  const phone = phoneInput ?? user.phone ?? "";
   if (phoneInput && phoneInput !== user.phone) {
     await prisma.user.update({
       where: { id: user.id },

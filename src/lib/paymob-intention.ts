@@ -52,9 +52,10 @@ export type CreateIntentionArgs = {
     firstName: string;
     lastName: string;
     email: string;
-    /** Required — real Egyptian E.164 phone (+20XXXXXXXXXX). Placeholder
-     *  values like "+201000000000" trigger bank-level fraud declines. */
-    phoneNumber: string;
+    /** Optional — Paymob accepts an empty value here. Real numbers help
+     *  banks verify the customer (and are required by mobile-wallet flows),
+     *  but international customers might not have one to give. */
+    phoneNumber?: string;
   };
   /** Where Paymob redirects after the user completes (or cancels) payment. */
   redirectUrl: string;
@@ -112,11 +113,11 @@ export async function createPaymentIntention(
       first_name: args.billing.firstName.slice(0, 50) || "MedExam",
       last_name: args.billing.lastName.slice(0, 50) || "User",
       email: args.billing.email,
-      // Required by Paymob — must be a real number. The checkout API
-      // refuses to create an intention without one (user prompted at
-      // checkout). Banks' AVS / fraud checks reject placeholder phones
-      // like "+201000000000" we used to send before.
-      phone_number: args.billing.phoneNumber,
+      // Phone is optional — pass what we have (real number from the
+      // user) or an empty string. The previous fake fallback
+      // "+201000000000" was triggering bank-level fraud declines, so
+      // never send placeholder digits here.
+      phone_number: args.billing.phoneNumber || "",
       country: "EG",
       // Real-looking placeholders. Paymob requires these fields but
       // they aren't address-verified — they just need to look plausible
