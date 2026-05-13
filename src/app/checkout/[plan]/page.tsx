@@ -150,7 +150,6 @@ export default async function CheckoutPage({
           <CheckoutForm
             plan={plan}
             t={t}
-            initialPhone={user.phone ?? ""}
             initialCycle={initialCycle}
           />
 

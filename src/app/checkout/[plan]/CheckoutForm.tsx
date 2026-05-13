@@ -20,34 +20,16 @@ type AppliedPromo = {
 
 type CheckoutT = Translations["checkout"];
 
-// Egyptian phone in E.164: +20 followed by 10 digits.
-const EG_PHONE_RE = /^\+20[0-9]{10}$/;
-
-function normalizePhone(raw: string): string {
-  // Accept user input in any common form and normalise to +20XXXXXXXXXX.
-  //   01012345678        → +201012345678
-  //   201012345678       → +201012345678
-  //   +20 10 1234 5678   → +201012345678
-  const digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("20") && digits.length >= 12) return `+${digits.slice(0, 12)}`;
-  if (digits.startsWith("0") && digits.length >= 11) return `+20${digits.slice(1, 11)}`;
-  if (digits.length === 10) return `+20${digits}`;
-  return raw.trim();
-}
-
 export default function CheckoutForm({
   plan,
   t,
-  initialPhone,
   initialCycle,
 }: {
   plan: Plan;
   t: CheckoutT;
-  initialPhone: string;
   initialCycle: BillingCycle;
 }) {
   const [months, setMonths] = useState<BillingCycle>(initialCycle);
-  const [phone, setPhone] = useState(initialPhone);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
@@ -80,13 +62,6 @@ export default function CheckoutForm({
   const finalAmount = Math.round(finalCents / 100);
   const effectivePromoCode = promo?.code ?? (promoInput.trim() || null);
 
-  // Phone is optional. If the user types something, we try to normalise it
-  // to E.164 (+20XXXXXXXXXX) and only pass it to the API if it parses; an
-  // unparseable value is silently dropped rather than blocking checkout —
-  // we don't want the form to be a wall for international users.
-  const normalizedPhone = phone.trim() ? normalizePhone(phone) : "";
-  const phoneValid = !normalizedPhone || EG_PHONE_RE.test(normalizedPhone);
-
   async function handlePay() {
     setPending(true);
     setError(null);
@@ -98,9 +73,6 @@ export default function CheckoutForm({
           plan,
           promoCode: effectivePromoCode,
           durationMonths: months,
-          // Only send phone if it parsed cleanly. The backend treats it as
-          // optional and falls back to the saved User.phone if available.
-          ...(EG_PHONE_RE.test(normalizedPhone) ? { phone: normalizedPhone } : {}),
         }),
       });
       if (!res.ok) {
@@ -204,34 +176,6 @@ export default function CheckoutForm({
 
       {/* Total + Paymob CTA */}
       <div className="space-y-4">
-        {/* Phone is optional — used by Paymob for OTP and by some banks
-            for fraud checks. Customers outside Egypt can leave it blank. */}
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium">
-            Mobile number <span className="text-xs font-normal text-zinc-500">(optional)</span>
-          </label>
-          <p className="mt-0.5 text-xs text-zinc-500">
-            Helps banks verify the payment. For mobile-wallet payments
-            (Vodafone Cash / Etisalat / Orange), use the number registered
-            with your wallet provider.
-          </p>
-          <input
-            id="phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="e.g. 01012345678"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="mt-2 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          {phone && !phoneValid && (
-            <p className="mt-1 text-xs text-zinc-500">
-              Egyptian format would be 11 digits starting with 01. Anything else is fine too — it just won&apos;t be auto-detected.
-            </p>
-          )}
-        </div>
-
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
           <div className="flex items-start gap-3">
             <span className="text-2xl" aria-hidden>💳</span>
