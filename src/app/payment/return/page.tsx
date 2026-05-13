@@ -6,6 +6,13 @@ import { verifyCheckoutToken } from "@/lib/paymob";
 import { PaymentStatus } from "@/generated/prisma/client";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { processReferralCommission } from "@/lib/credits";
+import { paymentReceiptEmail, sendEmail } from "@/lib/email";
+
+function methodLabel(m: "CARD" | "VODAFONE_CASH" | "INSTAPAY"): string {
+  if (m === "CARD") return "card";
+  if (m === "VODAFONE_CASH") return "Vodafone Cash";
+  return "Instapay";
+}
 
 const CHECKOUT_COOKIE = "mxh_checkout";
 
@@ -93,6 +100,29 @@ export default async function PaymentReturnPage({
 
     // Best-effort referral commission — never fail the upgrade on this.
     void processReferralCommission(order.id).catch(() => {});
+
+    // Receipt email — same content as the webhook path. Idempotent at
+    // the EmailLog layer; if the webhook already sent one for this order,
+    // Resend will still happily send a second. (We accept double-send for
+    // edge case rather than adding cross-path dedup logic right now.)
+    const receipt = paymentReceiptEmail({
+      name: user.name,
+      userId: user.id,
+      planLabel: PLAN_LIMITS[order.plan].label,
+      amountEgp: Math.round(order.amountCents / 100),
+      durationMonths: months,
+      paidAt: now,
+      expiresAt,
+      orderId: order.id,
+      paymentMethodLabel: methodLabel(order.paymentMethod),
+    });
+    void sendEmail({
+      toUserId: user.id,
+      toEmail: user.email,
+      subject: receipt.subject,
+      category: "payment_receipt",
+      html: receipt.html,
+    }).catch(() => {});
   }
 
   // NOTE: deliberately NOT deleting the cookie here. In Next 16, cookies()

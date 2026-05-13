@@ -6,6 +6,7 @@ import { createNotification } from "@/lib/notifications";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { processReferralCommission } from "@/lib/credits";
 import { topupByKind } from "@/lib/topups";
+import { paymentReceiptEmail, sendEmail } from "@/lib/email";
 
 /**
  * Paymob calls this endpoint when a transaction has been processed.
@@ -132,7 +133,14 @@ export async function POST(req: NextRequest) {
     where: { id: externalOrderId },
     include: {
       user: {
-        select: { id: true, plan: true, planStartedAt: true, planExpiresAt: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          plan: true,
+          planStartedAt: true,
+          planExpiresAt: true,
+        },
       },
     },
   });
@@ -277,6 +285,30 @@ export async function POST(req: NextRequest) {
     title: `Payment confirmed — you're on the ${PLAN_LIMITS[paymentOrder.plan].label} plan`,
     body: `Your ${methodLabel(paymentOrder.paymentMethod)} payment of ${(paymentOrder.amountCents / 100).toLocaleString()} EGP was verified. Your plan is active for ${months} ${months === 1 ? "month" : "months"}.`,
     href: "/account/subscription",
+  });
+
+  // VAT-style receipt email — required by Egyptian law for digital goods,
+  // expected by customers as a paper trail. Fire-and-forget; never block
+  // the webhook response on Resend hiccups.
+  const receipt = paymentReceiptEmail({
+    name: paymentOrder.user.name,
+    userId: paymentOrder.userId,
+    planLabel: PLAN_LIMITS[paymentOrder.plan].label,
+    amountEgp: Math.round(paymentOrder.amountCents / 100),
+    durationMonths: months,
+    paidAt: now,
+    expiresAt,
+    orderId: paymentOrder.id,
+    paymentMethodLabel: methodLabel(paymentOrder.paymentMethod),
+  });
+  void sendEmail({
+    toUserId: paymentOrder.userId,
+    toEmail: paymentOrder.user.email,
+    subject: receipt.subject,
+    category: "payment_receipt",
+    html: receipt.html,
+  }).catch((e) => {
+    console.warn("[paymob-webhook] receipt email failed", e);
   });
 
   // Referral commission — idempotent + first-paid-only.

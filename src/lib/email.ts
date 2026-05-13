@@ -7,9 +7,12 @@ export type EmailCategory =
   | "welcome"
   | "verification"
   | "password_reset"
+  | "payment_receipt"
   | "renewal_7d"
   | "renewal_1d"
   | "expired"
+  | "expired_grace_1d"
+  | "expired_grace_7d"
   | "reengagement"
   | "broadcast"
   | "group_invite"
@@ -337,6 +340,96 @@ export function expiredEmail(
       <p>
         <a href="${url}/plans" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Choose a plan →</a>
       </p>
+      ${unsubFooter(userId, "reminders")}
+    `),
+  };
+}
+
+export function paymentReceiptEmail(args: {
+  name: string | null;
+  userId: string;
+  planLabel: string;
+  amountEgp: number;
+  durationMonths: number;
+  paidAt: Date;
+  expiresAt: Date;
+  orderId: string;
+  paymentMethodLabel: string;
+}): { subject: string; html: string } {
+  const greet = args.name ? `Hi ${escape(args.name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  const durationLabel =
+    args.durationMonths === 1
+      ? "1 month"
+      : args.durationMonths === 12
+        ? "12 months (annual)"
+        : `${args.durationMonths} months`;
+  return {
+    subject: `Receipt — ${args.planLabel} plan, ${args.amountEgp.toLocaleString()} EGP`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>Thanks for your payment. You're now on the <strong>${escape(args.planLabel)}</strong> plan.</p>
+
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;font-size:14px;">
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;width:42%;">Order ID</td><td style="padding:10px 14px;font-family:monospace;">${escape(args.orderId)}</td></tr>
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Plan</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;">${escape(args.planLabel)}</td></tr>
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Duration</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;">${durationLabel}</td></tr>
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Amount</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;font-weight:600;">${args.amountEgp.toLocaleString()} EGP</td></tr>
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Paid on</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;">${args.paidAt.toLocaleDateString()}</td></tr>
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Method</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;">${escape(args.paymentMethodLabel)}</td></tr>
+        <tr><td style="padding:10px 14px;background:#f9fafb;color:#6b7280;border-top:1px solid #e5e7eb;">Plan active until</td><td style="padding:10px 14px;border-top:1px solid #e5e7eb;font-weight:600;">${args.expiresAt.toLocaleDateString()}</td></tr>
+      </table>
+
+      <p>
+        <a href="${url}/account/subscription" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Manage subscription →</a>
+      </p>
+
+      <p style="font-size:12px;color:#6b7280;margin-top:24px;">
+        Keep this email — it's your VAT-style receipt for the purchase. MedExam Hub, Cairo, Egypt. Contact <a href="mailto:info@medexamhub.org" style="color:#2563eb;">info@medexamhub.org</a> for refund requests or VAT invoice questions (see our <a href="${url}/refund" style="color:#2563eb;">refund policy</a>).
+      </p>
+    `),
+  };
+}
+
+export function expiredGrace1dEmail(
+  name: string | null,
+  userId: string,
+  planLabel: string
+): { subject: string; html: string } {
+  const greet = name ? `Hi ${escape(name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  return {
+    subject: `Your ${planLabel} plan expired yesterday — renew in one click`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>Your <strong>${escape(planLabel)}</strong> plan expired yesterday and your account has dropped to the Free tier.</p>
+      <p>The good news: <strong>all your past exams, notes, and review cards are still there</strong> — you don't lose any data.</p>
+      <p>Pick up where you left off:</p>
+      <p>
+        <a href="${url}/plans" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Renew now →</a>
+      </p>
+      ${unsubFooter(userId, "reminders")}
+    `),
+  };
+}
+
+export function expiredGrace7dEmail(
+  name: string | null,
+  userId: string,
+  planLabel: string
+): { subject: string; html: string } {
+  const greet = name ? `Hi ${escape(name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  return {
+    subject: `Still saved for you — your ${planLabel} progress is waiting`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>It's been a week since your <strong>${escape(planLabel)}</strong> plan expired. We just wanted to say — your account, your exams, your notes, all your progress is still here.</p>
+      <p>If life got busy, no judgement. When you're ready to get back into prep:</p>
+      <p>
+        <a href="${url}/plans" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Pick up where you left off →</a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;">Tip: annual plans save 25% — might be worth it if you're prepping for a board exam.</p>
       ${unsubFooter(userId, "reminders")}
     `),
   };

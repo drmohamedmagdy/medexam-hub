@@ -5,10 +5,13 @@ import {
   sendEmail,
   renewalReminderEmail,
   expiredEmail,
+  expiredGrace1dEmail,
+  expiredGrace7dEmail,
   reengagementEmail,
   communityDigestEmail,
   reviewReminderEmail,
 } from "@/lib/email";
+import type { Plan } from "@/generated/prisma/client";
 
 /**
  * Daily cron triggered by Vercel Cron at 09:00 UTC (see vercel.json).
@@ -41,11 +44,26 @@ export async function GET(req: Request) {
     renewal7d: 0,
     renewal1d: 0,
     expired: 0,
+    downgraded: 0,
+    grace1d: 0,
+    grace7d: 0,
     reengagement: 0,
     communityDigest: 0,
     reviewReminder: 0,
     errors: 0,
   };
+
+  // Helper: look up the last PAID plan a user had so the grace emails can
+  // say "your BASIC plan" instead of "your former plan". Falls back to
+  // BASIC if we can't find a record (shouldn't happen but defensive).
+  async function lookupLastPaidPlan(userId: string): Promise<Plan> {
+    const last = await prisma.paymentOrder.findFirst({
+      where: { userId, status: "PAID", topupKind: null },
+      orderBy: { paidAt: "desc" },
+      select: { plan: true },
+    });
+    return last?.plan ?? "BASIC";
+  }
 
   // -- 7-day reminder
   const window7Start = new Date(now.getTime() + 6 * DAY_MS);
@@ -104,6 +122,75 @@ export async function GET(req: Request) {
     const tpl = expiredEmail(u.name, u.id, PLAN_LIMITS[u.plan].label);
     const r = await sendEmail({ toUserId: u.id, toEmail: u.email, subject: tpl.subject, category: "expired", html: tpl.html });
     if (r.ok) counts.expired += 1; else counts.errors += 1;
+  }
+
+  // -- Auto-downgrade expired paid plans to FREE.
+  //
+  // Without this, users keep full access after their plan ends — we'd
+  // effectively be giving away the product. Runs AFTER the "expired"
+  // email block above so the email still goes out with the right plan
+  // label before we wipe it. planExpiresAt stays set (used below to find
+  // grace-period candidates and surfaced in the UI as "last paid plan
+  // ended on X").
+  const downgrade = await prisma.user.updateMany({
+    where: {
+      plan: { not: "FREE" },
+      planExpiresAt: { lt: now },
+    },
+    data: {
+      plan: "FREE",
+    },
+  });
+  counts.downgraded = downgrade.count;
+
+  // -- Grace 1d: expired between 1-2 days ago. Catches users who missed
+  //    the same-day "expired" email and might still want to renew quickly.
+  const grace1Start = new Date(now.getTime() - 2 * DAY_MS);
+  const grace1End = new Date(now.getTime() - 1 * DAY_MS);
+  const grace1Candidates = await prisma.user.findMany({
+    where: {
+      plan: "FREE",
+      emailReminders: true,
+      planExpiresAt: { gte: grace1Start, lte: grace1End },
+    },
+    select: { id: true, email: true, name: true },
+  });
+  for (const u of grace1Candidates) {
+    const lastPlan = await lookupLastPaidPlan(u.id);
+    const tpl = expiredGrace1dEmail(u.name, u.id, PLAN_LIMITS[lastPlan].label);
+    const r = await sendEmail({
+      toUserId: u.id,
+      toEmail: u.email,
+      subject: tpl.subject,
+      category: "expired_grace_1d",
+      html: tpl.html,
+    });
+    if (r.ok) counts.grace1d += 1; else counts.errors += 1;
+  }
+
+  // -- Grace 7d: last chance. Expired 7-8 days ago, still hasn't renewed.
+  //    After this we leave them alone — re-engagement covers longer dormancy.
+  const grace7Start = new Date(now.getTime() - 8 * DAY_MS);
+  const grace7End = new Date(now.getTime() - 7 * DAY_MS);
+  const grace7Candidates = await prisma.user.findMany({
+    where: {
+      plan: "FREE",
+      emailReminders: true,
+      planExpiresAt: { gte: grace7Start, lte: grace7End },
+    },
+    select: { id: true, email: true, name: true },
+  });
+  for (const u of grace7Candidates) {
+    const lastPlan = await lookupLastPaidPlan(u.id);
+    const tpl = expiredGrace7dEmail(u.name, u.id, PLAN_LIMITS[lastPlan].label);
+    const r = await sendEmail({
+      toUserId: u.id,
+      toEmail: u.email,
+      subject: tpl.subject,
+      category: "expired_grace_7d",
+      html: tpl.html,
+    });
+    if (r.ok) counts.grace7d += 1; else counts.errors += 1;
   }
 
   // -- Re-engagement: signed up >14 days ago, no exam in last 14 days,
