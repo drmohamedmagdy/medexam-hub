@@ -14,6 +14,14 @@ const Body = z.object({
   // Number of months the customer is buying. Defaults to 1 (monthly).
   // Validated against the BILLING_CYCLES whitelist below.
   durationMonths: z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)]).optional(),
+  // Egyptian phone in E.164 format. Required: Paymob's fraud system rejects
+  // intentions with placeholder phones (we used to send +201000000000 as a
+  // fallback and every live transaction got declined).
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+20[0-9]{10}$/, "Phone must be in +20XXXXXXXXXX format")
+    .optional(),
 });
 
 const CHECKOUT_COOKIE = "mxh_checkout";
@@ -24,10 +32,27 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return new NextResponse("Invalid request", { status: 400 });
 
-  const { plan, promoCode } = parsed.data;
+  const { plan, promoCode, phone: phoneInput } = parsed.data;
   const months: BillingCycle = isBillingCycle(parsed.data.durationMonths)
     ? parsed.data.durationMonths
     : 1;
+
+  // Resolve phone: prefer the value the user just typed at checkout, fall
+  // back to whatever's on their profile. Save the new one if provided so
+  // they don't have to re-enter it next time.
+  const phone = phoneInput ?? user.phone ?? null;
+  if (!phone) {
+    return NextResponse.json(
+      { error: "Phone number is required for payment. Please enter it on the checkout page." },
+      { status: 400 }
+    );
+  }
+  if (phoneInput && phoneInput !== user.phone) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { phone: phoneInput },
+    }).catch(() => {});
+  }
   const cfg = PLAN_LIMITS[plan];
   const cyclePrice = priceForCycle(plan, months);
   // For the order, originalCents is the pre-promo cycle total. Promos still
@@ -117,7 +142,7 @@ export async function POST(req: Request) {
         methods: ["card", "wallet"],
         description: `${cfg.label} plan — MedExam Hub`,
         externalOrderId: order.id,
-        billing: { firstName, lastName, email: user.email },
+        billing: { firstName, lastName, email: user.email, phoneNumber: phone },
         redirectUrl: `${baseUrl}/payment/return`,
       });
       return NextResponse.json({ url: intention.checkoutUrl });

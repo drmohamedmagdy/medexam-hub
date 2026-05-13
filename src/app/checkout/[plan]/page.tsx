@@ -140,6 +140,7 @@ export default async function CheckoutPage({
           <CheckoutForm
             plan={plan}
             t={t}
+            initialPhone={user.phone ?? ""}
           />
 
           <p className="mt-6 text-xs text-zinc-500">

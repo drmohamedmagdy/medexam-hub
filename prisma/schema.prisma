@@ -49,6 +49,10 @@ model User {
   email                 String        @unique
   emailVerifiedAt       DateTime?
   name                  String?
+  // Egyptian phone in E.164 format (e.g. +201012345678). Collected at
+  // checkout so we can send real billing data to Paymob — placeholder
+  // numbers trigger bank-level fraud declines.
+  phone                 String?
   passwordHash          String
   plan                  Plan          @default(FREE)
   planStartedAt         DateTime?

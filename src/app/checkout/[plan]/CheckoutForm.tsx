@@ -20,14 +20,32 @@ type AppliedPromo = {
 
 type CheckoutT = Translations["checkout"];
 
+// Egyptian phone in E.164: +20 followed by 10 digits.
+const EG_PHONE_RE = /^\+20[0-9]{10}$/;
+
+function normalizePhone(raw: string): string {
+  // Accept user input in any common form and normalise to +20XXXXXXXXXX.
+  //   01012345678        → +201012345678
+  //   201012345678       → +201012345678
+  //   +20 10 1234 5678   → +201012345678
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("20") && digits.length >= 12) return `+${digits.slice(0, 12)}`;
+  if (digits.startsWith("0") && digits.length >= 11) return `+20${digits.slice(1, 11)}`;
+  if (digits.length === 10) return `+20${digits}`;
+  return raw.trim();
+}
+
 export default function CheckoutForm({
   plan,
   t,
+  initialPhone,
 }: {
   plan: Plan;
   t: CheckoutT;
+  initialPhone: string;
 }) {
   const [months, setMonths] = useState<BillingCycle>(1);
+  const [phone, setPhone] = useState(initialPhone);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
@@ -60,7 +78,14 @@ export default function CheckoutForm({
   const finalAmount = Math.round(finalCents / 100);
   const effectivePromoCode = promo?.code ?? (promoInput.trim() || null);
 
+  const normalizedPhone = normalizePhone(phone);
+  const phoneValid = EG_PHONE_RE.test(normalizedPhone);
+
   async function handlePay() {
+    if (!phoneValid) {
+      setError("Please enter a valid Egyptian mobile number (11 digits starting with 01).");
+      return;
+    }
     setPending(true);
     setError(null);
     try {
@@ -71,6 +96,7 @@ export default function CheckoutForm({
           plan,
           promoCode: effectivePromoCode,
           durationMonths: months,
+          phone: normalizedPhone,
         }),
       });
       if (!res.ok) {
@@ -174,6 +200,37 @@ export default function CheckoutForm({
 
       {/* Total + Paymob CTA */}
       <div className="space-y-4">
+        {/* Phone is required — banks decline placeholder phone numbers. */}
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium">
+            Mobile number <span className="text-red-600">*</span>
+          </label>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Required by the bank. Use your real number (the one tied to your card or
+            wallet) — fake numbers cause the bank to decline the payment.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-medium dark:border-zinc-700 dark:bg-zinc-800">
+              🇪🇬 +20
+            </span>
+            <input
+              id="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="1012345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            />
+          </div>
+          {phone && !phoneValid && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+              Enter 11 digits starting with 01 (e.g. 01012345678).
+            </p>
+          )}
+        </div>
+
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
           <div className="flex items-start gap-3">
             <span className="text-2xl" aria-hidden>💳</span>
@@ -210,10 +267,14 @@ export default function CheckoutForm({
 
         <button
           onClick={handlePay}
-          disabled={pending}
+          disabled={pending || !phoneValid}
           className="w-full rounded-md bg-blue-600 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5"
         >
-          {pending ? t.cardRedirecting : t.cardPay.replace("{price}", formatPrice(finalAmount))}
+          {pending
+            ? t.cardRedirecting
+            : !phoneValid
+              ? "Enter your mobile number to continue"
+              : t.cardPay.replace("{price}", formatPrice(finalAmount))}
         </button>
       </div>
     </div>
