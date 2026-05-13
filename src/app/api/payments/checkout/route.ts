@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { requireUser } from "@/lib/auth";
@@ -7,6 +7,7 @@ import { PAYMOB_LINKS, newCheckoutToken } from "@/lib/paymob";
 import { createPaymentIntention, isPaymobConfigured } from "@/lib/paymob-intention";
 import { PLAN_LIMITS, priceForCycle, isBillingCycle, type BillingCycle } from "@/lib/plans";
 import { validatePromoCode } from "@/lib/promo";
+import { rateLimit, clientIp, tooManyRequests } from "@/lib/rate-limit";
 
 const Body = z.object({
   plan: z.enum(["BASIC", "PRO", "PREMIUM", "RESEARCHER"]),
@@ -27,8 +28,19 @@ const Body = z.object({
 const CHECKOUT_COOKIE = "mxh_checkout";
 const COOKIE_TTL_SEC = 30 * 60;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const user = await requireUser();
+
+  // Rate limit checkout creation: 10 intentions per user per 5 min. A real
+  // buyer needs at most 2-3 to clear a card decline / try wallet. Higher
+  // volumes are bots scraping pricing or fuzzing the body.
+  const rl = rateLimit({
+    key: `checkout:${user.id}:${clientIp(req)}`,
+    limit: 10,
+    windowMs: 5 * 60_000,
+  });
+  if (!rl.ok) return tooManyRequests(rl.retryAfterSec);
+
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return new NextResponse("Invalid request", { status: 400 });
 

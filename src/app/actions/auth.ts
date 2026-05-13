@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { createSession, destroySession, getCurrentUser, hashPassword, verifyPassword } from "@/lib/auth";
 import {
@@ -18,6 +19,20 @@ import {
   findUserByReferralCode,
   SIGNUP_BONUS_CREDITS,
 } from "@/lib/credits";
+import { rateLimit } from "@/lib/rate-limit";
+
+// Server actions don't get a Request object; pull the client IP from the
+// forwarded headers Vercel sets. Best-effort — if proxies strip the header
+// we fall back to a single shared bucket which still slows brute force.
+async function clientIpFromHeaders(): Promise<string> {
+  const h = await headers();
+  const xff = h.get("x-forwarded-for");
+  if (xff) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return h.get("x-real-ip") ?? "unknown";
+}
 
 const SignupSchema = z.object({
   name: z.string().min(2).max(80).trim(),
@@ -49,6 +64,17 @@ function safeNextRedirect(raw: FormDataEntryValue | null): string {
 }
 
 export async function signupAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  // 5 signups per IP per hour — prevents bot account creation.
+  const ip = await clientIpFromHeaders();
+  const rl = rateLimit({
+    key: `signup:${ip}`,
+    limit: 5,
+    windowMs: 60 * 60_000,
+  });
+  if (!rl.ok) {
+    return { error: `Too many signup attempts. Try again in ${Math.ceil(rl.retryAfterSec / 60)} min.` };
+  }
+
   const parsed = SignupSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -141,6 +167,18 @@ export async function resendVerificationAction(
 }
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  // 10 login attempts per IP per 15 min — slows password-spraying without
+  // locking out a forgetful real user.
+  const ip = await clientIpFromHeaders();
+  const rl = rateLimit({
+    key: `login:${ip}`,
+    limit: 10,
+    windowMs: 15 * 60_000,
+  });
+  if (!rl.ok) {
+    return { error: `Too many login attempts. Try again in ${Math.ceil(rl.retryAfterSec / 60)} min.` };
+  }
+
   const parsed = LoginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -182,6 +220,19 @@ export async function requestPasswordResetAction(
   _prev: RequestResetState,
   formData: FormData
 ): Promise<RequestResetState> {
+  // 5 reset requests per IP per hour — prevents using the endpoint to
+  // spam target inboxes / DoS our Resend quota.
+  const ip = await clientIpFromHeaders();
+  const rl = rateLimit({
+    key: `reset:${ip}`,
+    limit: 5,
+    windowMs: 60 * 60_000,
+  });
+  // Silently swallow the rate limit too — we already always return ok:true
+  // to avoid email-enumeration; surfacing a rate-limit message would leak
+  // that the attacker was hitting a real endpoint.
+  if (!rl.ok) return { ok: true };
+
   const parsed = RequestResetSchema.safeParse({
     email: formData.get("email"),
   });

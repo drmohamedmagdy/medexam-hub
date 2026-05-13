@@ -4,6 +4,7 @@ import { PLAN_LIMITS } from "@/lib/plans";
 import {
   adminApprovePaymentAction,
   adminRejectPaymentAction,
+  adminRefundPaymentAction,
 } from "@/app/actions/manual-payment";
 
 export const metadata = { title: "Admin — Payments" };
@@ -30,8 +31,8 @@ export default async function AdminPaymentsPage({
 
   const payments = await prisma.paymentOrder.findMany({
     where: {
-      ...(status === "PAID" || status === "PENDING" || status === "FAILED"
-        ? { status: status as "PAID" | "PENDING" | "FAILED" }
+      ...(status === "PAID" || status === "PENDING" || status === "FAILED" || status === "REFUNDED"
+        ? { status: status as "PAID" | "PENDING" | "FAILED" | "REFUNDED" }
         : {}),
       ...(methodFilter === "CARD" || methodFilter === "VODAFONE_CASH" || methodFilter === "INSTAPAY"
         ? { paymentMethod: methodFilter as "CARD" | "VODAFONE_CASH" | "INSTAPAY" }
@@ -182,6 +183,7 @@ export default async function AdminPaymentsPage({
         <FilterChip href="/admin/payments?status=PAID" active={status === "PAID"} label="Paid" />
         <FilterChip href="/admin/payments?status=PENDING" active={status === "PENDING"} label="Pending" />
         <FilterChip href="/admin/payments?status=FAILED" active={status === "FAILED"} label="Failed" />
+        <FilterChip href="/admin/payments?status=REFUNDED" active={status === "REFUNDED"} label="Refunded" />
         <span className="mx-1 text-zinc-300">|</span>
         <FilterChip href="/admin/payments?method=CARD" active={methodFilter === "CARD"} label="Card" />
         <FilterChip
@@ -210,6 +212,7 @@ export default async function AdminPaymentsPage({
                   <th className="px-4 py-3 text-start">Method</th>
                   <th className="px-4 py-3 text-end">Amount</th>
                   <th className="px-4 py-3 text-end">Status</th>
+                  <th className="px-4 py-3 text-end" aria-label="Actions"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -257,11 +260,28 @@ export default async function AdminPaymentsPage({
                             ? "bg-emerald-100 text-emerald-800"
                             : p.status === "FAILED"
                               ? "bg-red-100 text-red-800"
-                              : "bg-amber-100 text-amber-800"
+                              : p.status === "REFUNDED"
+                                ? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+                                : "bg-amber-100 text-amber-800"
                         }`}
                       >
                         {p.status.toLowerCase()}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-end">
+                      {p.status === "PAID" && (
+                        <form action={adminRefundPaymentAction} className="inline">
+                          <input type="hidden" name="id" value={p.id} />
+                          <input type="hidden" name="reason" value="Refunded by admin" />
+                          <button
+                            type="submit"
+                            className="rounded-md border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                            title="Mark this order as refunded in our DB. Issue the actual external refund first via Paymob dashboard or your bank."
+                          >
+                            ↩ Refund
+                          </button>
+                        </form>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -120,6 +120,35 @@ export default async function MockResultsPage({
         />
       </section>
 
+      {/* Certificate of completion — shown to passers (≥70%) on completed
+          mocks only. Links to a print-friendly cert page they can save as PDF. */}
+      {mock.status === "completed" && overallPct !== null && overallPct >= 70 && (
+        <section className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl" aria-hidden>
+                🎓
+              </span>
+              <div>
+                <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                  Congratulations — you passed!
+                </p>
+                <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                  Score {overallPct}% on {mock.templateLabel}. Download your
+                  certificate of completion.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/mock/${mock.id}/certificate`}
+              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              View certificate →
+            </Link>
+          </div>
+        </section>
+      )}
+
       {blockScores.length > 0 && (
         <section className="mt-8">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">

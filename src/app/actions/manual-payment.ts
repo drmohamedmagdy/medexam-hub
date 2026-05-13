@@ -345,3 +345,134 @@ function methodLabel(m: PaymentMethod): string {
   if (m === "INSTAPAY") return "Instapay";
   return "Card";
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: refund a previously-PAID order
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// This only handles the *internal* effects of a refund — marking the order
+// REFUNDED, reverting plan/bonus grants, restoring any credits the user
+// applied. It does NOT move money back to the customer's card or wallet.
+// Issuing the actual refund happens externally:
+//   - Card / wallet via Paymob: Paymob dashboard → Transactions → Refund
+//   - Manual (Vodafone Cash / Instapay): bank transfer or wallet send-back
+//
+// After the operator issues the external refund, they click "Mark refunded"
+// in /admin/payments to call this action, which closes the loop in our DB.
+
+export async function adminRefundPaymentAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const reasonInput = String(formData.get("reason") ?? "").trim().slice(0, 280);
+  if (!id) return;
+
+  const order = await prisma.paymentOrder.findUnique({
+    where: { id },
+    include: { user: { select: { id: true, plan: true } } },
+  });
+  if (!order) return;
+  // Only PAID orders can be refunded — REFUNDED is terminal, PENDING/FAILED
+  // never charged the customer so there's nothing to give back.
+  if (order.status !== PaymentStatus.PAID) return;
+
+  const now = new Date();
+  const reason = reasonInput || "Refunded by admin";
+
+  // Top-up refund: revoke the bonus grant created when this order was
+  // approved. We match by userId + yearMonth + kind + amount since
+  // BonusGrant doesn't link back to the source PaymentOrder.
+  if (order.topupKind) {
+    const product = topupByKind(order.topupKind);
+    const grantAmount = order.topupAmount ?? product?.amount ?? 0;
+    await prisma.$transaction(async (tx) => {
+      await tx.paymentOrder.update({
+        where: { id: order.id },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          reviewedAt: now,
+          reviewedBy: admin.id,
+          rejectionReason: reason,
+        },
+      });
+      if (product && grantAmount > 0 && order.paidAt) {
+        await tx.bonusGrant.deleteMany({
+          where: {
+            userId: order.userId,
+            kind: product.bonusKind,
+            amount: grantAmount,
+            yearMonth: yearMonthOf(order.paidAt),
+            creditsSpent: 0,
+          },
+        });
+      }
+      // Refund any credits the user applied to this order so they can
+      // reuse them on a future purchase. Idempotent: chargeCredits/
+      // awardCredits each row in CreditTransaction means re-running this
+      // would award again — guarded by the status check above.
+      if (order.creditsApplied > 0) {
+        await awardCredits({
+          userId: order.userId,
+          amount: order.creditsApplied,
+          type: "redemption_refund",
+          description: `Refund of top-up order ${order.id.slice(0, 8)}`,
+        });
+      }
+    });
+  } else {
+    // Plan-purchase refund. If this order was the active one extending
+    // the user's plan, revert them to FREE. We approximate "active" as
+    // "user.plan == order.plan AND no newer PAID order exists for them".
+    const hasNewerPaid = await prisma.paymentOrder.findFirst({
+      where: {
+        userId: order.userId,
+        status: PaymentStatus.PAID,
+        topupKind: null,
+        id: { not: order.id },
+        paidAt: { gt: order.paidAt ?? new Date(0) },
+      },
+      select: { id: true },
+    });
+    await prisma.$transaction(async (tx) => {
+      await tx.paymentOrder.update({
+        where: { id: order.id },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          reviewedAt: now,
+          reviewedBy: admin.id,
+          rejectionReason: reason,
+        },
+      });
+      // Only strip the plan if no newer paid order kept it alive.
+      if (!hasNewerPaid && order.user.plan === order.plan) {
+        await tx.user.update({
+          where: { id: order.userId },
+          data: {
+            plan: "FREE",
+            planExpiresAt: now,
+            planCancelledAt: now,
+          },
+        });
+      }
+      if (order.creditsApplied > 0) {
+        await awardCredits({
+          userId: order.userId,
+          amount: order.creditsApplied,
+          type: "redemption_refund",
+          description: `Refund of order ${order.id.slice(0, 8)}`,
+        });
+      }
+    });
+  }
+
+  await createNotification({
+    userId: order.userId,
+    category: "system",
+    emoji: "💸",
+    title: "Refund issued",
+    body: `${(order.amountCents / 100).toLocaleString()} EGP has been refunded. ${reason}`,
+    href: "/account/subscription",
+  });
+
+  revalidatePath("/admin/payments");
+  revalidatePath("/account/subscription");
+}
