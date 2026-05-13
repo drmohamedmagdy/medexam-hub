@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { PLAN_LIMITS, PROMO_DISCOUNT_PCT, formatPrice } from "@/lib/plans";
-import { PAYMOB_LINKS } from "@/lib/paymob";
 import type { Plan } from "@/generated/prisma/client";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import CheckoutForm from "./CheckoutForm";
@@ -57,12 +56,10 @@ export default async function CheckoutPage({
 
   const plan = planUpper as PaidPlan;
   const cfg = PLAN_LIMITS[plan];
-  const cardPaymentReady = !PAYMOB_LINKS[plan]?.includes("CHANGE_ME_");
 
   const locale = await getLocale();
   const allT = getTranslations(locale);
   const t = allT.checkout;
-  const tCredits = allT.credits;
   const subtitle = t.subtitle.replace("{price}", formatPrice(cfg.priceMonthly));
   const promoBadge =
     PROMO_DISCOUNT_PCT > 0 && cfg.originalPriceMonthly
@@ -86,17 +83,6 @@ export default async function CheckoutPage({
         <p className="mt-2 inline-flex items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
           <span aria-hidden>🎉</span>
           <span>{promoBadge}</span>
-        </p>
-      )}
-
-      {!cardPaymentReady && (
-        <p className="mt-3 inline-flex items-start gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-          <span aria-hidden>ℹ️</span>
-          <span>
-            Card payment is being set up for this plan. Please pay via{" "}
-            <strong>Vodafone Cash</strong> or <strong>InstaPay</strong> below — your
-            access activates after admin review (usually within an hour).
-          </span>
         </p>
       )}
 
@@ -155,8 +141,6 @@ export default async function CheckoutPage({
             plan={plan}
             priceMonthly={cfg.priceMonthly}
             t={t}
-            tCredits={tCredits}
-            creditsBalance={user.creditsBalance}
           />
 
           <p className="mt-6 text-xs text-zinc-500">
