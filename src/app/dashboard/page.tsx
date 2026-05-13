@@ -9,6 +9,7 @@ import { getAnalyticsSummary, pickWeakAreas } from "@/lib/analytics";
 import UpgradeBanner from "@/components/UpgradeBanner";
 import VerifyEmailBanner from "@/components/VerifyEmailBanner";
 import WelcomeToast from "@/components/WelcomeToast";
+import DashboardInstallBanner from "@/components/DashboardInstallBanner";
 import { getLocale, getTranslations } from "@/lib/i18n-server";
 import type { Translations } from "@/lib/i18n";
 import type { Plan } from "@/generated/prisma/client";
@@ -110,6 +111,8 @@ export default async function DashboardPage({
       {(!user.emailVerifiedAt || justVerified) && (
         <VerifyEmailBanner email={user.email} justVerified={justVerified} />
       )}
+
+      <DashboardInstallBanner />
 
       <UpgradeBanner
         plan={user.plan}
