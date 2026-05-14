@@ -18,6 +18,15 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+// The inline script in src/app/layout.tsx <head> stashes the prompt on
+// window the moment Chrome fires it — well before React hydrates. We
+// type the global so we can read it safely on mount.
+declare global {
+  interface Window {
+    __mxhInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
+}
+
 function isIos(): boolean {
   if (typeof navigator === "undefined") return false;
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -42,13 +51,23 @@ export default function DashboardInstallBanner() {
       setHideInStandalone(true);
       return;
     }
+    // Adopt anything the early <head> script already captured. Without
+    // this we'd miss the event on fast page loads where Chrome fires
+    // beforeinstallprompt before React mounts.
+    if (window.__mxhInstallPrompt) {
+      setDeferred(window.__mxhInstallPrompt);
+    }
+    // Also listen for later firings (some pages re-trigger it).
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
+      const evt = e as BeforeInstallPromptEvent;
+      window.__mxhInstallPrompt = evt;
+      setDeferred(evt);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     // Clear deferred once installed so we hide on this tab too.
     const onInstalled = () => {
+      window.__mxhInstallPrompt = null;
       setDeferred(null);
       setHideInStandalone(true);
     };
@@ -65,6 +84,10 @@ export default function DashboardInstallBanner() {
     if (deferred) {
       await deferred.prompt();
       await deferred.userChoice;
+      // beforeinstallprompt events are one-shot per Chrome's spec —
+      // null both the local state and the window cache so a second
+      // click doesn't try to re-use a spent event.
+      window.__mxhInstallPrompt = null;
       setDeferred(null);
       return;
     }

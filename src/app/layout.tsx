@@ -205,6 +205,15 @@ export default async function RootLayout({
             __html: JSON.stringify(ORGANIZATION_LD),
           }}
         />
+        {/* Capture beforeinstallprompt the instant Chrome fires it —
+            this runs before React hydrates, so we never miss the event
+            on a fast load. DashboardInstallBanner reads the stashed
+            event on mount and uses it for direct install. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__mxhInstallPrompt=e;});window.addEventListener('appinstalled',function(){window.__mxhInstallPrompt=null;});}catch(_){};})();`,
+          }}
+        />
         {/* Strip browser-extension-injected attributes (Bitdefender's bis_skin_checked, etc.)
             before React hydrates. Dev-only noise; does not affect functionality. */}
         <script
