@@ -2,25 +2,25 @@
 
 import { useEffect, useState } from "react";
 
-// Always-visible "Install as app" button on the dashboard. Stays put so
-// any user — new or returning — can install at any time, not just once.
-// Hides itself only when the user is already inside the installed PWA
-// (display-mode: standalone), since asking someone to install the app
-// they're already using would be silly.
+// Persistent "Install MedExam Hub on your phone?" banner on the dashboard.
+// Shows on every visit until the user actually installs the PWA — there's
+// no dismiss button on purpose. The banner disappears the moment the
+// install completes (appinstalled event) or if we detect the page is
+// already running in the installed app (display-mode: standalone).
 //
-// On Android Chrome / Edge / Samsung Internet, clicking opens the
-// native install dialog via the cached beforeinstallprompt event.
-// On iOS Safari, clicking opens a small popover with the manual
-// Share → Add to Home Screen steps (no programmatic install on iOS).
+// On Android / Chromium: clicking the CTA opens the native install dialog
+// directly via the cached beforeinstallprompt event (captured in <head>
+// before hydration so we never miss it).
+//
+// On iOS Safari: Apple gives no programmatic install API, so we open a
+// modal popover with the manual Share → Add to Home Screen steps. The
+// banner stays until the user installs and revisits in standalone mode.
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-// The inline script in src/app/layout.tsx <head> stashes the prompt on
-// window the moment Chrome fires it — well before React hydrates. We
-// type the global so we can read it safely on mount.
 declare global {
   interface Window {
     __mxhInstallPrompt?: BeforeInstallPromptEvent | null;
@@ -42,22 +42,18 @@ function isStandalone(): boolean {
 
 export default function DashboardInstallBanner() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [hideInStandalone, setHideInStandalone] = useState(false);
-  const [showIosPopover, setShowIosPopover] = useState(false);
+  const [installed, setInstalled] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const ios = isIos();
 
   useEffect(() => {
     if (isStandalone()) {
-      setHideInStandalone(true);
+      setInstalled(true);
       return;
     }
-    // Adopt anything the early <head> script already captured. Without
-    // this we'd miss the event on fast page loads where Chrome fires
-    // beforeinstallprompt before React mounts.
     if (window.__mxhInstallPrompt) {
       setDeferred(window.__mxhInstallPrompt);
     }
-    // Also listen for later firings (some pages re-trigger it).
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       const evt = e as BeforeInstallPromptEvent;
@@ -65,11 +61,11 @@ export default function DashboardInstallBanner() {
       setDeferred(evt);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    // Clear deferred once installed so we hide on this tab too.
     const onInstalled = () => {
       window.__mxhInstallPrompt = null;
       setDeferred(null);
-      setHideInStandalone(true);
+      setInstalled(true);
+      setShowInstructions(false);
     };
     window.addEventListener("appinstalled", onInstalled);
     return () => {
@@ -78,60 +74,64 @@ export default function DashboardInstallBanner() {
     };
   }, []);
 
-  if (hideInStandalone) return null;
+  if (installed) return null;
 
-  const onClick = async () => {
+  const onInstall = async () => {
     if (deferred) {
       await deferred.prompt();
-      await deferred.userChoice;
-      // beforeinstallprompt events are one-shot per Chrome's spec —
-      // null both the local state and the window cache so a second
-      // click doesn't try to re-use a spent event.
+      const choice = await deferred.userChoice;
+      // beforeinstallprompt is one-shot per Chrome's spec. Null it so a
+      // second click doesn't try to re-use a spent event.
       window.__mxhInstallPrompt = null;
       setDeferred(null);
+      if (choice.outcome === "accepted") {
+        // appinstalled event will fire and hide the banner; here we just
+        // optimistically dismiss in case the event is slow.
+        setInstalled(true);
+      }
       return;
     }
-    if (ios) {
-      setShowIosPopover(true);
-      return;
-    }
-    // Desktop browser without beforeinstallprompt support — tell the
-    // user how to install manually via the browser menu.
-    setShowIosPopover(true);
+    // iOS or desktop without beforeinstallprompt — show manual steps.
+    setShowInstructions(true);
   };
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/30 sm:px-5">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-white text-2xl shadow-sm dark:bg-zinc-900">
-            📱
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-              Install MedExam Hub on your phone
-            </p>
-            <p className="text-xs text-blue-800 dark:text-blue-300">
-              One-tap home-screen icon, full-screen mode, faster cold starts.
-            </p>
+      <div className="mb-6 overflow-hidden rounded-2xl border-2 border-blue-500 bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-5 shadow-md dark:border-blue-700 dark:from-blue-950/40 dark:via-zinc-900 dark:to-indigo-950/40 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <span className="grid h-14 w-14 flex-none place-items-center rounded-2xl bg-white text-3xl shadow-sm dark:bg-zinc-900">
+              📱
+            </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-blue-900 dark:text-blue-200 sm:text-xl">
+                Install MedExam Hub on your phone
+              </h2>
+              <p className="mt-1 text-sm text-blue-800 dark:text-blue-300">
+                Add MedExam Hub to your home screen for one-tap access,
+                full-screen mode, faster cold starts, and offline-safe
+                asset caching. No app store, no download — installs
+                straight from the browser.
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={onInstall}
+            className="flex-none rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-blue-700 sm:px-6"
+          >
+            Install now
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClick}
-          className="flex-none rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-        >
-          {deferred || ios ? "Install" : "Show me how"}
-        </button>
       </div>
 
-      {showIosPopover && (
+      {showInstructions && (
         <div
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 pb-6 pt-20 sm:items-center sm:p-4"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowIosPopover(false);
+            if (e.target === e.currentTarget) setShowInstructions(false);
           }}
         >
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-zinc-900 sm:p-6">
@@ -164,17 +164,16 @@ export default function DashboardInstallBanner() {
                   Pick <span className="font-semibold">Install app</span> or{" "}
                   <span className="font-semibold">Add to Home Screen</span>.
                 </li>
-                <li>Confirm — the app icon appears on your home screen.</li>
+                <li>
+                  Confirm — the app icon appears on your home screen and the
+                  banner here will disappear next time you open the app.
+                </li>
               </ol>
             )}
-            <p className="mt-4 text-xs text-zinc-500">
-              Once installed, open MedExam Hub from your home screen for a
-              full-screen, app-like experience.
-            </p>
             <div className="mt-5 flex justify-end">
               <button
                 type="button"
-                onClick={() => setShowIosPopover(false)}
+                onClick={() => setShowInstructions(false)}
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Got it
