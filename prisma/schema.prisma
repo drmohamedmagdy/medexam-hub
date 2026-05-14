@@ -1085,6 +1085,38 @@ model StatsAnalysis {
   @@index([fileId])
 }
 
+// Scheduled future broadcast to the Telegram channel. The cron endpoint
+// /api/cron/scheduled-broadcasts runs at 09:00 / 14:00 / 20:00 Cairo
+// time (06:00 / 11:00 / 17:00 UTC) and sends any rows where
+// scheduledFor <= now AND sent=false, then flips sent=true.
+//
+// Populated by scripts/seed-scheduled-broadcasts.ts which lays out
+// 30 entries (3/day × 10 days) mixing study tips, sample questions,
+// and promo nudges. After the 10-day window expires, the table is
+// empty and the cron is a no-op until reseeded.
+model ScheduledBroadcast {
+  id           String   @id @default(cuid())
+  scheduledFor DateTime
+  // "advice" | "question" | "promo" — drives the icon/styling shown
+  // in /admin/scheduled-broadcasts and any analytics we want to slice.
+  kind         String
+  text         String   @db.Text
+  imageUrl     String?
+  ctaLabel     String?
+  ctaUrl       String?
+  sent         Boolean  @default(false)
+  sentAt       DateTime?
+  // Populated only on failure — pulled from Telegram API's
+  // description field. Successful sends leave this null.
+  errorMessage String?
+  // The BroadcastLog row created on send, for joining audit trails.
+  broadcastLogId String?
+  createdAt    DateTime @default(now())
+
+  @@index([sent, scheduledFor])
+  @@index([scheduledFor])
+}
+
 // Audit trail for every Telegram broadcast we send to the channel —
 // either auto-posted (QOTD from cron) or manually triggered by an admin
 // from /admin/broadcast. Lets us see what went out and when, and gives
