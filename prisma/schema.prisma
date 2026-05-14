@@ -1085,6 +1085,27 @@ model StatsAnalysis {
   @@index([fileId])
 }
 
+// Audit trail for every Telegram broadcast we send to the channel —
+// either auto-posted (QOTD from cron) or manually triggered by an admin
+// from /admin/broadcast. Lets us see what went out and when, and gives
+// the admin page a "last 20 broadcasts" feed.
+model BroadcastLog {
+  id            String   @id @default(cuid())
+  // "qotd_auto" | "admin_manual"
+  kind          String
+  text          String   @db.Text
+  imageUrl      String?
+  // Telegram's message_id within the channel — useful if we ever want
+  // to edit/delete a post programmatically.
+  telegramMessageId Int?
+  ok            Boolean  @default(true)
+  errorMessage  String?
+  sentBy        String?  // userId for admin sends; null for cron
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // Student ambassador applications. Public form at /ambassador captures
 // these; admin reviews in /admin/ambassadors and decides who gets a
 // free Pro plan in exchange for promoting MedExam Hub at their school.

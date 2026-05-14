@@ -15,6 +15,11 @@ import {
   communityDigestEmail,
   reviewReminderEmail,
 } from "@/lib/email";
+import {
+  sendTelegramMessage,
+  isTelegramConfigured,
+  escapeTelegramHtml,
+} from "@/lib/telegram";
 import type { Plan } from "@/generated/prisma/client";
 import { ensureTodaysQuestion } from "@/lib/daily-question";
 
@@ -66,12 +71,80 @@ export async function GET(req: Request) {
   // Question of the Day — runs first so subsequent /qotd visitors today
   // get a populated question. Wrapped in try/catch so an OpenAI hiccup
   // doesn't block the rest of the cron from running.
+  let qotdId: string | null = null;
   try {
-    const { created } = await ensureTodaysQuestion();
+    const { created, id } = await ensureTodaysQuestion();
     counts.qotdGenerated = created;
+    qotdId = id;
   } catch (err) {
     console.error("[cron-daily] QOTD generation failed", err);
     counts.errors += 1;
+  }
+
+  // Telegram channel auto-post. Only fires when the QOTD was *just*
+  // created this run (counts.qotdGenerated === true) so we don't
+  // duplicate a post if the cron retries mid-day. Skipped entirely if
+  // Telegram env vars aren't set.
+  if (counts.qotdGenerated && qotdId && isTelegramConfigured()) {
+    try {
+      const q = await prisma.dailyQuestion.findUnique({
+        where: { id: qotdId },
+        select: {
+          specialty: true,
+          prompt: true,
+          optionsJson: true,
+          correctId: true,
+          explanation: true,
+          learningPoint: true,
+        },
+      });
+      if (q) {
+        const options = JSON.parse(q.optionsJson) as Array<{ id: string; text: string }>;
+        const correctText = options.find((o) => o.id === q.correctId)?.text ?? "—";
+        const baseUrl = process.env.PUBLIC_BASE_URL ?? "https://medexamhub.org";
+        const optionsBlock = options
+          .map((o, i) => `${String.fromCharCode(65 + i)}. ${escapeTelegramHtml(o.text)}`)
+          .join("\n");
+        const text = [
+          `🩺 <b>Question of the Day</b> · ${escapeTelegramHtml(q.specialty || "Mixed")}`,
+          "",
+          escapeTelegramHtml(q.prompt),
+          "",
+          optionsBlock,
+          "",
+          `<b>Answer:</b> <span class="tg-spoiler">${escapeTelegramHtml(correctText)}</span>`,
+          "",
+          `<i>${escapeTelegramHtml((q.explanation ?? "").slice(0, 600))}</i>`,
+          q.learningPoint ? `\n💡 ${escapeTelegramHtml(q.learningPoint)}` : "",
+          "",
+          `👉 Get 5,000+ AI-generated questions across every specialty at ${baseUrl}`,
+          `🎁 Use code <code>STUDY30</code> for 30% off any plan`,
+        ].join("\n");
+
+        const result = await sendTelegramMessage({
+          text,
+          parseMode: "HTML",
+          disablePreview: true,
+          inlineButtons: [
+            { text: "Practise full bank →", url: `${baseUrl}/qotd` },
+            { text: "Sign up free", url: `${baseUrl}/signup` },
+          ],
+        });
+        await prisma.broadcastLog.create({
+          data: {
+            kind: "qotd_auto",
+            text,
+            telegramMessageId: result.ok ? result.messageId : null,
+            ok: result.ok,
+            errorMessage: result.ok ? null : result.error,
+          },
+        });
+        if (!result.ok) counts.errors += 1;
+      }
+    } catch (err) {
+      console.error("[cron-daily] Telegram QOTD post failed", err);
+      counts.errors += 1;
+    }
   }
 
   // Helper: look up the last PAID plan a user had so the grace emails can
