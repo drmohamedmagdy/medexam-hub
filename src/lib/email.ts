@@ -14,6 +14,7 @@ export type EmailCategory =
   | "trial_ending"
   | "trial_ended"
   | "pre_renewal_value"
+  | "ambassador_recruit"
   | "renewal_7d"
   | "renewal_1d"
   | "expired"
@@ -479,6 +480,49 @@ export function preRenewalValueEmail(args: {
       </p>
       <p style="font-size:13px;color:#6b7280;">Annual plan saves you 25% — might be worth the lock-in if you&apos;re prepping for a board exam.</p>
       ${unsubFooter(args.userId, "reminders")}
+    `),
+  };
+}
+
+export function ambassadorRecruitEmail(args: {
+  name: string | null;
+  userId: string;
+}): { subject: string; html: string } {
+  const greet = args.name ? `Hi ${escape(args.name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  return {
+    subject: "🎓 Become a MedExam Hub campus ambassador (free Pro for the year)",
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>We&apos;re recruiting <strong>one ambassador per Egyptian medical school</strong> — and we&apos;d love to hear from you.</p>
+
+      <p style="margin-top:18px;"><strong>What you get</strong></p>
+      <ul style="padding-left:20px;margin:8px 0;color:#374151;">
+        <li>🎁 <strong>Free Pro plan</strong> for the full academic year (~8,400 EGP value)</li>
+        <li>💰 <strong>Personal promo code</strong> giving your batch 20% off — and you earn referral credit on every signup</li>
+        <li>⚡ <strong>Early access</strong> to new features (mock exam templates, specialty content)</li>
+        <li>💼 <strong>LinkedIn recommendation</strong> at year-end</li>
+        <li>🎓 <strong>Ambassador badge</strong> on your MedExam Hub profile</li>
+      </ul>
+
+      <p style="margin-top:18px;"><strong>What we ask</strong></p>
+      <ul style="padding-left:20px;margin:8px 0;color:#374151;">
+        <li>Post a weekly question of the week from MedExam Hub in your batch&apos;s study groups (we provide the content)</li>
+        <li>Run one 10-min intro at a study group meeting per semester</li>
+        <li>Be available for 15 min/month of feedback calls about new features</li>
+      </ul>
+
+      <p style="margin-top:24px;">Application takes <strong>3 minutes</strong>. We review weekly and reply within 2 weeks.</p>
+
+      <p style="margin-top:16px;">
+        <a href="${url}/ambassador" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;">Apply to be an ambassador →</a>
+      </p>
+
+      <p style="font-size:13px;color:#6b7280;margin-top:18px;">
+        We&apos;re especially looking for active students in Telegram / Facebook study groups, top scorers, and anyone already known for sharing good resources with their batch.
+      </p>
+
+      ${unsubFooter(args.userId, "marketing")}
     `),
   };
 }
