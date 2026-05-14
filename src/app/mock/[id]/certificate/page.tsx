@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import PrintButton from "./PrintButton";
+import ShareButtons from "./ShareButtons";
 
 // Certificate of completion for mock exams scored ≥70%. Renders a
 // print-friendly page; users click "Print / Save as PDF" to get a
@@ -184,6 +185,8 @@ export default async function CertificatePage({
             </div>
           </div>
         </div>
+
+        <ShareButtons templateLabel={mock.templateLabel} score={score} />
 
         <p className="no-print mt-6 text-center text-xs text-zinc-500">
           Tip: in the Print dialog, choose <span className="font-semibold">Save as PDF</span>{" "}

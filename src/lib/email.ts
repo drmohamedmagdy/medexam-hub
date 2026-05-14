@@ -11,6 +11,9 @@ export type EmailCategory =
   | "abandoned_cart"
   | "qotd"
   | "year_in_review"
+  | "trial_ending"
+  | "trial_ended"
+  | "pre_renewal_value"
   | "renewal_7d"
   | "renewal_1d"
   | "expired"
@@ -391,6 +394,91 @@ export function paymentReceiptEmail(args: {
       <p style="font-size:12px;color:#6b7280;margin-top:24px;">
         Keep this email — the linked invoice above is printable as a PDF. MedExam Hub, Cairo, Egypt. Contact <a href="mailto:info@medexamhub.org" style="color:#2563eb;">info@medexamhub.org</a> for refund requests (see our <a href="${url}/refund" style="color:#2563eb;">refund policy</a>).
       </p>
+    `),
+  };
+}
+
+export function trialEndingEmail(args: {
+  name: string | null;
+  userId: string;
+  daysLeft: number;
+  questionsAnswered: number;
+}): { subject: string; html: string } {
+  const greet = args.name ? `Hi ${escape(args.name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  const dayWord = args.daysLeft === 1 ? "day" : "days";
+  return {
+    subject: `Your Pro trial ends in ${args.daysLeft} ${dayWord}`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>Your <strong>7-day Pro trial</strong> ends in ${args.daysLeft} ${dayWord}. You&apos;ve answered <strong>${args.questionsAnswered.toLocaleString()}</strong> questions so far — momentum is real.</p>
+      <p>Keep the Pro quota (1,500 questions/month, image generation, PDF export):</p>
+      <p>
+        <a href="${url}/plans" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Upgrade to keep Pro →</a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;">Or pick the smaller Basic plan (299 EGP/mo, 400 questions). Annual billing saves 25%.</p>
+      ${unsubFooter(args.userId, "reminders")}
+    `),
+  };
+}
+
+export function trialEndedEmail(args: {
+  name: string | null;
+  userId: string;
+  questionsAnswered: number;
+}): { subject: string; html: string } {
+  const greet = args.name ? `Hi ${escape(args.name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  return {
+    subject: `Your Pro trial ended — your account is now on Free`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>Your <strong>7-day Pro trial</strong> has ended. You&apos;ve been moved to the <strong>Free tier</strong> (20 questions/month).</p>
+      <p>The good news: your <strong>${args.questionsAnswered.toLocaleString()} answered questions, exam history, study notes, and review cards are all still here</strong>. Nothing's deleted.</p>
+      <p>Get back to Pro:</p>
+      <p>
+        <a href="${url}/plans" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Choose a plan →</a>
+      </p>
+      ${unsubFooter(args.userId, "reminders")}
+    `),
+  };
+}
+
+export function preRenewalValueEmail(args: {
+  name: string | null;
+  userId: string;
+  planLabel: string;
+  expiresAt: Date;
+  daysLeft: number;
+  questionsThisMonth: number;
+  examsThisMonth: number;
+  avgScore: number | null;
+  bestSpecialty: string | null;
+  reviewCardsCleared: number;
+}): { subject: string; html: string } {
+  const greet = args.name ? `Hi ${escape(args.name.split(" ")[0])},` : "Hi there,";
+  const url = appBaseUrl();
+  const scoreLine = args.avgScore !== null
+    ? `your average score climbed to <strong>${args.avgScore}%</strong>${args.bestSpecialty ? `, strongest in <strong>${escape(args.bestSpecialty)}</strong>` : ""}.`
+    : "you've been steadily building your question bank.";
+  return {
+    subject: `Don't lose your streak — your ${args.planLabel} plan renews in ${args.daysLeft} days`,
+    html: wrapHtml(`
+      <h1 style="font-size:22px;margin:0 0 16px;">${greet}</h1>
+      <p>Quick recap of what you did this month on your <strong>${escape(args.planLabel)}</strong> plan:</p>
+      <ul style="padding-left:20px;margin:12px 0;color:#374151;">
+        <li><strong>${args.questionsThisMonth.toLocaleString()}</strong> questions answered across <strong>${args.examsThisMonth}</strong> exams</li>
+        <li>${scoreLine}</li>
+        ${args.reviewCardsCleared > 0
+          ? `<li><strong>${args.reviewCardsCleared.toLocaleString()}</strong> review cards cleared from your spaced-repetition deck</li>`
+          : ""}
+      </ul>
+      <p>Your plan renews on <strong>${args.expiresAt.toLocaleDateString()}</strong> — <strong>${args.daysLeft} days</strong> from now. Keep going:</p>
+      <p>
+        <a href="${url}/account/subscription" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">Renew now →</a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;">Annual plan saves you 25% — might be worth the lock-in if you&apos;re prepping for a board exam.</p>
+      ${unsubFooter(args.userId, "reminders")}
     `),
   };
 }

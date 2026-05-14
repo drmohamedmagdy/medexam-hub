@@ -58,6 +58,14 @@ model User {
   planStartedAt         DateTime?
   planExpiresAt         DateTime?
   planCancelledAt       DateTime?
+  // Set on signup to grant new users 7 days of Pro before they revert to
+  // FREE. Distinct from planExpiresAt because trial expiry doesn't fire
+  // the same emails (no "renew your plan" — they were never paying).
+  // The same daily cron that handles auto-downgrade walks this too.
+  trialEndsAt           DateTime?
+  // True if the user has ever used the signup trial. Prevents re-granting
+  // the trial by deleting and recreating an account with the same email.
+  trialUsed             Boolean       @default(false)
   // Email preferences
   emailMarketing        Boolean       @default(true)
   emailReminders        Boolean       @default(true)
@@ -69,6 +77,7 @@ model User {
   creditsBalance        Int           @default(0)
   // Last sent timestamps so the daily cron doesn't double-send within a window
   lastReminderSentAt    DateTime?
+  lastPreRenewalSentAt  DateTime?
   lastReengagementAt    DateTime?
   lastReviewReminderAt  DateTime?
   // Per-user defaults remembered from the last exam they generated
@@ -1074,4 +1083,33 @@ model StatsAnalysis {
 
   @@index([workspaceId, createdAt])
   @@index([fileId])
+}
+
+// Student ambassador applications. Public form at /ambassador captures
+// these; admin reviews in /admin/ambassadors and decides who gets a
+// free Pro plan in exchange for promoting MedExam Hub at their school.
+model AmbassadorApplication {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  phone           String?
+  medicalSchool   String
+  yearOfStudy     String   // "1st year" .. "intern" .. "resident" etc.
+  socialLinks     String?  // free-form: Telegram handle, Instagram, etc.
+  motivation      String   // why they want to be an ambassador
+  // Admin workflow: PENDING → APPROVED / REJECTED. Approved ambassadors
+  // get a Pro plan grant manually (we don't auto-upgrade in case
+  // the email doesn't match an existing User row).
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  reviewerNotes   String?
+  // Optional link to a User account if the applicant later signs up
+  // with the same email. Set lazily.
+  linkedUserId    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
 }

@@ -8,6 +8,9 @@ import {
   expiredGrace1dEmail,
   expiredGrace7dEmail,
   abandonedCartEmail,
+  trialEndingEmail,
+  trialEndedEmail,
+  preRenewalValueEmail,
   reengagementEmail,
   communityDigestEmail,
   reviewReminderEmail,
@@ -45,11 +48,14 @@ export async function GET(req: Request) {
   const counts = {
     renewal7d: 0,
     renewal1d: 0,
+    preRenewal: 0,
     expired: 0,
     downgraded: 0,
     grace1d: 0,
     grace7d: 0,
     abandonedCart: 0,
+    trialEnding: 0,
+    trialEnded: 0,
     qotdGenerated: false,
     reengagement: 0,
     communityDigest: 0,
@@ -80,7 +86,10 @@ export async function GET(req: Request) {
     return last?.plan ?? "BASIC";
   }
 
-  // -- 7-day reminder
+  // -- 7-day reminder.
+  // Excludes trial users — we don't want to bug them about "renewing"
+  // their free trial; they didn't pay for it. The pre-renewal value
+  // email block below also explicitly skips trial users.
   const window7Start = new Date(now.getTime() + 6 * DAY_MS);
   const window7End = new Date(now.getTime() + 7 * DAY_MS);
   const due7d = await prisma.user.findMany({
@@ -88,6 +97,7 @@ export async function GET(req: Request) {
       plan: { not: "FREE" },
       planCancelledAt: null,
       emailReminders: true,
+      trialEndsAt: null,
       planExpiresAt: { gte: window7Start, lte: window7End },
     },
     select: { id: true, email: true, name: true, plan: true, planExpiresAt: true },
@@ -101,7 +111,7 @@ export async function GET(req: Request) {
     } else counts.errors += 1;
   }
 
-  // -- 1-day reminder
+  // -- 1-day reminder (trial users excluded — see 7-day note).
   const window1Start = new Date(now.getTime() + 0 * DAY_MS);
   const window1End = new Date(now.getTime() + 1 * DAY_MS);
   const due1d = await prisma.user.findMany({
@@ -109,6 +119,7 @@ export async function GET(req: Request) {
       plan: { not: "FREE" },
       planCancelledAt: null,
       emailReminders: true,
+      trialEndsAt: null,
       planExpiresAt: { gte: window1Start, lte: window1End },
     },
     select: { id: true, email: true, name: true, plan: true, planExpiresAt: true },
@@ -122,13 +133,162 @@ export async function GET(req: Request) {
     } else counts.errors += 1;
   }
 
-  // -- Expired (within last 24 hours, plan still set to a paid tier)
+  // -- Trial ending (2 days out): nudge with personalised value summary.
+  const trialEndStart = new Date(now.getTime() + 1 * DAY_MS);
+  const trialEndEnd = new Date(now.getTime() + 3 * DAY_MS);
+  const dueTrialEnding = await prisma.user.findMany({
+    where: {
+      trialEndsAt: { gte: trialEndStart, lte: trialEndEnd },
+      plan: { not: "FREE" },
+      emailReminders: true,
+    },
+    select: { id: true, email: true, name: true, trialEndsAt: true },
+  });
+  for (const u of dueTrialEnding) {
+    const qCount = await prisma.question.count({
+      where: { exam: { userId: u.id }, isCorrect: { not: null } },
+    });
+    const daysLeft = Math.max(
+      1,
+      Math.ceil((u.trialEndsAt!.getTime() - now.getTime()) / DAY_MS)
+    );
+    const tpl = trialEndingEmail({
+      name: u.name,
+      userId: u.id,
+      daysLeft,
+      questionsAnswered: qCount,
+    });
+    const r = await sendEmail({
+      toUserId: u.id,
+      toEmail: u.email,
+      subject: tpl.subject,
+      category: "trial_ending",
+      html: tpl.html,
+    });
+    if (r.ok) counts.trialEnding += 1;
+    else counts.errors += 1;
+  }
+
+  // -- Trial ended (within last 24h): the dedicated "your trial ended"
+  //    email goes here. Auto-downgrade further down catches these users
+  //    by the planExpiresAt < now rule and flips them to FREE.
+  const trialEndedStart = new Date(now.getTime() - 1 * DAY_MS);
+  const dueTrialEnded = await prisma.user.findMany({
+    where: {
+      trialEndsAt: { gte: trialEndedStart, lte: now },
+      plan: { not: "FREE" },
+      emailReminders: true,
+    },
+    select: { id: true, email: true, name: true },
+  });
+  for (const u of dueTrialEnded) {
+    const qCount = await prisma.question.count({
+      where: { exam: { userId: u.id }, isCorrect: { not: null } },
+    });
+    const tpl = trialEndedEmail({
+      name: u.name,
+      userId: u.id,
+      questionsAnswered: qCount,
+    });
+    const r = await sendEmail({
+      toUserId: u.id,
+      toEmail: u.email,
+      subject: tpl.subject,
+      category: "trial_ended",
+      html: tpl.html,
+    });
+    if (r.ok) counts.trialEnded += 1;
+    else counts.errors += 1;
+  }
+
+  // -- Pre-renewal value summary (3 days before paid renewal). Personalised
+  //    with the user's stats this month — proven retention pattern.
+  const preRenStart = new Date(now.getTime() + 2 * DAY_MS);
+  const preRenEnd = new Date(now.getTime() + 4 * DAY_MS);
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const duePreRenewal = await prisma.user.findMany({
+    where: {
+      plan: { not: "FREE" },
+      planCancelledAt: null,
+      emailReminders: true,
+      trialEndsAt: null,
+      planExpiresAt: { gte: preRenStart, lte: preRenEnd },
+      OR: [
+        { lastPreRenewalSentAt: null },
+        { lastPreRenewalSentAt: { lt: yesterday } },
+      ],
+    },
+    select: { id: true, email: true, name: true, plan: true, planExpiresAt: true },
+  });
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  for (const u of duePreRenewal) {
+    const exams = await prisma.exam.findMany({
+      where: { userId: u.id, createdAt: { gte: monthStart }, status: "COMPLETED" },
+      select: { specialty: true, scorePct: true, numQuestions: true },
+    });
+    const questionsThisMonth = exams.reduce((s, e) => s + e.numQuestions, 0);
+    const scored = exams.filter((e) => e.scorePct !== null);
+    const avgScore =
+      scored.length === 0
+        ? null
+        : Math.round(scored.reduce((s, e) => s + (e.scorePct ?? 0), 0) / scored.length);
+    const bySpec = new Map<string, { sum: number; count: number }>();
+    for (const e of scored) {
+      const key = e.specialty?.trim() || "Mixed";
+      const cur = bySpec.get(key) ?? { sum: 0, count: 0 };
+      cur.sum += e.scorePct ?? 0;
+      cur.count += 1;
+      bySpec.set(key, cur);
+    }
+    const bestSpec = [...bySpec.entries()]
+      .map(([k, v]) => ({ k, avg: v.sum / v.count }))
+      .sort((a, b) => b.avg - a.avg)[0]?.k ?? null;
+    const reviewCleared = await prisma.reviewCard.count({
+      where: { userId: u.id, lastReviewedAt: { gte: monthStart } },
+    });
+    const daysLeft = Math.max(
+      1,
+      Math.ceil((u.planExpiresAt!.getTime() - now.getTime()) / DAY_MS)
+    );
+    const tpl = preRenewalValueEmail({
+      name: u.name,
+      userId: u.id,
+      planLabel: PLAN_LIMITS[u.plan].label,
+      expiresAt: u.planExpiresAt!,
+      daysLeft,
+      questionsThisMonth,
+      examsThisMonth: exams.length,
+      avgScore,
+      bestSpecialty: bestSpec,
+      reviewCardsCleared: reviewCleared,
+    });
+    const r = await sendEmail({
+      toUserId: u.id,
+      toEmail: u.email,
+      subject: tpl.subject,
+      category: "pre_renewal_value",
+      html: tpl.html,
+    });
+    if (r.ok) {
+      counts.preRenewal += 1;
+      await prisma.user.update({
+        where: { id: u.id },
+        data: { lastPreRenewalSentAt: now },
+      });
+    } else counts.errors += 1;
+  }
+
+  // -- Expired (within last 24 hours, plan still set to a paid tier).
+  // Trial users excluded — they get the dedicated trialEndingEmail
+  // below instead. The "expired" copy talks about renewal which makes
+  // no sense for someone who never paid.
   const expiredStart = new Date(now.getTime() - 1 * DAY_MS);
   const expiredEnd = now;
   const dueExpired = await prisma.user.findMany({
     where: {
       plan: { not: "FREE" },
       emailReminders: true,
+      trialEndsAt: null,
       planExpiresAt: { gte: expiredStart, lte: expiredEnd },
     },
     select: { id: true, email: true, name: true, plan: true },

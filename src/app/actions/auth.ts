@@ -97,12 +97,23 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
   }
 
   const passwordHash = await hashPassword(parsed.data.password);
+  // Grant a 7-day Pro trial on signup. Auto-downgrades back to FREE in
+  // the daily cron when trialEndsAt passes. trialUsed=true prevents a
+  // second trial if the user deletes and recreates the account with
+  // the same email later.
+  const now = new Date();
+  const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const user = await prisma.user.create({
     data: {
       email: parsed.data.email,
       name: parsed.data.name,
       passwordHash,
       referredByUserId: referrerId,
+      plan: "PRO",
+      planStartedAt: now,
+      planExpiresAt: trialEndsAt,
+      trialEndsAt,
+      trialUsed: true,
     },
   });
 

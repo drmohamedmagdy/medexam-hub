@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "@/lib/i18n-server";
 import { prisma } from "@/lib/db";
 import NewExamForm from "./NewExamForm";
 import OnboardingTour from "./OnboardingTour";
+import QuotaUpsell from "./QuotaUpsell";
 
 export default async function NewExamPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
@@ -43,6 +44,13 @@ export default async function NewExamPage() {
           .replace("{limit}", String(usage.limit))
           .replace("{plan}", planLabel)}
       </p>
+
+      {/* Quota-hit upsell — shown when the user has 0 questions left for
+          the month. Highest-converting moment in the funnel: serious
+          intent + clear next step. */}
+      {usage.remaining <= 0 && (
+        <QuotaUpsell plan={user.plan} monthlyQuestions={usage.limit} />
+      )}
       <NewExamForm
         remaining={usage.remaining}
         maxPerExam={planCfg.maxQuestionsPerExam}
