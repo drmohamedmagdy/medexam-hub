@@ -2,21 +2,21 @@
 
 import { useEffect, useState } from "react";
 
-// "Install as an app?" banner — shown ONLY on the dashboard at the top
-// of the page (not floating, not on study screens). Asks once, remembers
-// the answer in localStorage. Designed to be ignorable.
+// Always-visible "Install as app" button on the dashboard. Stays put so
+// any user — new or returning — can install at any time, not just once.
+// Hides itself only when the user is already inside the installed PWA
+// (display-mode: standalone), since asking someone to install the app
+// they're already using would be silly.
 //
-// The old InstallPrompt floated globally and ended up on top of mock-exam
-// questions; users (rightly) hated it. This version is a quiet inline
-// banner the user actively sees on the dashboard hero and can dismiss in
-// one tap.
+// On Android Chrome / Edge / Samsung Internet, clicking opens the
+// native install dialog via the cached beforeinstallprompt event.
+// On iOS Safari, clicking opens a small popover with the manual
+// Share → Add to Home Screen steps (no programmatic install on iOS).
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
-
-const DISMISSED_KEY = "mxh_install_banner_dismissed_v2";
 
 function isIos(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -31,105 +31,135 @@ function isStandalone(): boolean {
   );
 }
 
-function isDismissed(): boolean {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem(DISMISSED_KEY) === "1";
-}
-
 export default function DashboardInstallBanner() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showIosHint, setShowIosHint] = useState(false);
+  const [hideInStandalone, setHideInStandalone] = useState(false);
+  const [showIosPopover, setShowIosPopover] = useState(false);
+  const ios = isIos();
 
   useEffect(() => {
-    if (isStandalone() || isDismissed()) return;
-
+    if (isStandalone()) {
+      setHideInStandalone(true);
+      return;
+    }
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
-
-    // iOS Safari path — show the manual-steps banner.
-    if (isIos() && !isStandalone()) {
-      setShowIosHint(true);
-    }
-
-    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+    // Clear deferred once installed so we hide on this tab too.
+    const onInstalled = () => {
+      setDeferred(null);
+      setHideInStandalone(true);
+    };
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, []);
 
-  const dismiss = () => {
-    try {
-      localStorage.setItem(DISMISSED_KEY, "1");
-    } catch {}
-    setDeferred(null);
-    setShowIosHint(false);
-  };
+  if (hideInStandalone) return null;
 
-  const install = async () => {
-    if (!deferred) return;
-    await deferred.prompt();
-    const { outcome } = await deferred.userChoice;
-    if (outcome === "accepted") {
-      try {
-        localStorage.removeItem(DISMISSED_KEY);
-      } catch {}
-    } else {
-      // Treat decline as dismissal — don't re-ask.
-      try {
-        localStorage.setItem(DISMISSED_KEY, "1");
-      } catch {}
+  const onClick = async () => {
+    if (deferred) {
+      await deferred.prompt();
+      await deferred.userChoice;
+      setDeferred(null);
+      return;
     }
-    setDeferred(null);
+    if (ios) {
+      setShowIosPopover(true);
+      return;
+    }
+    // Desktop browser without beforeinstallprompt support — tell the
+    // user how to install manually via the browser menu.
+    setShowIosPopover(true);
   };
-
-  if (!deferred && !showIosHint) return null;
 
   return (
-    <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 dark:border-blue-900 dark:from-blue-950/40 dark:to-indigo-950/40 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <span className="grid h-12 w-12 flex-none place-items-center rounded-xl bg-white text-2xl shadow-sm dark:bg-zinc-900">
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/30 sm:px-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-white text-2xl shadow-sm dark:bg-zinc-900">
             📱
           </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-blue-900 dark:text-blue-200">
-              Install MedExam Hub on your phone?
+          <div>
+            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+              Install MedExam Hub on your phone
             </p>
-            {deferred ? (
-              <p className="mt-0.5 text-sm text-blue-800 dark:text-blue-300">
-                Add to your home screen for one-tap access, full-screen mode,
-                offline-safe asset cache, and faster cold starts. No app
-                store, no download — installs straight from the browser.
-              </p>
-            ) : (
-              <p className="mt-0.5 text-sm text-blue-800 dark:text-blue-300">
-                Tap the <span className="font-semibold">Share</span> button
-                in Safari, then{" "}
-                <span className="font-semibold">Add to Home Screen</span> to
-                get the app-like experience on your iPhone.
-              </p>
-            )}
+            <p className="text-xs text-blue-800 dark:text-blue-300">
+              One-tap home-screen icon, full-screen mode, faster cold starts.
+            </p>
           </div>
         </div>
-        <div className="flex flex-none gap-2">
-          {deferred && (
-            <button
-              type="button"
-              onClick={install}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-            >
-              Yes, install
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={dismiss}
-            className="rounded-md border border-blue-300 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-white dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/60"
-          >
-            {deferred ? "No thanks" : "Got it"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex-none rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          {deferred || ios ? "Install" : "Show me how"}
+        </button>
       </div>
-    </div>
+
+      {showIosPopover && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 pb-6 pt-20 sm:items-center sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowIosPopover(false);
+          }}
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-zinc-900 sm:p-6">
+            <h2 className="text-base font-semibold">
+              {ios ? "Install on iPhone / iPad" : "Install from the browser menu"}
+            </h2>
+            {ios ? (
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+                <li>
+                  Tap the <span className="font-semibold">Share</span> button at
+                  the bottom of Safari (the square with an arrow pointing up).
+                </li>
+                <li>
+                  Scroll down and tap{" "}
+                  <span className="font-semibold">Add to Home Screen</span>.
+                </li>
+                <li>
+                  Tap <span className="font-semibold">Add</span> in the top
+                  right. MedExam Hub will appear as an icon on your home screen.
+                </li>
+              </ol>
+            ) : (
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+                <li>
+                  Open your browser&apos;s menu (the{" "}
+                  <span className="font-semibold">⋮</span> or{" "}
+                  <span className="font-semibold">⋯</span> icon).
+                </li>
+                <li>
+                  Pick <span className="font-semibold">Install app</span> or{" "}
+                  <span className="font-semibold">Add to Home Screen</span>.
+                </li>
+                <li>Confirm — the app icon appears on your home screen.</li>
+              </ol>
+            )}
+            <p className="mt-4 text-xs text-zinc-500">
+              Once installed, open MedExam Hub from your home screen for a
+              full-screen, app-like experience.
+            </p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowIosPopover(false)}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
