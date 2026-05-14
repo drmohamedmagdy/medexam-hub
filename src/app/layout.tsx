@@ -433,6 +433,8 @@ export default async function RootLayout({
                 <li><Link href="/courses" className="hover:text-zinc-900 dark:hover:text-zinc-100">Courses</Link></li>
                 <li><Link href="/research" className="hover:text-zinc-900 dark:hover:text-zinc-100">Research &amp; Stats</Link></li>
                 <li><Link href="/community" className="hover:text-zinc-900 dark:hover:text-zinc-100">Community</Link></li>
+                <li><Link href="/blog" className="hover:text-zinc-900 dark:hover:text-zinc-100">Blog</Link></li>
+                <li><Link href="/ambassador" className="font-medium text-blue-600 hover:underline dark:text-cyan-400">🎓 Become an ambassador</Link></li>
               </ul>
             </div>
 
