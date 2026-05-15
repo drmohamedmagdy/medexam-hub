@@ -70,6 +70,12 @@ export default async function LeaderboardPage({
         </div>
         {attempts.length > 0 && (
           <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/exam/${master.id}/leaderboard/podium`}
+              className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+            >
+              🏆 Podium certificate
+            </Link>
             <LeaderboardShareButton
               examTitle={master.title}
               shareUrl={shareUrl ?? `${process.env.PUBLIC_BASE_URL ?? "https://medexamhub.org"}/e/${master.shareToken ?? master.id}`}
