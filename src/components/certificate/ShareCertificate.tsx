@@ -181,6 +181,70 @@ export default function ShareCertificate({ targetId, fileName, shareText }: Prop
     }
   };
 
+  // Per-platform share. Auto-downloads the PNG so the user has the
+  // image file in hand, then opens the platform's compose dialog in a
+  // new tab. Platforms with URL-based image upload don't exist for
+  // social media — even LinkedIn / Facebook / Instagram require the
+  // user to manually attach the image in their composer. This flow
+  // gets the PNG onto their device + opens the right composer in one
+  // click; user finishes the post.
+  const SITE = "https://medexamhub.org";
+  const FALLBACK_TEXT =
+    shareText || `Look at my MedExam Hub certificate! 🎓 ${SITE}`;
+
+  const onPlatformShare = async (platform:
+    | "whatsapp"
+    | "facebook"
+    | "linkedin"
+    | "twitter"
+    | "telegram"
+    | "instagram"
+  ) => {
+    setBusy("sharing");
+    setError(null);
+    setDone(null);
+    try {
+      const blob = await captureAsBlob(targetId);
+      triggerDownload(blob, `${fileName}.png`);
+
+      const composeUrl = (() => {
+        const text = encodeURIComponent(FALLBACK_TEXT);
+        const url = encodeURIComponent(SITE);
+        switch (platform) {
+          case "whatsapp":
+            return `https://wa.me/?text=${encodeURIComponent(`${FALLBACK_TEXT}\n\n${SITE}`)}`;
+          case "facebook":
+            return `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+          case "linkedin":
+            return `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+          case "twitter":
+            return `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+          case "telegram":
+            return `https://t.me/share/url?url=${url}&text=${text}`;
+          case "instagram":
+            // Instagram has no URL share — just open their website so the
+            // user can create a post. The downloaded image is ready to attach.
+            return "https://www.instagram.com/";
+        }
+      })();
+
+      // Open the platform's compose dialog in a new tab. The user
+      // attaches the just-downloaded PNG manually inside that composer.
+      window.open(composeUrl, "_blank", "noopener,noreferrer");
+      setDone("downloaded");
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(`[ShareCertificate] ${platform} share failed:`, e);
+      setError(
+        e instanceof Error
+          ? `${e.message} — check the browser console for details.`
+          : "Couldn't generate the image"
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="no-print mt-6 flex flex-col items-center gap-3">
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -213,16 +277,81 @@ export default function ShareCertificate({ targetId, fileName, shareText }: Prop
         </button>
       </div>
 
+      {/* Per-platform share row — image downloads + composer opens.
+          User attaches the PNG inside the platform's composer (no
+          social network accepts image uploads via URL share intent). */}
+      <div className="flex flex-col items-center gap-1.5">
+        <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+          Or post directly to
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPlatformShare("whatsapp")}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60"
+            title="Download image + open WhatsApp"
+          >
+            💬 WhatsApp
+          </button>
+          <button
+            type="button"
+            onClick={() => onPlatformShare("facebook")}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium hover:bg-blue-100 disabled:opacity-60 dark:border-blue-800 dark:bg-blue-950/40"
+            title="Download image + open Facebook composer"
+          >
+            📘 Facebook
+          </button>
+          <button
+            type="button"
+            onClick={() => onPlatformShare("linkedin")}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-medium hover:bg-sky-100 disabled:opacity-60 dark:border-sky-800 dark:bg-sky-950/40"
+            title="Download image + open LinkedIn"
+          >
+            💼 LinkedIn
+          </button>
+          <button
+            type="button"
+            onClick={() => onPlatformShare("instagram")}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-md border border-pink-300 bg-gradient-to-r from-pink-50 via-rose-50 to-purple-50 px-3 py-1.5 text-xs font-medium hover:from-pink-100 hover:via-rose-100 hover:to-purple-100 disabled:opacity-60 dark:border-pink-800 dark:from-pink-950/40 dark:via-rose-950/40 dark:to-purple-950/40"
+            title="Download image + open Instagram"
+          >
+            📸 Instagram
+          </button>
+          <button
+            type="button"
+            onClick={() => onPlatformShare("twitter")}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800/50"
+            title="Download image + open Twitter / X"
+          >
+            𝕏 Twitter
+          </button>
+          <button
+            type="button"
+            onClick={() => onPlatformShare("telegram")}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-1.5 text-xs font-medium hover:bg-cyan-100 disabled:opacity-60 dark:border-cyan-800 dark:bg-cyan-950/40"
+            title="Download image + open Telegram"
+          >
+            ✈️ Telegram
+          </button>
+        </div>
+      </div>
+
       {done === "shared" && (
         <p className="text-xs text-emerald-700 dark:text-emerald-400">
           ✓ Shared — the image is now in the conversation you picked.
         </p>
       )}
       {done === "downloaded" && (
-        <p className="text-center text-xs text-zinc-600 dark:text-zinc-400">
-          ✓ Saved to your downloads.
-          <br />
-          Open WhatsApp / Facebook / Instagram → new post → attach the PNG.
+        <p className="max-w-md text-center text-xs text-zinc-600 dark:text-zinc-400">
+          ✓ <strong>Image saved to your downloads.</strong> In the composer
+          that just opened, click <strong>add photo / attachment</strong>{" "}
+          and pick the file you just downloaded.
         </p>
       )}
       {error && (
