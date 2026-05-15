@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toPng } from "html-to-image";
+import { toBlob, toPng } from "html-to-image";
 
 // Captures the certificate DOM as a PNG and shares it as a FILE
 // (not as a link). Three execution paths in order of preference:
@@ -33,38 +33,73 @@ const SUPPORTS_FILE_SHARE =
   // Probe with a dummy file to confirm the platform really accepts files
   navigator.canShare({ files: [new File([""], "test.png", { type: "image/png" })] });
 
+// 1×1 transparent PNG used as fallback when an external resource the
+// library tries to inline can't be fetched. Tells html-to-image "treat
+// this as loaded, just skip it" instead of throwing "Failed to fetch".
+const TRANSPARENT_PIXEL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+const CAPTURE_OPTS = {
+  pixelRatio: 2,
+  cacheBust: false,
+  skipFonts: true,
+  backgroundColor: "#ffffff",
+  imagePlaceholder: TRANSPARENT_PIXEL,
+  filter: (n: HTMLElement | Node) => {
+    if (!(n instanceof Element)) return true;
+    const tag = n.tagName?.toLowerCase();
+    if (tag === "link" || tag === "style") return false;
+    return true;
+  },
+};
+
 async function captureAsBlob(targetId: string): Promise<Blob> {
   const node = document.getElementById(targetId);
   if (!node) throw new Error("Certificate not found on page");
-  // 2x pixel ratio = crisp on Retina screens + when printed.
-  //
-  // skipFonts: html-to-image tries to fetch + inline @font-face rules
-  // from any stylesheet on the page. If ANY rule's src URL fails CORS
-  // or 404s, the whole capture throws "Failed to fetch". We don't need
-  // embedded fonts — the cert renders fine with system fonts in the
-  // output PNG — so skip the entire dance.
-  //
-  // filter: also skip any <link> or <style> nodes whose import we don't
-  // control. Belt-and-braces against rogue third-party styles.
-  const dataUrl = await toPng(node, {
-    pixelRatio: 2,
-    cacheBust: true,
-    skipFonts: true,
-    backgroundColor: "#ffffff",
-    // Tell html-to-image to load images with CORS=anonymous so the
-    // /logo.png in the cert can be tainted-free.
-    fetchRequestInit: { mode: "cors", credentials: "omit" },
-    filter: (n) => {
-      if (!(n instanceof Element)) return true;
-      const tag = n.tagName?.toLowerCase();
-      // Don't try to inline external stylesheets — they're the source
-      // of the failed fetches.
-      if (tag === "link" || tag === "style") return false;
-      return true;
-    },
-  });
+
+  // Wait for any <img> descendants to finish loading before snapshotting.
+  // html-to-image will substitute the placeholder for not-yet-loaded
+  // images, which gives a blank logo. Wait briefly so the real image
+  // makes it in.
+  await waitForImages(node);
+
+  // Prefer toBlob — avoids the dataUrl → fetch round-trip in toPng,
+  // which is what was producing the "Failed to fetch" message even
+  // when the actual capture had succeeded.
+  try {
+    const blob = await toBlob(node, CAPTURE_OPTS);
+    if (blob) return blob;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn("[ShareCertificate] toBlob failed, falling back to toPng:", e);
+  }
+
+  // Fallback: toPng + manual conversion (older browsers / edge cases).
+  const dataUrl = await toPng(node, CAPTURE_OPTS);
   const res = await fetch(dataUrl);
   return await res.blob();
+}
+
+async function waitForImages(node: HTMLElement): Promise<void> {
+  const imgs = Array.from(node.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) return resolve();
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            resolve();
+          };
+          img.addEventListener("load", finish, { once: true });
+          img.addEventListener("error", finish, { once: true });
+          // Safety timeout so a hung image doesn't block the capture forever.
+          setTimeout(finish, 3000);
+        })
+    )
+  );
 }
 
 export default function ShareCertificate({ targetId, fileName, shareText }: Props) {
@@ -104,13 +139,21 @@ export default function ShareCertificate({ targetId, fileName, shareText }: Prop
         setBusy(null);
         return;
       }
+      // eslint-disable-next-line no-console
+      console.error("[ShareCertificate] share path failed:", e);
       // Anything else: fall back to download so the user still gets the image.
       try {
         const blob = await captureAsBlob(targetId);
         triggerDownload(blob, `${fileName}.png`);
         setDone("downloaded");
       } catch (e2) {
-        setError(e2 instanceof Error ? e2.message : "Couldn't generate the image");
+        // eslint-disable-next-line no-console
+        console.error("[ShareCertificate] capture failed too:", e2);
+        setError(
+          e2 instanceof Error
+            ? `${e2.message} — check the browser console for details.`
+            : "Couldn't generate the image — check the browser console."
+        );
       }
     } finally {
       setBusy(null);
@@ -126,7 +169,13 @@ export default function ShareCertificate({ targetId, fileName, shareText }: Prop
       triggerDownload(blob, `${fileName}.png`);
       setDone("downloaded");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't generate the image");
+      // eslint-disable-next-line no-console
+      console.error("[ShareCertificate] download path failed:", e);
+      setError(
+        e instanceof Error
+          ? `${e.message} — check the browser console for details.`
+          : "Couldn't generate the image"
+      );
     } finally {
       setBusy(null);
     }

@@ -91,7 +91,6 @@ export default function PodiumCertificateCard(props: Props) {
           alt=""
           width={48}
           height={48}
-          crossOrigin="anonymous"
           className="h-12 w-12 rounded-md object-contain"
         />
       </div>

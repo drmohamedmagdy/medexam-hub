@@ -98,13 +98,15 @@ export default function CertificateCard(props: CertificateProps) {
 
       {/* Top-left logo */}
       <div className="absolute left-10 top-10 flex items-center gap-2">
+        {/* Same-origin image — no crossOrigin attribute (that would
+            force a CORS request the same-origin server doesn't satisfy
+            and would taint the canvas → break html-to-image). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
           alt=""
           width={48}
           height={48}
-          crossOrigin="anonymous"
           className="h-12 w-12 rounded-md object-contain"
         />
       </div>
