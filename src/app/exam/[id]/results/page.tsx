@@ -77,6 +77,36 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
       {!isShortNotes && (
         <ScoreCelebration score={scoreInt} correct={correct} total={total} />
       )}
+
+      {/* Certificate of Excellence — single-exam high-scorer banner.
+          Bar is 80% (vs 70% for mock exams) because a single exam is
+          shorter and easier to ace. Links to the printable cert page. */}
+      {!isShortNotes && scoreInt >= 80 && (
+        <section className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40 sm:p-5 print:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl" aria-hidden>
+                🏆
+              </span>
+              <div>
+                <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                  Excellent work — you earned a certificate
+                </p>
+                <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                  Score {scoreInt}% qualifies for a Certificate of
+                  Excellence. Download and share on LinkedIn / WhatsApp.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/exam/${exam.id}/certificate`}
+              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              View certificate →
+            </Link>
+          </div>
+        </section>
+      )}
       {isShortNotes && (
         <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200 sm:p-5 print:hidden">
           <p className="font-semibold">Self-assessment time</p>

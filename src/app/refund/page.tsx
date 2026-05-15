@@ -57,8 +57,9 @@ export default function RefundPage() {
         <a href="mailto:info@medexamhub.org">info@medexamhub.org</a> from
         the address on your account, with your payment reference and a
         short note. Refunds are processed back to the original payment
-        method (Paymob — Vodafone Cash or Instapay) and typically take
-        5–10 business days to appear, depending on your provider.
+        method via Paymob (Visa / Mastercard or Egyptian mobile wallet)
+        and typically take 5–10 business days to appear, depending on
+        your provider.
       </p>
 
       <h2>Plan changes</h2>

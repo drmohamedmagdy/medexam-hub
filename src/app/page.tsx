@@ -422,7 +422,7 @@ export default async function Home() {
               },
               {
                 q: "What payment methods do you accept?",
-                a: "All payments are processed securely by Paymob — Vodafone Cash and Instapay. We never see or store your card or wallet number.",
+                a: "All payments are processed securely by Paymob — Visa / Mastercard cards and Egyptian mobile wallets (Vodafone Cash, Etisalat Cash, Orange Money). We never see or store your card or wallet number.",
               },
               {
                 q: "Can I cancel? Do you offer refunds?",

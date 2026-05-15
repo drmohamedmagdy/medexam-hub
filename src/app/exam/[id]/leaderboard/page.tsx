@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import LeaderboardShareButton from "./LeaderboardShareButton";
 
 export const metadata = { title: "Shared exam leaderboard" };
 
@@ -68,12 +69,23 @@ export default async function LeaderboardPage({
           </p>
         </div>
         {attempts.length > 0 && (
-          <Link
-            href={`/exam/${master.id}/leaderboard/print`}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            📄 Download PDF
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <LeaderboardShareButton
+              examTitle={master.title}
+              shareUrl={shareUrl ?? `${process.env.PUBLIC_BASE_URL ?? "https://medexamhub.org"}/e/${master.shareToken ?? master.id}`}
+              podium={attempts.slice(0, 3).map((a, i) => ({
+                rank: (i + 1) as 1 | 2 | 3,
+                name: a.user.name?.trim() || a.user.email.split("@")[0],
+                score: Math.round(a.scorePct ?? 0),
+              }))}
+            />
+            <Link
+              href={`/exam/${master.id}/leaderboard/print`}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              📄 Download PDF
+            </Link>
+          </div>
         )}
       </header>
 
@@ -95,15 +107,24 @@ export default async function LeaderboardPage({
             will fill up here.
           </p>
         ) : (
+          <>
           <ol>
             {attempts.map((a, idx) => {
               const name = a.user.name?.trim() || a.user.email.split("@")[0];
               const score = Math.round(a.scorePct ?? 0);
               const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`;
+              const isTop3 = idx < 3;
+              const rowTint = idx === 0
+                ? "bg-amber-50 dark:bg-amber-950/30"
+                : idx === 1
+                  ? "bg-zinc-100 dark:bg-zinc-800/40"
+                  : idx === 2
+                    ? "bg-orange-50 dark:bg-orange-950/30"
+                    : "";
               return (
                 <li
                   key={a.id}
-                  className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-5 py-3 last:border-b-0 dark:border-zinc-800"
+                  className={`flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-5 py-3 last:border-b-0 dark:border-zinc-800 ${rowTint}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="w-12 text-center text-base font-mono font-semibold text-zinc-700 dark:text-zinc-300">
@@ -120,6 +141,11 @@ export default async function LeaderboardPage({
                         {a.submittedAt
                           ? a.submittedAt.toLocaleString()
                           : "—"}
+                        {isTop3 && score >= 80 && (
+                          <span className="ms-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            🏆 certificate eligible
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -137,6 +163,18 @@ export default async function LeaderboardPage({
               );
             })}
           </ol>
+
+          {/* Hint to the owner about how top-3 takers receive certificates. */}
+          {attempts.some((a, i) => i < 3 && (a.scorePct ?? 0) >= 80) && (
+            <p className="border-t border-zinc-100 px-5 py-3 text-xs text-zinc-500 dark:border-zinc-800">
+              💡 Top-3 takers scoring ≥80% automatically see a{" "}
+              <span className="font-semibold">Certificate of Excellence</span>{" "}
+              banner on their own results page. Use the{" "}
+              <span className="font-semibold">📢 Share top 3</span> button
+              above to announce the podium on social media.
+            </p>
+          )}
+          </>
         )}
       </section>
     </div>

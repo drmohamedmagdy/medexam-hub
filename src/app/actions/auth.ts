@@ -97,23 +97,38 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
   }
 
   const passwordHash = await hashPassword(parsed.data.password);
-  // Grant a 7-day Pro trial on signup. Auto-downgrades back to FREE in
-  // the daily cron when trialEndsAt passes. trialUsed=true prevents a
-  // second trial if the user deletes and recreates the account with
-  // the same email later.
+  // Limited-time 7-day Pro trial offer. The trial is enabled only while
+  // the current date is before SIGNUP_TRIAL_PROMO_ENDS_AT. After that
+  // cutoff, new users sign up onto the FREE tier as usual (they can
+  // still upgrade voluntarily). Set the env var to a future ISO date to
+  // re-open the promo; omit it / set to a past date to keep it closed.
   const now = new Date();
-  const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const trialCutoffRaw = process.env.SIGNUP_TRIAL_PROMO_ENDS_AT;
+  const trialCutoff = trialCutoffRaw ? new Date(trialCutoffRaw) : null;
+  const trialActive = trialCutoff && !Number.isNaN(trialCutoff.getTime()) && now < trialCutoff;
+
+  const trialEndsAt = trialActive
+    ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    : null;
+
   const user = await prisma.user.create({
     data: {
       email: parsed.data.email,
       name: parsed.data.name,
       passwordHash,
       referredByUserId: referrerId,
-      plan: "PRO",
-      planStartedAt: now,
-      planExpiresAt: trialEndsAt,
-      trialEndsAt,
-      trialUsed: true,
+      // Trial grants Pro + sets planExpiresAt + trialEndsAt. Cron picks
+      // these up and downgrades after 7 days. When the promo is closed
+      // these all stay null and the user starts on the FREE default.
+      ...(trialActive
+        ? {
+            plan: "PRO" as const,
+            planStartedAt: now,
+            planExpiresAt: trialEndsAt!,
+            trialEndsAt,
+            trialUsed: true,
+          }
+        : {}),
     },
   });
 
