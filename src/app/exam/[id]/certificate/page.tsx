@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import CertificateCard from "@/components/certificate/CertificateCard";
 import ShareCertificate from "@/components/certificate/ShareCertificate";
+import { detectCertLanguage } from "@/components/certificate/detectLanguage";
 
 // Single-exam Certificate of Excellence. Bar is 80% (vs 70% for mock
 // exams) — a single exam is shorter and easier to ace than a timed
@@ -52,6 +53,10 @@ export default async function ExamCertificatePage({
   const subline = [exam.specialty, exam.examType, exam.difficulty]
     .filter(Boolean)
     .join(" · ");
+  // Cert language follows the exam content: Arabic title → Arabic cert.
+  // Fallback samples the recipient's name too in case the title's all
+  // English but the user is Arabic-speaking.
+  const language = detectCertLanguage(exam.title, exam.specialty, recipientName);
 
   return (
     <>
@@ -79,6 +84,7 @@ export default async function ExamCertificatePage({
         </div>
 
         <CertificateCard
+          language={language}
           recipientName={recipientName}
           achievementTitle={title}
           achievementSubline={subline || undefined}

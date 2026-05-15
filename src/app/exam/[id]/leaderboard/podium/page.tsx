@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import PodiumCertificateCard from "@/components/certificate/PodiumCertificateCard";
 import ShareCertificate from "@/components/certificate/ShareCertificate";
+import { detectCertLanguage } from "@/components/certificate/detectLanguage";
 
 // Top-3 podium certificate for a shared exam. Owner-only — only the
 // creator of the master exam can view + share this image. The certificate
@@ -88,6 +89,7 @@ export default async function PodiumCertificatePage({
         </div>
 
         <PodiumCertificateCard
+          language={detectCertLanguage(master.title, master.specialty)}
           examTitle={master.title}
           examSubline={subline || undefined}
           podium={podium}

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import CertificateCard from "@/components/certificate/CertificateCard";
 import ShareCertificate from "@/components/certificate/ShareCertificate";
+import { detectCertLanguage } from "@/components/certificate/detectLanguage";
 
 // Mock-exam Certificate of Completion. Bar is 70% — full-length timed
 // mocks are harder to ace than a single exam (80% threshold there),
@@ -51,6 +52,9 @@ export default async function CertificatePage({
   const completedAt = mock.completedAt ?? new Date();
   const certNumber = `CERT-${completedAt.getFullYear()}-${mock.id.slice(0, 8).toUpperCase()}`;
   const recipientName = user.name?.trim() || user.email.split("@")[0];
+  // Cert language follows the mock template's name (set when generated)
+  // plus the user's name as a fallback.
+  const language = detectCertLanguage(mock.templateLabel, recipientName);
 
   return (
     <>
@@ -78,9 +82,10 @@ export default async function CertificatePage({
         </div>
 
         <CertificateCard
+          language={language}
           recipientName={recipientName}
           achievementTitle={mock.templateLabel}
-          achievementSubline="Full-length mock exam"
+          achievementSubline={language === "ar" ? "امتحان تجريبي كامل" : "Full-length mock exam"}
           scorePct={score}
           questionCount={totalQuestions}
           completedAt={completedAt}

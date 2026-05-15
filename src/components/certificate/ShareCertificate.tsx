@@ -36,13 +36,32 @@ const SUPPORTS_FILE_SHARE =
 async function captureAsBlob(targetId: string): Promise<Blob> {
   const node = document.getElementById(targetId);
   if (!node) throw new Error("Certificate not found on page");
-  // 2x pixel ratio so the export is crisp on Retina screens and prints.
+  // 2x pixel ratio = crisp on Retina screens + when printed.
+  //
+  // skipFonts: html-to-image tries to fetch + inline @font-face rules
+  // from any stylesheet on the page. If ANY rule's src URL fails CORS
+  // or 404s, the whole capture throws "Failed to fetch". We don't need
+  // embedded fonts — the cert renders fine with system fonts in the
+  // output PNG — so skip the entire dance.
+  //
+  // filter: also skip any <link> or <style> nodes whose import we don't
+  // control. Belt-and-braces against rogue third-party styles.
   const dataUrl = await toPng(node, {
     pixelRatio: 2,
     cacheBust: true,
-    // Force a white background underneath any transparent areas — looks
-    // better when shared into chat apps that render on dark backgrounds.
+    skipFonts: true,
     backgroundColor: "#ffffff",
+    // Tell html-to-image to load images with CORS=anonymous so the
+    // /logo.png in the cert can be tainted-free.
+    fetchRequestInit: { mode: "cors", credentials: "omit" },
+    filter: (n) => {
+      if (!(n instanceof Element)) return true;
+      const tag = n.tagName?.toLowerCase();
+      // Don't try to inline external stylesheets — they're the source
+      // of the failed fetches.
+      if (tag === "link" || tag === "style") return false;
+      return true;
+    },
   });
   const res = await fetch(dataUrl);
   return await res.blob();

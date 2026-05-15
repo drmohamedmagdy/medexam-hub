@@ -1,8 +1,4 @@
-/**
- * Bilingual top-3 podium certificate. One image celebrating the
- * podium of a shared exam — the owner of the shared link captures
- * this and posts to social media to announce winners.
- */
+import type { CertLanguage } from "./detectLanguage";
 
 type PodiumEntry = {
   rank: 1 | 2 | 3;
@@ -11,19 +7,46 @@ type PodiumEntry = {
 };
 
 type Props = {
-  /** Title of the shared exam they competed on. */
+  language: CertLanguage;
   examTitle: string;
-  /** Optional subline (specialty, exam type). */
   examSubline?: string;
-  /** 1st, 2nd, 3rd entries (length 1-3). */
   podium: PodiumEntry[];
   completedAt: Date;
-  /** Total attempts on the shared exam (for context). */
   totalAttempts: number;
   certNumber: string;
 };
 
+const TXT = {
+  en: {
+    org: "MedExam Hub",
+    tagline: "AI-powered medical exam preparation",
+    title: "Top 3 Achievers",
+    onTitle: "on",
+    outOf: (n: number) => `out of ${n} ${n === 1 ? "candidate" : "candidates"}`,
+    signatureName: "Dr. Mohamed Magdy",
+    signatureRole: "Authorised signature",
+    locale: "en-GB" as const,
+  },
+  ar: {
+    org: "ميدإكزام هَب",
+    tagline: "إعداد الامتحانات الطبية بالذكاء الاصطناعي",
+    title: "أفضل ثلاثة متفوقين",
+    onTitle: "في",
+    outOf: (n: number) => `من بين ${n} ${n === 1 ? "متسابق" : "متسابقاً"}`,
+    signatureName: "د. محمد مجدي",
+    signatureRole: "التوقيع المعتمد",
+    locale: "ar-EG" as const,
+  },
+};
+
 export default function PodiumCertificateCard(props: Props) {
+  const t = TXT[props.language];
+  const isAr = props.language === "ar";
+  const dir = isAr ? "rtl" : "ltr";
+  const arFont = isAr
+    ? "'Amiri', 'Noto Naskh Arabic', 'Cairo', 'Tahoma', serif"
+    : undefined;
+
   const ordered = [...props.podium].sort((a, b) => a.rank - b.rank);
   const heightForRank: Record<number, string> = {
     1: "h-32",
@@ -40,7 +63,9 @@ export default function PodiumCertificateCard(props: Props) {
   return (
     <div
       id="cert-card"
+      dir={dir}
       className="cert-card relative mx-auto aspect-[1.414/1] w-full max-w-[1100px] overflow-hidden rounded-xl border-[10px] border-double border-amber-700 bg-gradient-to-br from-amber-50 via-white to-blue-50 px-8 py-10 shadow-2xl sm:px-12 sm:py-10"
+      style={isAr ? { fontFamily: arFont } : undefined}
     >
       <div className="absolute inset-3 rounded-md border border-amber-400/50" aria-hidden />
 
@@ -48,7 +73,9 @@ export default function PodiumCertificateCard(props: Props) {
         aria-hidden
         className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.04]"
       >
-        <span className="font-serif text-[12rem] font-bold text-amber-900">🏆</span>
+        <span className="text-[12rem] font-bold text-amber-900" style={{ fontFamily: "serif" }}>
+          🏆
+        </span>
       </div>
 
       <span aria-hidden className="absolute left-6 top-6 text-2xl text-amber-700">❦</span>
@@ -56,38 +83,42 @@ export default function PodiumCertificateCard(props: Props) {
       <span aria-hidden className="absolute bottom-6 left-6 text-2xl text-amber-700">❦</span>
       <span aria-hidden className="absolute bottom-6 right-6 text-2xl text-amber-700">❦</span>
 
-      {/* Header */}
-      <div className="relative text-center">
+      {/* Top-left logo */}
+      <div className="absolute left-10 top-10 flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt=""
+          width={48}
+          height={48}
+          crossOrigin="anonymous"
+          className="h-12 w-12 rounded-md object-contain"
+        />
+      </div>
+
+      <div className="relative pt-2 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-amber-800">
-          MedExam Hub · ميدإكزام هَب
+          {t.org}
         </p>
-        <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          Top 3 Achievers
-        </h1>
-        <h2
-          dir="rtl"
-          className="mt-1 font-serif text-2xl font-bold text-zinc-800 sm:text-3xl"
-          style={{ fontFamily: "'Amiri', 'Noto Naskh Arabic', serif" }}
+        <h1
+          className="mt-3 font-serif text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl"
+          style={arFont ? { fontFamily: arFont } : undefined}
         >
-          أفضل ثلاثة متفوقين
-        </h2>
+          {t.title}
+        </h1>
         <p className="mt-3 text-sm text-zinc-700 sm:text-base">
-          on <span className="font-semibold">{props.examTitle}</span>
+          {t.onTitle} <span className="font-semibold">{props.examTitle}</span>
           {props.examSubline && (
             <span className="text-zinc-500"> · {props.examSubline}</span>
           )}
         </p>
-        <p className="text-xs text-zinc-500">
-          out of {props.totalAttempts} {props.totalAttempts === 1 ? "candidate" : "candidates"}
-        </p>
+        <p className="text-xs text-zinc-500">{t.outOf(props.totalAttempts)}</p>
       </div>
 
-      {/* Podium — order columns 2/1/3 for the classic visual: silver, gold, bronze */}
       <div className="relative mx-auto mt-6 flex max-w-xl items-end justify-center gap-3 sm:gap-4">
         {[2, 1, 3].map((rank) => {
           const entry = ordered.find((p) => p.rank === rank);
           if (!entry) {
-            // Empty pedestal placeholder so the visual still works with 1 or 2 entries.
             return (
               <div key={rank} className="flex w-1/3 flex-col items-center">
                 <div
@@ -119,20 +150,12 @@ export default function PodiumCertificateCard(props: Props) {
         })}
       </div>
 
-      {/* Footer */}
       <div className="relative mt-8 flex items-end justify-between gap-6">
         <div className="flex-1 text-center">
           <SignatureSvg />
           <div className="mx-auto h-px w-40 bg-zinc-700" />
           <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-600">
-            Dr. Mohamed Magdy · Authorised signature
-          </p>
-          <p
-            dir="rtl"
-            className="text-[10px] text-zinc-600"
-            style={{ fontFamily: "'Amiri', 'Noto Naskh Arabic', serif" }}
-          >
-            د. محمد مجدي · التوقيع المعتمد
+            {t.signatureName} · {t.signatureRole}
           </p>
         </div>
 
@@ -142,7 +165,7 @@ export default function PodiumCertificateCard(props: Props) {
 
         <div className="flex-1 text-end">
           <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-            {props.completedAt.toLocaleDateString("en-GB", {
+            {props.completedAt.toLocaleDateString(t.locale, {
               year: "numeric",
               month: "long",
               day: "numeric",
