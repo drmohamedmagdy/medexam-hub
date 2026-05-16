@@ -61,12 +61,18 @@ export default function PodiumCertificateCard(props: Props) {
   const medalForRank: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
   return (
-    <div
-      id="cert-card"
-      dir={dir}
-      className="cert-card relative mx-auto aspect-[1.414/1] w-full max-w-[1100px] overflow-hidden rounded-xl border-[10px] border-double border-amber-700 bg-gradient-to-br from-amber-50 via-white to-blue-50 px-8 py-10 shadow-2xl sm:px-12 sm:py-10"
-      style={isAr ? { fontFamily: arFont } : undefined}
-    >
+    <div className="cert-scroller w-full overflow-x-auto">
+      <div
+        id="cert-card"
+        dir={dir}
+        className="cert-card relative mx-auto rounded-xl border-[10px] border-double border-amber-700 bg-gradient-to-br from-amber-50 via-white to-blue-50 shadow-2xl"
+        style={{
+          width: "1100px",
+          height: "778px",
+          padding: "40px 48px",
+          ...(isAr ? { fontFamily: arFont } : {}),
+        }}
+      >
       <div className="absolute inset-3 rounded-md border border-amber-400/50" aria-hidden />
 
       <div
@@ -173,6 +179,7 @@ export default function PodiumCertificateCard(props: Props) {
           <p className="font-mono text-[10px] font-semibold">{props.certNumber}</p>
           <p className="mt-2 text-[9px] text-zinc-400">medexamhub.org</p>
         </div>
+      </div>
       </div>
     </div>
   );

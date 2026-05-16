@@ -72,12 +72,26 @@ export default function CertificateCard(props: CertificateProps) {
     : undefined;
 
   return (
-    <div
-      id="cert-card"
-      dir={dir}
-      className="cert-card relative mx-auto aspect-[1.414/1] w-full max-w-[1100px] overflow-hidden rounded-xl border-[10px] border-double border-amber-700 bg-gradient-to-br from-amber-50 via-white to-blue-50 px-8 py-10 shadow-2xl sm:px-14 sm:py-12"
-      style={isAr ? { fontFamily: arFont } : undefined}
-    >
+    // Outer scroller — on small screens the cert is wider than the
+    // viewport, so allow horizontal scroll without clipping content.
+    // On the capture path the cert is always rendered at its native
+    // 1100×778 size, so the PNG is always complete.
+    <div className="cert-scroller w-full overflow-x-auto">
+      <div
+        id="cert-card"
+        dir={dir}
+        // Fixed pixel dimensions instead of aspect-ratio + max-width.
+        // 1100×778 is the design size; same on every device. On phones
+        // the parent scroller lets the user pan horizontally to view
+        // the whole card.
+        className="cert-card relative mx-auto rounded-xl border-[10px] border-double border-amber-700 bg-gradient-to-br from-amber-50 via-white to-blue-50 shadow-2xl"
+        style={{
+          width: "1100px",
+          height: "778px",
+          padding: "48px 56px",
+          ...(isAr ? { fontFamily: arFont } : {}),
+        }}
+      >
       <div className="absolute inset-3 rounded-md border border-amber-400/50" aria-hidden />
 
       {/* Subtle background watermark */}
@@ -206,6 +220,7 @@ export default function CertificateCard(props: CertificateProps) {
           <p className="font-mono text-xs font-semibold">{props.certNumber}</p>
           <p className="mt-2 text-[9px] text-zinc-400">{t.verify}</p>
         </div>
+      </div>
       </div>
     </div>
   );

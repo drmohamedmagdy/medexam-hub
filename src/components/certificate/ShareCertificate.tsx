@@ -39,12 +39,33 @@ const SUPPORTS_FILE_SHARE =
 const TRANSPARENT_PIXEL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
+// The cert is designed at exactly 1100×778 px. Forcing these
+// dimensions on the capture means the PNG looks identical on phones
+// (where the DOM is horizontally scrolled inside its container) and
+// desktops, and the user always gets the full card — not a clipped
+// version of whatever was visible in their viewport at click time.
+const CERT_WIDTH = 1100;
+const CERT_HEIGHT = 778;
+
 const CAPTURE_OPTS = {
   pixelRatio: 2,
   cacheBust: false,
   skipFonts: true,
   backgroundColor: "#ffffff",
   imagePlaceholder: TRANSPARENT_PIXEL,
+  width: CERT_WIDTH,
+  height: CERT_HEIGHT,
+  canvasWidth: CERT_WIDTH,
+  canvasHeight: CERT_HEIGHT,
+  // Style overrides applied to the cloned node inside html-to-image.
+  // Ensures the clone is exactly the design dimensions regardless of
+  // how the live DOM is sized (mobile viewport, zoomed page, etc.).
+  style: {
+    width: `${CERT_WIDTH}px`,
+    height: `${CERT_HEIGHT}px`,
+    transform: "none",
+    transformOrigin: "top left",
+  },
   filter: (n: HTMLElement | Node) => {
     if (!(n instanceof Element)) return true;
     const tag = n.tagName?.toLowerCase();
