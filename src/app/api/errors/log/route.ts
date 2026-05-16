@@ -20,6 +20,11 @@ const STALE_ACTION_RE =
 const CHUNK_LOAD_RE =
   /failed to load chunk|chunkloaderror|loading chunk \d+ failed/i;
 
+// Vercel edge rejects oversize Server Action POSTs with no body — Next
+// surfaces it as this exact phrase. User-recoverable (smaller file);
+// not a server bug to investigate.
+const ACTION_BODY_RE = /an unexpected response was received from the server/i;
+
 const Schema = z.object({
   message: z.string().min(1).max(2000),
   stack: z.string().max(8000).optional(),
@@ -56,6 +61,9 @@ export async function POST(req: NextRequest) {
   }
   if (CHUNK_LOAD_RE.test(parsed.data.message)) {
     return Response.json({ ok: true, skipped: "chunk-load" });
+  }
+  if (ACTION_BODY_RE.test(parsed.data.message)) {
+    return Response.json({ ok: true, skipped: "action-body" });
   }
   await logError({
     message: parsed.data.message,

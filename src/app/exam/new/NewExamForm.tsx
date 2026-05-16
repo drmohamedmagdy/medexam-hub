@@ -119,9 +119,31 @@ export default function NewExamForm({
 
   return (
     <>
-      {/* Upload form (separate from generate form because it submits a file) */}
+      {/* Upload form (separate from generate form because it submits a file).
+          onSubmit hook does a client-side size pre-flight — if the file
+          is over 4 MB the action body will be rejected by Vercel's edge
+          before reaching the server, surfacing as a generic "Something
+          went wrong" error boundary. Stop it client-side instead. */}
       {fileEnabled && mode === "file" && (
-        <form action={uploadAction} className="mt-6 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <form
+          action={uploadAction}
+          onSubmit={(e) => {
+            const fileInput = e.currentTarget.querySelector<HTMLInputElement>(
+              'input[name="file"]'
+            );
+            const f = fileInput?.files?.[0];
+            // 4.5 MB is Vercel's edge limit; we use 4 MB to leave room for
+            // the form overhead (action ID, generateSummary checkbox, etc.).
+            const MAX = 4 * 1024 * 1024;
+            if (f && f.size > MAX) {
+              e.preventDefault();
+              alert(
+                `File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Maximum is 4 MB. Please compress or split the file.`
+              );
+            }
+          }}
+          className="mt-6 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
+        >
           <div>
             <label className="block text-sm font-medium">{labels.uploadNew}</label>
             <input

@@ -33,6 +33,12 @@ const STALE_ACTION_RE = /server action .* was not found on the server|failed to 
 const CHUNK_LOAD_RE =
   /failed to load chunk|chunkloaderror|loading chunk \d+ failed/i;
 
+// Vercel edge rejects Server Action POST bodies over 4.5 MB with no
+// JSON body — Next throws this exact message client-side. Most common
+// trigger: user uploaded a file too large for the server action. We
+// surface a friendlier message + a hint about the size limit.
+const ACTION_BODY_RE = /an unexpected response was received from the server/i;
+
 function isStaleServerAction(message: string | undefined | null): boolean {
   if (!message) return false;
   return STALE_ACTION_RE.test(message);
@@ -41,6 +47,11 @@ function isStaleServerAction(message: string | undefined | null): boolean {
 function isChunkLoadError(message: string | undefined | null): boolean {
   if (!message) return false;
   return CHUNK_LOAD_RE.test(message);
+}
+
+function isActionBodyError(message: string | undefined | null): boolean {
+  if (!message) return false;
+  return ACTION_BODY_RE.test(message);
 }
 
 // Route-segment error boundary. Wraps every page that lives under the
@@ -57,6 +68,7 @@ export default function RouteError({
   const transient = isTransientNetworkError(error.message);
   const stale = isStaleServerAction(error.message);
   const chunkLoad = isChunkLoadError(error.message);
+  const actionBody = isActionBodyError(error.message);
 
   useEffect(() => {
     // Both stale-server-action and chunk-load errors mean the user had a
@@ -71,6 +83,12 @@ export default function RouteError({
       if (typeof window !== "undefined") {
         window.location.reload();
       }
+      return;
+    }
+    // Action body limit hit — user-fixable (smaller file), no log needed.
+    if (actionBody) {
+      // eslint-disable-next-line no-console
+      console.warn("[RouteError] action body too large — surfaced friendly message");
       return;
     }
     // Skip the persistent log for transient network errors — they're
@@ -99,7 +117,45 @@ export default function RouteError({
     });
     // eslint-disable-next-line no-console
     console.error("[RouteError]", error);
-  }, [error, transient, stale, chunkLoad]);
+  }, [error, transient, stale, chunkLoad, actionBody]);
+
+  if (actionBody) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center sm:py-24">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-2xl text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+          📦
+        </div>
+        <h1 className="mt-5 text-2xl font-bold tracking-tight">
+          That file&apos;s a bit too large
+        </h1>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          Our server rejected the upload before we could process it.
+          The maximum file size is <strong>4 MB</strong>. If your file is
+          larger, try compressing it (most PDF viewers can do this) or
+          splitting it into smaller chunks.
+        </p>
+        <p className="mt-2 text-xs text-zinc-500">
+          If you weren&apos;t uploading a file, the request may have been
+          interrupted. Please try again.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => unstable_retry()}
+            className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Try again
+          </button>
+          <Link
+            href="/"
+            className="rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            Back to home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (stale || chunkLoad) {
     // Brief placeholder while the auto-reload from the effect kicks in.
