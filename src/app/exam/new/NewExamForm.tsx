@@ -1,8 +1,13 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { createExamAction, type NewExamState } from "@/app/actions/exam";
-import { uploadFileAction, type UploadState } from "@/app/actions/upload";
+import {
+  uploadFileAction,
+  processUploadedBlobAction,
+  type UploadState,
+} from "@/app/actions/upload";
 import { SPECIALTIES, SPECIALTY_GROUPS } from "@/lib/specialties";
 import { EXAM_TYPE_GROUPS, getAllExamTypeIds } from "@/lib/exam-types";
 import { EXAM_LANGUAGES, DEFAULT_LANGUAGE, findLanguage } from "@/lib/languages";
@@ -72,10 +77,51 @@ export default function NewExamForm({
   recentFiles: RecentFile[];
 }) {
   const [state, action, pending] = useActionState<NewExamState, FormData>(createExamAction, null);
-  const [uploadState, uploadAction, uploadPending] = useActionState<UploadState, FormData>(
+  // uploadAction (the Server Action form-handler) is intentionally unused —
+  // we keep useActionState wired up only for `uploadState` / `uploadPending`.
+  // The visible upload flow uses Blob client-upload via onSubmit instead.
+  const [uploadState, , uploadPending] = useActionState<UploadState, FormData>(
     uploadFileAction,
     null
   );
+
+  // Vercel Blob client-upload path — lets users upload files >4.5 MB by
+  // streaming directly to Blob storage. Falls back to the Server Action
+  // path (uploadFileAction above) if the client-side upload fails or if
+  // window.crypto.subtle isn't available (e.g. http://, ancient browser).
+  const [blobUploading, setBlobUploading] = useState(false);
+  const [blobProgress, setBlobProgress] = useState(0);
+  const [blobError, setBlobError] = useState<string | null>(null);
+  const [blobResult, setBlobResult] = useState<UploadState>(null);
+
+  async function handleBlobUpload(file: File, generateSummary: boolean) {
+    setBlobError(null);
+    setBlobResult(null);
+    setBlobProgress(0);
+    setBlobUploading(true);
+    try {
+      const blob = await upload(`files/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/files/upload",
+        onUploadProgress: ({ percentage }) =>
+          setBlobProgress(Math.round(percentage)),
+      });
+      // File is now on Vercel Blob — ask the server to extract text +
+      // create the FileUpload row + optionally generate the summary.
+      const result = await processUploadedBlobAction({
+        blobUrl: blob.url,
+        filename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+        generateSummary,
+      });
+      setBlobResult(result);
+    } catch (e) {
+      setBlobError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBlobUploading(false);
+    }
+  }
   const [mode, setMode] = useState<GenerationMode>(defaults?.generationMode ?? "specialty");
   const [selectedFileId, setSelectedFileId] = useState<string>("");
   const useGenericDifficulty = mode === "file" || mode === "custom";
@@ -116,31 +162,36 @@ export default function NewExamForm({
   if (uploadState?.ok && uploadState.fileId && selectedFileId !== uploadState.fileId) {
     setSelectedFileId(uploadState.fileId);
   }
+  if (blobResult?.ok && blobResult.fileId && selectedFileId !== blobResult.fileId) {
+    setSelectedFileId(blobResult.fileId);
+  }
 
   return (
     <>
-      {/* Upload form (separate from generate form because it submits a file).
-          onSubmit hook does a client-side size pre-flight — if the file
-          is over 4 MB the action body will be rejected by Vercel's edge
-          before reaching the server, surfacing as a generic "Something
-          went wrong" error boundary. Stop it client-side instead. */}
+      {/* Upload form — client-side Vercel Blob upload bypasses the
+          Server Action 4.5 MB body limit. File streams directly to Blob
+          storage; we then ask the server to extract text and register
+          the FileUpload row via processUploadedBlobAction. Max size is
+          MAX_FILE_BYTES (50 MB) — pre-flight checked client-side. */}
       {fileEnabled && mode === "file" && (
         <form
-          action={uploadAction}
-          onSubmit={(e) => {
-            const fileInput = e.currentTarget.querySelector<HTMLInputElement>(
-              'input[name="file"]'
-            );
-            const f = fileInput?.files?.[0];
-            // 4.5 MB is Vercel's edge limit; we use 4 MB to leave room for
-            // the form overhead (action ID, generateSummary checkbox, etc.).
-            const MAX = 4 * 1024 * 1024;
-            if (f && f.size > MAX) {
-              e.preventDefault();
-              alert(
-                `File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Maximum is 4 MB. Please compress or split the file.`
-              );
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            const file = fd.get("file");
+            if (!(file instanceof File) || file.size === 0) {
+              setBlobError("Please pick a file first.");
+              return;
             }
+            const MAX = 50 * 1024 * 1024;
+            if (file.size > MAX) {
+              setBlobError(
+                `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 50 MB.`
+              );
+              return;
+            }
+            const generateSummary = fd.get("generateSummary") === "on";
+            await handleBlobUpload(file, generateSummary);
           }}
           className="mt-6 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
@@ -168,15 +219,31 @@ export default function NewExamForm({
               <span className="block text-xs text-zinc-500">{labels.summaryOptionHint}</span>
             </span>
           </label>
-          {uploadState?.error && (
+          {/* Show upload progress while bytes are streaming to Blob. */}
+          {blobUploading && (
+            <div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                <div
+                  className="h-full bg-blue-600 transition-all"
+                  style={{ width: `${blobProgress}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-zinc-500">
+                {blobProgress < 100
+                  ? `Uploading… ${blobProgress}%`
+                  : labels.uploadReading}
+              </p>
+            </div>
+          )}
+          {(uploadState?.error || blobError || (blobResult && !blobResult.ok && blobResult.error)) && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-              {uploadState.error}
+              {uploadState?.error ?? blobError ?? blobResult?.error}
             </p>
           )}
-          {uploadState?.ok && (
+          {(uploadState?.ok || blobResult?.ok) && (
             <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
               {labels.uploadDone}
-              {uploadState.summaryFailed && (
+              {(uploadState?.summaryFailed || blobResult?.summaryFailed) && (
                 <span className="mt-1 block text-xs text-amber-700 dark:text-amber-300">
                   {labels.summaryFailed}
                 </span>
@@ -185,10 +252,14 @@ export default function NewExamForm({
           )}
           <button
             type="submit"
-            disabled={uploadPending || (fileUsage?.remaining ?? 0) < 1}
+            disabled={
+              uploadPending || blobUploading || (fileUsage?.remaining ?? 0) < 1
+            }
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
-            {uploadPending ? labels.uploadReading : labels.uploadButton}
+            {uploadPending || blobUploading
+              ? labels.uploadReading
+              : labels.uploadButton}
           </button>
         </form>
       )}
