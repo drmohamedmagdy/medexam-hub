@@ -420,6 +420,11 @@ model Exam {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions    Question[]
   sourceFile   FileUpload? @relation(fields: [sourceFileId], references: [id], onDelete: SetNull)
+  // Multi-source exams attach extra files through the ExamSourceFile join
+  // table. `sourceFileId` mirrors the first selected file so older code that
+  // assumes a single source still works; the join table is the source of
+  // truth when an exam was generated from multiple files.
+  sourceFiles  ExamSourceFile[]
   sharedFrom   Exam?       @relation("ExamShares", fields: [sharedFromId], references: [id], onDelete: Cascade)
   sharedAttempts Exam[]    @relation("ExamShares")
   mockExam     MockExam?   @relation(fields: [mockExamId], references: [id], onDelete: SetNull)
@@ -427,6 +432,22 @@ model Exam {
   @@index([userId, createdAt])
   @@index([sharedFromId])
   @@index([mockExamId, blockIndex])
+}
+
+// Many-to-many join between Exam and FileUpload. An exam generated from
+// multiple uploaded files has one row here per source file, ordered by
+// `orderIndex` so the take/results UI can list sources in the order the
+// user picked them.
+model ExamSourceFile {
+  examId     String
+  fileId     String
+  orderIndex Int
+
+  exam Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  file FileUpload @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([examId, fileId])
+  @@index([fileId])
 }
 
 // Multi-block timed exam simulation. Each block is a regular Exam row
@@ -470,6 +491,7 @@ model FileUpload {
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exams         Exam[]
+  examLinks     ExamSourceFile[]
 
   @@index([userId, yearMonth])
   @@index([userId, createdAt])

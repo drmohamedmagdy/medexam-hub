@@ -123,7 +123,18 @@ export default function NewExamForm({
     }
   }
   const [mode, setMode] = useState<GenerationMode>(defaults?.generationMode ?? "specialty");
-  const [selectedFileId, setSelectedFileId] = useState<string>("");
+  // Multi-file selection. Order matters for the prompt (first picked is
+  // presented first to the AI), so we keep this as an ordered list rather
+  // than a Set. The legacy single-file path treats the first entry as the
+  // "primary" source so existing display code keeps working.
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const selectedFileId = selectedFileIds[0] ?? "";
+
+  function toggleFile(id: string) {
+    setSelectedFileIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
   const useGenericDifficulty = mode === "file" || mode === "custom";
   const canGenerate = remaining >= 1;
 
@@ -158,12 +169,20 @@ export default function NewExamForm({
     setDifficulty((prev) => coerceDifficulty(prev, useGenericDifficulty));
   }, [useGenericDifficulty]);
 
-  // After a successful upload, auto-select the file
-  if (uploadState?.ok && uploadState.fileId && selectedFileId !== uploadState.fileId) {
-    setSelectedFileId(uploadState.fileId);
+  // After a successful upload, auto-add the file to the selection.
+  if (
+    uploadState?.ok &&
+    uploadState.fileId &&
+    !selectedFileIds.includes(uploadState.fileId)
+  ) {
+    setSelectedFileIds((prev) => [...prev, uploadState.fileId!]);
   }
-  if (blobResult?.ok && blobResult.fileId && selectedFileId !== blobResult.fileId) {
-    setSelectedFileId(blobResult.fileId);
+  if (
+    blobResult?.ok &&
+    blobResult.fileId &&
+    !selectedFileIds.includes(blobResult.fileId)
+  ) {
+    setSelectedFileIds((prev) => [...prev, blobResult.fileId!]);
   }
 
   return (
@@ -403,25 +422,78 @@ export default function NewExamForm({
         {mode === "file" && (
           <>
             <Field label={labels.sourceFile}>
-              <select
+              {/* Comma-separated list of selected file IDs. The server reads
+                  this (preferred) and uses sourceFileId only as a legacy
+                  fallback when no `sourceFileIds` are present. */}
+              <input
+                type="hidden"
+                name="sourceFileIds"
+                value={selectedFileIds.join(",")}
+              />
+              {/* Legacy field — populated with the first picked file so any
+                  code path that still reads sourceFileId keeps working. */}
+              <input
+                type="hidden"
                 name="sourceFileId"
-                required
                 value={selectedFileId}
-                onChange={(e) => setSelectedFileId(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900"
-              >
-                <option value="">{labels.pickFile}</option>
-                {recentFiles.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.filename} ({Math.round(f.charCount / 100) / 10}k chars)
-                    {f.hasSummary ? " · 📄" : ""}
-                  </option>
-                ))}
-              </select>
+              />
+              {recentFiles.length === 0 ? (
+                <p className="mt-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-300">
+                  {labels.pickFile}
+                </p>
+              ) : (
+                <div className="mt-1 max-h-64 space-y-1 overflow-y-auto rounded-md border border-zinc-300 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+                  {recentFiles.map((f) => {
+                    const checked = selectedFileIds.includes(f.id);
+                    const order = checked
+                      ? selectedFileIds.indexOf(f.id) + 1
+                      : null;
+                    return (
+                      <label
+                        key={f.id}
+                        className={`flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm transition ${
+                          checked
+                            ? "bg-blue-50 dark:bg-blue-950/40"
+                            : "hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleFile(f.id)}
+                          className="h-4 w-4 shrink-0"
+                        />
+                        {order !== null && (
+                          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-semibold text-white">
+                            {order}
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">
+                          {f.filename}
+                        </span>
+                        <span className="shrink-0 text-xs text-zinc-500">
+                          {Math.round(f.charCount / 100) / 10}k
+                          {f.hasSummary ? " · 📄" : ""}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
               <p className="mt-1 text-xs text-zinc-500">
-                {labels.fileExplain}
+                {labels.multiFileHint ?? labels.fileExplain}
               </p>
-              <SummaryLinks file={recentFiles.find((f) => f.id === selectedFileId) ?? null} labels={labels} />
+              {selectedFileIds.length > 0 && (
+                <p className="mt-1 text-xs text-blue-700 dark:text-cyan-300">
+                  {selectedFileIds.length === 1
+                    ? "1 file selected"
+                    : `${selectedFileIds.length} files selected`}
+                </p>
+              )}
+              <SummaryLinks
+                file={recentFiles.find((f) => f.id === selectedFileId) ?? null}
+                labels={labels}
+              />
             </Field>
             <Field label={labels.topicOptional}>
               <input
@@ -593,7 +665,7 @@ export default function NewExamForm({
 
         <button
           type="submit"
-          disabled={pending || !canGenerate || (mode === "file" && !selectedFileId)}
+          disabled={pending || !canGenerate || (mode === "file" && selectedFileIds.length === 0)}
           className="w-full rounded-md bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:py-2.5 sm:text-sm"
         >
           {pending ? labels.generateLoading : labels.generate}

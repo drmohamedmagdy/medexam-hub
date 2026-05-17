@@ -10,7 +10,7 @@ import { getMonthlyQuestionsUsage, recordQuestionsUsed } from "@/lib/quota";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { Difficulty, ExamMode, ExamStatus, QuestionFormat } from "@/generated/prisma/client";
 import { getAllExamTypeIds, findExamType } from "@/lib/exam-types";
-import { truncateForPrompt } from "@/lib/file-upload";
+import { truncateForPrompt, truncateMultiSource } from "@/lib/file-upload";
 import { detectAndPersistAchievements } from "@/lib/achievements";
 import { createNotification } from "@/lib/notifications";
 
@@ -20,6 +20,10 @@ const NewExamSchema = z
     topic: z.string().max(120).optional().or(z.literal("")),
     examType: z.string().max(80).optional().or(z.literal("")),
     sourceFileId: z.string().max(40).optional().or(z.literal("")),
+    // Comma-separated list of file IDs for multi-source exams. When set,
+    // takes precedence over `sourceFileId` (which we still accept for
+    // backwards-compat — older form submissions may not include this).
+    sourceFileIds: z.string().max(800).optional().or(z.literal("")),
     language: z.string().max(8).optional().or(z.literal("")),
     audience: z.enum(["MEDICAL", "PARAMEDICAL", "NONMEDICAL"]).optional(),
     questionFormat: z.nativeEnum(QuestionFormat).optional(),
@@ -36,7 +40,11 @@ const NewExamSchema = z
     withImages: z.coerce.boolean().optional(),
   })
   .refine(
-    (d) => Boolean(d.specialty) || Boolean(d.examType) || Boolean(d.sourceFileId),
+    (d) =>
+      Boolean(d.specialty) ||
+      Boolean(d.examType) ||
+      Boolean(d.sourceFileId) ||
+      Boolean(d.sourceFileIds),
     { message: "Pick a specialty, exam type, or source file." }
   );
 
@@ -49,6 +57,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
     topic: formData.get("topic") ?? "",
     examType: formData.get("examType") ?? "",
     sourceFileId: formData.get("sourceFileId") ?? "",
+    sourceFileIds: formData.get("sourceFileIds") ?? "",
     language: formData.get("language") ?? "",
     audience: formData.get("audience") || undefined,
     questionFormat: formData.get("questionFormat") || undefined,
@@ -84,29 +93,44 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
 
   const examType = input.examType ? findExamType(input.examType) : null;
 
-  // Resolve source file (paid plans only)
-  let sourceFile: { id: string; filename: string; extractedText: string } | null = null;
-  if (input.sourceFileId) {
+  // Resolve source files (paid plans only). Accept the new multi-file
+  // input `sourceFileIds` (comma-separated, ordered) and fall back to the
+  // legacy single `sourceFileId`. We preserve the user's picked order
+  // because the prompt presents files in that order to the AI.
+  type SourceFile = { id: string; filename: string; extractedText: string };
+  let sourceFiles: SourceFile[] = [];
+  const requestedIds = parseSourceFileIds(input.sourceFileIds, input.sourceFileId);
+  if (requestedIds.length > 0) {
     if (planCfg.fileUploadsPerMonth === 0) {
       return {
         error: "File-based exams require Pro or Premium. Upgrade to use this feature.",
       };
     }
-    const f = await prisma.fileUpload.findUnique({
-      where: { id: input.sourceFileId },
-      select: { id: true, userId: true, filename: true, extractedText: true },
+    const found = await prisma.fileUpload.findMany({
+      where: { id: { in: requestedIds }, userId: user.id },
+      select: { id: true, filename: true, extractedText: true },
     });
-    if (!f || f.userId !== user.id) {
-      return { error: "Source file not found." };
+    if (found.length !== requestedIds.length) {
+      return { error: "One or more source files could not be found." };
     }
-    sourceFile = { id: f.id, filename: f.filename, extractedText: f.extractedText };
+    // Preserve the order the user picked the files in.
+    const byId = new Map(found.map((f) => [f.id, f]));
+    sourceFiles = requestedIds
+      .map((id) => byId.get(id))
+      .filter((f): f is SourceFile => Boolean(f));
   }
+  const primarySourceFile = sourceFiles[0] ?? null;
 
   const title = buildTitle({
     examTypeLabel: examType?.label ?? null,
     specialty: input.specialty || null,
     topic: input.topic || null,
-    fileLabel: sourceFile ? `From ${sourceFile.filename}` : null,
+    fileLabel:
+      sourceFiles.length === 0
+        ? null
+        : sourceFiles.length === 1
+          ? `From ${sourceFiles[0]!.filename}`
+          : `From ${sourceFiles.length} files`,
   });
 
   // Parse mixed-format selection. The form sends a comma-separated list
@@ -163,7 +187,16 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       specialty: input.specialty || null,
       topic: input.topic || null,
       examType: input.examType || null,
-      sourceFileId: sourceFile?.id ?? null,
+      sourceFileId: primarySourceFile?.id ?? null,
+      sourceFiles:
+        sourceFiles.length > 0
+          ? {
+              create: sourceFiles.map((f, i) => ({
+                fileId: f.id,
+                orderIndex: i,
+              })),
+            }
+          : undefined,
       difficulty: input.difficulty,
       mode: input.mode,
       questionFormat: primaryFormat,
@@ -179,7 +212,7 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
   // generationMode: "custom" when the user is on the custom tab (audience set
   // and no medical examType), "exam" when an examType is chosen, "specialty"
   // otherwise (the default medical-specialty path).
-  const isCustom = !!input.audience && !input.examType && !input.sourceFileId;
+  const isCustom = !!input.audience && !input.examType && sourceFiles.length === 0;
   await prisma.user.update({
     where: { id: user.id },
     data: {
@@ -200,14 +233,28 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
 
   let questions;
   try {
-    const trimmed = sourceFile ? truncateForPrompt(sourceFile.extractedText) : null;
+    // Build the prompt's source block: single-file → as-is up to the
+    // 30k char cap; multi-file → fair-share split across files with
+    // `=== file: name ===` headers so the AI can keep them straight.
+    let sourceText: string | null = null;
+    let sourceFilenameForPrompt: string | null = null;
+    if (sourceFiles.length === 1) {
+      const only = sourceFiles[0]!;
+      sourceText = truncateForPrompt(only.extractedText).text;
+      sourceFilenameForPrompt = only.filename;
+    } else if (sourceFiles.length > 1) {
+      sourceText = truncateMultiSource(
+        sourceFiles.map((f) => ({ filename: f.filename, text: f.extractedText }))
+      ).text;
+      sourceFilenameForPrompt = sourceFiles.map((f) => f.filename).join(", ");
+    }
     questions = await generateExam({
       specialty: input.specialty || null,
       topic: input.topic || null,
       examType: input.examType || null,
       language: input.language || null,
-      sourceText: trimmed?.text ?? null,
-      sourceFilename: sourceFile?.filename ?? null,
+      sourceText,
+      sourceFilename: sourceFilenameForPrompt,
       audience: input.audience ?? "MEDICAL",
       questionFormat: primaryFormat,
       formatBatches: isMixed ? merged : undefined,
@@ -323,6 +370,31 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
   await recordQuestionsUsed(user.id, questions.length);
 
   redirect(`/exam/${exam.id}`);
+}
+
+/**
+ * Combine the new `sourceFileIds` (CSV) and legacy `sourceFileId` inputs
+ * into a single ordered, deduped list. Drops empties and clamps to 10
+ * files so a malicious / curious client can't blow up the per-file
+ * truncation share to 0.
+ */
+function parseSourceFileIds(csv: string | undefined, legacy: string | undefined): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of (csv ?? "").split(",")) {
+    const id = raw.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  if (legacy) {
+    const id = legacy.trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      out.push(id);
+    }
+  }
+  return out.slice(0, 10);
 }
 
 function buildTitle(parts: {

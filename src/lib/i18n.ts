@@ -295,6 +295,7 @@ export type Translations = {
     sourceFile: string;
     pickFile: string;
     fileExplain: string;
+    multiFileHint?: string;
     fileTopicPlaceholder: string;
     customTitle: string;
     customExplain: string;
@@ -1653,6 +1654,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Reading file…", uploadButton: "Upload",
       sourceFile: "Source file", pickFile: "— pick a file —",
       fileExplain: "Questions will be generated strictly from this file's content. Upload a new file above if your file isn't in the list.",
+      multiFileHint: "Pick one or more files. Questions will be generated strictly from the combined content; longer combinations are trimmed proportionally.",
       fileTopicPlaceholder: "e.g. Focus on chapter 3, or specific topic within the file",
       customTitle: "Build your own exam",
       customExplain: "Whether you're a paramedical or non-medical student, you can easily build your own exam. Choose your subject, set your difficulty, and generate questions that match your learning goals.",
@@ -1756,6 +1758,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "جارٍ قراءة الملف…", uploadButton: "رفع",
       sourceFile: "الملف المصدر", pickFile: "— اختر ملفًا —",
       fileExplain: "ستُولَّد الأسئلة حصريًا من محتوى هذا الملف. ارفع ملفًا جديدًا أعلاه إذا لم يكن ملفك ضمن القائمة.",
+      multiFileHint: "اختر ملفًا واحدًا أو أكثر. ستُولَّد الأسئلة حصريًا من المحتوى المُجمَّع، ويتم اقتطاع المجموعات الأطول بنسبة متساوية.",
       fileTopicPlaceholder: "مثال: التركيز على الفصل 3، أو موضوع محدد داخل الملف",
       customTitle: "أنشئ امتحانك بنفسك",
       customExplain: "سواء كنت طالب علوم طبية مساعدة أو طالبًا غير طبي، يمكنك بسهولة إنشاء امتحان خاص بك. اختر مادتك، حدّد مستوى الصعوبة، وأنشئ أسئلة تناسب أهدافك التعليمية.",
@@ -1859,6 +1862,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Lecture du fichier…", uploadButton: "Téléverser",
       sourceFile: "Fichier source", pickFile: "— choisissez un fichier —",
       fileExplain: "Les questions seront générées strictement à partir du contenu de ce fichier. Téléversez un nouveau fichier ci-dessus si le vôtre n'est pas dans la liste.",
+      multiFileHint: "Choisissez un ou plusieurs fichiers. Les questions seront générées uniquement à partir du contenu combiné ; les combinaisons trop longues sont tronquées proportionnellement.",
       fileTopicPlaceholder: "ex. Se concentrer sur le chapitre 3, ou un sujet précis du fichier",
       customTitle: "Créez votre propre examen",
       customExplain: "Que vous soyez étudiant paramédical ou non médical, vous pouvez facilement créer votre propre examen. Choisissez votre matière, définissez votre difficulté et générez des questions adaptées à vos objectifs.",
@@ -1962,6 +1966,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Leyendo archivo…", uploadButton: "Subir",
       sourceFile: "Archivo fuente", pickFile: "— elige un archivo —",
       fileExplain: "Las preguntas se generarán estrictamente a partir del contenido de este archivo. Sube un nuevo archivo arriba si el tuyo no está en la lista.",
+      multiFileHint: "Elige uno o varios archivos. Las preguntas se generarán solo a partir del contenido combinado; las combinaciones largas se recortan proporcionalmente.",
       fileTopicPlaceholder: "ej. Enfocarse en el capítulo 3, o un tema específico del archivo",
       customTitle: "Crea tu propio examen",
       customExplain: "Tanto si eres estudiante paramédico como no médico, puedes crear fácilmente tu propio examen. Elige tu materia, define la dificultad y genera preguntas que se ajusten a tus objetivos.",
@@ -2065,6 +2070,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Datei wird gelesen…", uploadButton: "Hochladen",
       sourceFile: "Quelldatei", pickFile: "— Datei wählen —",
       fileExplain: "Die Fragen werden ausschließlich aus dem Inhalt dieser Datei generiert. Laden Sie oben eine neue Datei hoch, falls Ihre nicht in der Liste ist.",
+      multiFileHint: "Wählen Sie eine oder mehrere Dateien aus. Fragen werden ausschließlich aus dem kombinierten Inhalt generiert; längere Kombinationen werden anteilig gekürzt.",
       fileTopicPlaceholder: "z. B. Fokus auf Kapitel 3 oder ein bestimmtes Thema in der Datei",
       customTitle: "Eigene Prüfung erstellen",
       customExplain: "Egal ob Sie paramedizinisch oder nicht-medizinisch studieren, Sie können einfach Ihre eigene Prüfung erstellen. Wählen Sie Ihr Fach, legen Sie den Schwierigkeitsgrad fest und erstellen Sie Fragen, die zu Ihren Lernzielen passen.",
@@ -2168,6 +2174,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Lettura file…", uploadButton: "Carica",
       sourceFile: "File sorgente", pickFile: "— scegli un file —",
       fileExplain: "Le domande saranno generate esclusivamente dal contenuto di questo file. Carica un nuovo file qui sopra se il tuo non è nell'elenco.",
+      multiFileHint: "Scegli uno o più file. Le domande saranno generate solo dal contenuto combinato; le combinazioni più lunghe vengono troncate proporzionalmente.",
       fileTopicPlaceholder: "es. Focalizzati sul capitolo 3 o su un argomento specifico del file",
       customTitle: "Crea il tuo esame",
       customExplain: "Che tu sia uno studente paramedico o non medico, puoi facilmente creare il tuo esame. Scegli la materia, imposta la difficoltà e genera domande in linea con i tuoi obiettivi di apprendimento.",
@@ -2271,6 +2278,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Lendo arquivo…", uploadButton: "Enviar",
       sourceFile: "Arquivo de origem", pickFile: "— escolha um arquivo —",
       fileExplain: "As questões serão geradas estritamente a partir do conteúdo deste arquivo. Envie um novo arquivo acima se o seu não estiver na lista.",
+      multiFileHint: "Escolha um ou mais arquivos. As questões serão geradas apenas a partir do conteúdo combinado; combinações maiores são reduzidas proporcionalmente.",
       fileTopicPlaceholder: "ex. Focar no capítulo 3, ou um tópico específico do arquivo",
       customTitle: "Crie seu próprio exame",
       customExplain: "Seja você estudante paramédico ou não médico, pode facilmente criar seu próprio exame. Escolha sua matéria, defina a dificuldade e gere questões alinhadas aos seus objetivos.",
@@ -2374,6 +2382,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "Dosya okunuyor…", uploadButton: "Yükle",
       sourceFile: "Kaynak dosya", pickFile: "— bir dosya seçin —",
       fileExplain: "Sorular yalnızca bu dosyanın içeriğinden oluşturulacak. Dosyanız listede yoksa yukarıdan yeni bir dosya yükleyin.",
+      multiFileHint: "Bir veya daha fazla dosya seçin. Sorular yalnızca birleştirilmiş içerikten oluşturulur; daha uzun birleşimler orantılı olarak kısaltılır.",
       fileTopicPlaceholder: "örn. 3. bölüme odaklan veya dosyadaki belirli bir konuya",
       customTitle: "Kendi sınavını oluştur",
       customExplain: "Sağlıkla ilgili bir alanda ya da tıp dışı bir alanda öğrenci olsanız da, kendi sınavınızı kolayca oluşturabilirsiniz. Konunuzu seçin, zorluk seviyesini belirleyin ve öğrenme hedeflerinize uygun sorular oluşturun.",
@@ -2477,6 +2486,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "فائل پڑھی جا رہی ہے…", uploadButton: "اپلوڈ",
       sourceFile: "سورس فائل", pickFile: "— ایک فائل منتخب کریں —",
       fileExplain: "سوالات صرف اسی فائل کے مواد سے بنائے جائیں گے۔ اگر آپ کی فائل فہرست میں نہیں ہے تو اوپر سے نئی فائل اپلوڈ کریں۔",
+      multiFileHint: "ایک یا زیادہ فائلیں منتخب کریں۔ سوالات صرف مشترکہ مواد سے بنائے جائیں گے؛ لمبے مجموعے متناسب طور پر کاٹے جاتے ہیں۔",
       fileTopicPlaceholder: "مثلاً باب 3 پر توجہ، یا فائل کے اندر کوئی خاص موضوع",
       customTitle: "اپنا امتحان خود بنائیں",
       customExplain: "آپ پیرامیڈیکل طالبعلم ہوں یا غیر طبی، آپ آسانی سے اپنا امتحان بنا سکتے ہیں۔ اپنا مضمون چنیں، مشکل کی سطح طے کریں اور اپنے تعلیمی اہداف سے ہم آہنگ سوالات بنائیں۔",
@@ -2580,6 +2590,7 @@ const EXTRAS: Record<Locale, Extras> = {
       uploadReading: "در حال خواندن فایل…", uploadButton: "بارگذاری",
       sourceFile: "فایل منبع", pickFile: "— یک فایل انتخاب کنید —",
       fileExplain: "سؤالات تنها از محتوای این فایل تولید می‌شوند. اگر فایل شما در فهرست نیست، در بالا یک فایل جدید بارگذاری کنید.",
+      multiFileHint: "یک یا چند فایل را انتخاب کنید. سؤالات فقط از محتوای ترکیبی تولید می‌شوند؛ ترکیب‌های طولانی‌تر به نسبت کوتاه می‌شوند.",
       fileTopicPlaceholder: "مثال: تمرکز روی فصل ۳، یا موضوعی خاص درون فایل",
       customTitle: "آزمون خود را بسازید",
       customExplain: "چه دانشجوی پیراپزشکی باشید چه غیرپزشکی، می‌توانید به‌راحتی آزمون خود را بسازید. موضوعتان را انتخاب کنید، سطح دشواری را تنظیم کنید و سؤالاتی هم‌راستا با اهداف یادگیری‌تان بسازید.",
