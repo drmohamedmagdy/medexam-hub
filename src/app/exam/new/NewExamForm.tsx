@@ -108,6 +108,29 @@ export default function NewExamForm({
     setBlobStage("preparing");
     setBlobUploading(true);
     try {
+      // Routing decision: files small enough to fit Vercel's Server Action
+      // body cap (~4.5 MB) skip the Blob client-upload path entirely and
+      // POST through uploadFileAction. That path is older and known-good;
+      // Blob client-upload only earns its complexity above the cap.
+      // A user reported uploads hanging at 0% with no error — falling back
+      // to the server action means files under 4 MB always work even when
+      // the Blob client-upload path is misconfigured on the deployment.
+      const SERVER_ACTION_SAFE_BYTES = 4 * 1024 * 1024;
+      if (file.size <= SERVER_ACTION_SAFE_BYTES) {
+        console.log("[upload] using server-action path (file <= 4 MB)", {
+          size: file.size,
+        });
+        setBlobStage("processing");
+        const fd = new FormData();
+        fd.set("file", file);
+        if (generateSummary) fd.set("generateSummary", "on");
+        const result = await uploadFileAction(null, fd);
+        setBlobResult(result);
+        return;
+      }
+      console.log("[upload] using Blob client-upload (file > 4 MB)", {
+        size: file.size,
+      });
       // Sanitize the storage path. Spaces, parens, and other special chars
       // in filenames (e.g. "lect.3 lenses (2).pdf") have historically caused
       // signed-URL mismatches on some storage backends. The original name
