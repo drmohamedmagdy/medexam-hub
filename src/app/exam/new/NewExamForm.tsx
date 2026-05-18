@@ -120,14 +120,39 @@ export default function NewExamForm({
         .replace(/^_+|_+$/g, "")
         .slice(0, 120) || "upload";
 
+      // Hard timeout so a silently-stalled upload (no progress events
+      // after the initial 0%) doesn't spin forever. Picked at 4 min so
+      // 50 MB on a slow connection still has headroom.
+      const aborter = new AbortController();
+      const timeoutId = window.setTimeout(() => {
+        console.error("[blob upload] aborting — no progress in 4 min");
+        aborter.abort();
+      }, 4 * 60 * 1000);
+
+      console.log("[blob upload] starting", {
+        safeName,
+        size: file.size,
+        type: file.type,
+      });
+
       const blob = await upload(`files/${safeName}`, file, {
         access: "public",
         handleUploadUrl: "/api/files/upload",
-        onUploadProgress: ({ percentage }) => {
+        abortSignal: aborter.signal,
+        onUploadProgress: ({ loaded, total, percentage }) => {
           if (blobStage !== "uploading") setBlobStage("uploading");
           setBlobProgress(Math.round(percentage));
+          // Reset the stall timer on each progress event.
+          window.clearTimeout(timeoutId);
+          if (percentage < 100) {
+            console.log(
+              `[blob upload] progress ${Math.round(percentage)}% (${loaded}/${total})`
+            );
+          }
         },
       });
+      window.clearTimeout(timeoutId);
+      console.log("[blob upload] complete", { url: blob.url });
       // File is now on Vercel Blob — ask the server to extract text +
       // create the FileUpload row + optionally generate the summary.
       setBlobStage("processing");
