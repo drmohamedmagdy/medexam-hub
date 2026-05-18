@@ -38,6 +38,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // Without a Blob token configured on the Vercel project, handleUpload
+  // would silently issue a useless client token and the browser upload
+  // would hang at 0% with no error surfaced. Fail loudly instead.
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    console.error("[upload route] BLOB_READ_WRITE_TOKEN is not set");
+    return NextResponse.json(
+      { error: "File upload is misconfigured on this deployment. Please contact support." },
+      { status: 500 }
+    );
+  }
+
   const body = (await request.json()) as HandleUploadBody;
 
   try {
@@ -54,13 +65,20 @@ export async function POST(request: Request) {
           tokenPayload: JSON.stringify({ userId: user.id }),
         };
       },
-      onUploadCompleted: async () => {
-        // No-op — text extraction + DB record are created by a separate
-        // server action the client invokes once it has the blob URL.
+      onUploadCompleted: async ({ blob }) => {
+        // No-op for the upload pipeline — text extraction + DB record are
+        // created by a separate server action the client invokes once it
+        // has the blob URL. Log so we can confirm uploads actually completed
+        // when diagnosing user-reported "stuck at 0%" issues.
+        console.log("[upload route] blob upload completed:", {
+          url: blob.url,
+          pathname: blob.pathname,
+        });
       },
     });
     return NextResponse.json(json);
   } catch (error) {
+    console.error("[upload route] handleUpload threw:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload failed" },
       { status: 400 }

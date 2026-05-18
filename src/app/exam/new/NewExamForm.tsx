@@ -90,6 +90,13 @@ export default function NewExamForm({
   // path (uploadFileAction above) if the client-side upload fails or if
   // window.crypto.subtle isn't available (e.g. http://, ancient browser).
   const [blobUploading, setBlobUploading] = useState(false);
+  // "preparing": waiting for the server-issued upload token; bytes
+  //   haven't started flowing yet.
+  // "uploading": browser is PUTting bytes to Vercel Blob; progress %
+  //   reflects bytes sent.
+  // "processing": upload finished; server is fetching the blob, extracting
+  //   text, and creating the FileUpload row.
+  const [blobStage, setBlobStage] = useState<"idle" | "preparing" | "uploading" | "processing">("idle");
   const [blobProgress, setBlobProgress] = useState(0);
   const [blobError, setBlobError] = useState<string | null>(null);
   const [blobResult, setBlobResult] = useState<UploadState>(null);
@@ -98,16 +105,32 @@ export default function NewExamForm({
     setBlobError(null);
     setBlobResult(null);
     setBlobProgress(0);
+    setBlobStage("preparing");
     setBlobUploading(true);
     try {
-      const blob = await upload(`files/${file.name}`, file, {
+      // Sanitize the storage path. Spaces, parens, and other special chars
+      // in filenames (e.g. "lect.3 lenses (2).pdf") have historically caused
+      // signed-URL mismatches on some storage backends. The original name
+      // is preserved separately and passed to the server action below so
+      // the user still sees their filename in the UI.
+      const safeName = file.name
+        .normalize("NFKD")
+        .replace(/[^\w.\-]+/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 120) || "upload";
+
+      const blob = await upload(`files/${safeName}`, file, {
         access: "public",
         handleUploadUrl: "/api/files/upload",
-        onUploadProgress: ({ percentage }) =>
-          setBlobProgress(Math.round(percentage)),
+        onUploadProgress: ({ percentage }) => {
+          if (blobStage !== "uploading") setBlobStage("uploading");
+          setBlobProgress(Math.round(percentage));
+        },
       });
       // File is now on Vercel Blob — ask the server to extract text +
       // create the FileUpload row + optionally generate the summary.
+      setBlobStage("processing");
       const result = await processUploadedBlobAction({
         blobUrl: blob.url,
         filename: file.name,
@@ -117,9 +140,14 @@ export default function NewExamForm({
       });
       setBlobResult(result);
     } catch (e) {
+      // Logged so we can diagnose stuck uploads from the browser console
+      // when a user reports the issue (server-side errors are also logged
+      // separately by the API route).
+      console.error("[blob upload] failed:", e);
       setBlobError(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBlobUploading(false);
+      setBlobStage("idle");
     }
   }
   const [mode, setMode] = useState<GenerationMode>(defaults?.generationMode ?? "specialty");
@@ -238,19 +266,29 @@ export default function NewExamForm({
               <span className="block text-xs text-zinc-500">{labels.summaryOptionHint}</span>
             </span>
           </label>
-          {/* Show upload progress while bytes are streaming to Blob. */}
+          {/* Show upload progress while bytes are streaming to Blob.
+              The progress bar only animates during the "uploading" phase;
+              "preparing" (waiting on token) and "processing" (server-side
+              text extraction) use an indeterminate look. */}
           {blobUploading && (
             <div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
                 <div
                   className="h-full bg-blue-600 transition-all"
-                  style={{ width: `${blobProgress}%` }}
+                  style={{
+                    width:
+                      blobStage === "uploading"
+                        ? `${blobProgress}%`
+                        : blobStage === "processing"
+                          ? "100%"
+                          : "10%",
+                  }}
                 />
               </div>
               <p className="mt-1 text-xs text-zinc-500">
-                {blobProgress < 100
-                  ? `Uploading… ${blobProgress}%`
-                  : labels.uploadReading}
+                {blobStage === "preparing" && "Preparing upload…"}
+                {blobStage === "uploading" && `Uploading… ${blobProgress}%`}
+                {blobStage === "processing" && labels.uploadReading}
               </p>
             </div>
           )}
