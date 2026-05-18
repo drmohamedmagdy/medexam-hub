@@ -22,7 +22,13 @@ const csp = [
   "media-src 'self' blob: https://*.public.blob.vercel-storage.com",
   // SSE + fetches. Self covers our APIs; explicit Vercel hosts cover
   // analytics + Blob uploads.
-  "connect-src 'self' https://vitals.vercel-insights.com https://*.public.blob.vercel-storage.com https://va.vercel-scripts.com",
+  // - *.public.blob.vercel-storage.com: where finished blobs are served
+  //   from and where simple (<5 MB) PUTs go.
+  // - vercel.com + blob.vercel-storage.com: the @vercel/blob client SDK
+  //   routes its multipart-upload API calls through these origins. Without
+  //   them in the allowlist, browser-side uploads stall at 0% with a CSP
+  //   "Refused to connect" error in the console.
+  "connect-src 'self' https://vitals.vercel-insights.com https://*.public.blob.vercel-storage.com https://blob.vercel-storage.com https://vercel.com https://va.vercel-scripts.com",
   // No one is allowed to embed us — kills classic clickjacking attacks.
   "frame-ancestors 'none'",
   "base-uri 'self'",
