@@ -118,48 +118,114 @@ function buildArabicReengagementHtml(userId: string, fullName: string | null): s
   const ctaUrl = `${SITE}/plans?promo=${PROMO_CODE}`;
   const unsubUrl = `${SITE}/api/email/unsubscribe?token=${makeUnsubToken(userId, "marketing")}`;
 
+  // Table-based layout is the industry standard for HTML emails because
+  // Outlook, Yahoo, and many mobile clients strip or partially honor CSS.
+  // The previous div-based template collapsed in Gmail (background color
+  // box disappeared, "rounded" CTA rendered as plain link). Tables with
+  // bgcolor attributes + inline styles render identically everywhere.
+  const FONT_STACK = `'Segoe UI', Tahoma, Arial, 'Helvetica Neue', Helvetica, sans-serif`;
+
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif; margin:0; padding:24px; color:#111; line-height:1.7; background:#fafafa;">
-<div dir="rtl" style="text-align:right; max-width:560px; margin:0 auto; background:#ffffff; padding:32px 28px; border-radius:12px; border:1px solid #eee;">
-  <p style="font-size:16px; margin:0 0 16px;">أهلاً ${firstName} 👋</p>
-  <p style="font-size:16px; margin:0 0 16px;"><b>مش ناوي تشترك معانا وتستفيد بخدماتنا كاملة؟</b> 🤔</p>
-  <p style="font-size:15px; margin:0 0 20px;">
-    إحنا في <b>MedExam Hub</b> بنساعد آلاف الأطباء وطلاب الطب يتحضّروا
-    لامتحاناتهم بأسلوب جديد كلياً — وحبّينا نفكّرك إنك ممكن تستفيد أكتر بكتير.
-  </p>
-  <ul style="font-size:15px; margin:0 0 20px; padding-right:8px; list-style:none;">
-    <li style="margin:6px 0;">✅ آلاف الأسئلة المُولَّدة بالـ AI في كل التخصصات</li>
-    <li style="margin:6px 0;">✅ امتحانات تجريبية موقّتة بمعايير الامتحانات الحقيقية</li>
-    <li style="margin:6px 0;">✅ مراجعة الإجابات الخاطئة تلقائياً (spaced repetition)</li>
-    <li style="margin:6px 0;">✅ شهادات إتمام موثّقة تضيفها لـ CV</li>
-    <li style="margin:6px 0;">✅ تحضير لـ USMLE · MRCP · PLAB · امتحانات النيابة المصرية</li>
-  </ul>
-  <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:16px 20px; margin:20px 0; text-align:right;">
-    <p style="font-size:15px; margin:0 0 8px;">🎁 <b>عرض خاص ليك</b></p>
-    <p style="font-size:14px; margin:0 0 14px; color:#333;">
-      استخدم الكود <b style="font-family:Consolas, Menlo, monospace; background:#ffffff; padding:2px 8px; border-radius:4px; direction:ltr; display:inline-block;">${PROMO_CODE}</b> واحصل على خصم <b>20%</b> على أي خطة مدفوعة.<br/>
-      العرض ساري حتى يوم <b>3 يونيو</b>.
-    </p>
-    <p style="margin:0;">
-      <a href="${ctaUrl}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:8px; font-weight:600; font-size:15px;">
-        اشترك الآن واحصل على الخصم ←
-      </a>
-    </p>
-  </div>
-  <p style="font-size:14px; margin:20px 0 8px; color:#444;">
-    لو عندك أي سؤال أو حابب تعرف الخطة الأنسب ليك، رد على الإيميل ده وهنرد عليك شخصياً.
-  </p>
-  <p style="font-size:14px; margin:16px 0 0; color:#666;">تحياتنا،<br/><b>فريق MedExam Hub</b></p>
-  <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
-  <p style="font-size:11px; color:#888; line-height:1.5; text-align:right;">
-    وصلك الإيميل ده لأن عندك حساب على MedExam Hub.
-    لو مش عايز إيميلات تسويقية، <a href="${unsubUrl}" style="color:#888;">اضغط هنا لإلغاء الاشتراك</a>.<br/>
-    MedExam Hub · For medical education only.
-  </p>
-</div>
-</body></html>`;
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedExam Hub</title>
+</head>
+<body dir="rtl" style="margin:0; padding:0; background-color:#f5f5f5; font-family:${FONT_STACK};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#f5f5f5" style="background-color:#f5f5f5;">
+  <tr><td align="center" style="padding:24px 12px;">
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px; width:100%; background-color:#ffffff; border:1px solid #e5e7eb; border-radius:12px;">
+
+      <!-- top spacer -->
+      <tr><td style="height:28px; line-height:28px; font-size:0;">&nbsp;</td></tr>
+
+      <!-- greeting + intro -->
+      <tr><td style="padding:0 28px;">
+        <p dir="rtl" style="margin:0 0 14px; font-family:${FONT_STACK}; font-size:17px; color:#111; line-height:1.7; text-align:right;">
+          أهلاً ${firstName} 👋
+        </p>
+        <p dir="rtl" style="margin:0 0 14px; font-family:${FONT_STACK}; font-size:17px; color:#111; line-height:1.7; text-align:right;">
+          <strong>مش ناوي تشترك معانا وتستفيد بخدماتنا كاملة؟</strong> 🤔
+        </p>
+        <p dir="rtl" style="margin:0 0 18px; font-family:${FONT_STACK}; font-size:15px; color:#333; line-height:1.8; text-align:right;">
+          إحنا في <strong>MedExam Hub</strong> بنساعد آلاف الأطباء وطلاب الطب
+          يتحضّروا لامتحاناتهم بأسلوب جديد كلياً — وحبّينا نفكّرك إنك ممكن تستفيد أكتر بكتير.
+        </p>
+      </td></tr>
+
+      <!-- features list (one row per item — robust across clients) -->
+      <tr><td style="padding:0 28px 8px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr><td dir="rtl" style="padding:5px 0; font-family:${FONT_STACK}; font-size:15px; color:#333; text-align:right; line-height:1.6;">✅ آلاف الأسئلة المُولَّدة بالـ AI في كل التخصصات</td></tr>
+          <tr><td dir="rtl" style="padding:5px 0; font-family:${FONT_STACK}; font-size:15px; color:#333; text-align:right; line-height:1.6;">✅ امتحانات تجريبية موقّتة بمعايير الامتحانات الحقيقية</td></tr>
+          <tr><td dir="rtl" style="padding:5px 0; font-family:${FONT_STACK}; font-size:15px; color:#333; text-align:right; line-height:1.6;">✅ مراجعة الإجابات الخاطئة تلقائياً (spaced repetition)</td></tr>
+          <tr><td dir="rtl" style="padding:5px 0; font-family:${FONT_STACK}; font-size:15px; color:#333; text-align:right; line-height:1.6;">✅ شهادات إتمام موثّقة تضيفها لـ CV</td></tr>
+          <tr><td dir="rtl" style="padding:5px 0; font-family:${FONT_STACK}; font-size:15px; color:#333; text-align:right; line-height:1.6;">✅ تحضير لـ USMLE · MRCP · PLAB · امتحانات النيابة المصرية</td></tr>
+        </table>
+      </td></tr>
+
+      <!-- promo box (nested table with bgcolor so Outlook honors it) -->
+      <tr><td style="padding:24px 28px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#eff6ff" style="background-color:#eff6ff; border:1px solid #bfdbfe; border-radius:12px;">
+          <tr><td style="padding:20px 24px;">
+            <p dir="rtl" style="margin:0 0 10px; font-family:${FONT_STACK}; font-size:16px; color:#1e3a8a; text-align:right;">
+              🎁 <strong>عرض خاص ليك</strong>
+            </p>
+            <p dir="rtl" style="margin:0 0 16px; font-family:${FONT_STACK}; font-size:14px; color:#1f2937; line-height:1.8; text-align:right;">
+              استخدم الكود
+              <span style="display:inline-block; direction:ltr; font-family:Consolas,Menlo,monospace; background-color:#ffffff; color:#1e40af; padding:3px 10px; border-radius:4px; font-weight:bold; border:1px solid #93c5fd;">TGAR20</span>
+              واحصل على خصم <strong>20%</strong> على أي خطة مدفوعة.<br>
+              العرض ساري حتى يوم <strong>3 يونيو</strong>.
+            </p>
+            <!-- CTA button: table with bgcolor renders as solid button
+                 in every client (Outlook included). -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr><td align="center" bgcolor="#2563eb" style="background-color:#2563eb; border-radius:8px;">
+                <a href="${ctaUrl}" style="display:inline-block; padding:12px 28px; font-family:${FONT_STACK}; font-size:15px; color:#ffffff; text-decoration:none; font-weight:600; border-radius:8px;">
+                  اشترك الآن واحصل على الخصم ←
+                </a>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </td></tr>
+
+      <!-- closing -->
+      <tr><td style="padding:4px 28px 0;">
+        <p dir="rtl" style="margin:0 0 16px; font-family:${FONT_STACK}; font-size:14px; color:#4b5563; line-height:1.8; text-align:right;">
+          لو عندك أي سؤال أو حابب تعرف الخطة الأنسب ليك،
+          رد على الإيميل ده وهنرد عليك شخصياً.
+        </p>
+        <p dir="rtl" style="margin:0; font-family:${FONT_STACK}; font-size:14px; color:#6b7280; line-height:1.8; text-align:right;">
+          تحياتنا،<br>
+          <strong>فريق MedExam Hub</strong>
+        </p>
+      </td></tr>
+
+      <!-- divider -->
+      <tr><td style="padding:20px 28px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr><td style="border-top:1px solid #e5e7eb; font-size:0; line-height:0;">&nbsp;</td></tr>
+        </table>
+      </td></tr>
+
+      <!-- footer / unsubscribe -->
+      <tr><td style="padding:0 28px 28px;">
+        <p dir="rtl" style="margin:0; font-family:${FONT_STACK}; font-size:11px; color:#9ca3af; line-height:1.6; text-align:right;">
+          وصلك الإيميل ده لأن عندك حساب على MedExam Hub.<br>
+          لو مش عايز إيميلات تسويقية، <a href="${unsubUrl}" style="color:#6b7280; text-decoration:underline;">اضغط هنا لإلغاء الاشتراك</a>.<br>
+          MedExam Hub · For medical education only.
+        </p>
+      </td></tr>
+
+    </table>
+
+  </td></tr>
+</table>
+</body>
+</html>`;
 }
 
 const SUBJECT = "مش ناوي تشترك معانا؟ 🩺";
