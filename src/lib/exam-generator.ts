@@ -468,9 +468,54 @@ async function generateSingleFormat(
     ],
   };
 
-  const system = personaByAudience[audience].join(" ");
+  // When source material is provided, the source DOMINATES — the audience
+  // persona is just a framing hint. A user reported uploading a research-
+  // methodology PDF and getting cardiology vignettes back because the default
+  // MEDICAL persona ("you are a medical question writer") overpowered the
+  // "use the source" instruction buried at the end of the user message.
+  // Fix: source-mode uses its own system prompt that tells the model the
+  // source IS the curriculum, regardless of audience.
+  const hasSource = Boolean(input.sourceText);
+  const system = hasSource
+    ? [
+        "You are an exam-question writer. Your ONLY job is to generate questions strictly from the source material provided in the user message.",
+        "The source material defines the entire subject and scope. If the source is about research methodology, write research-methodology questions. If it is about history, write history questions. If it is about engineering, write engineering questions. NEVER default to medical or clinical scenarios unless the source itself is medical.",
+        "Every question must test facts, definitions, concepts, mechanisms, or recommendations that are EXPLICITLY present in the source text. Do not introduce content from your training data that is not supported by the source.",
+        "If the source does not contain enough material for the requested number of questions, generate fewer questions rather than fabricating content outside the source.",
+        `Output language: ${language.promptName}. Write the question stem, all options, the explanation, and the learning point in ${language.promptName}.`,
+      ].join(" ")
+    : personaByAudience[audience].join(" ");
 
   const lines: string[] = [];
+
+  // ── SOURCE MATERIAL FIRST ───────────────────────────────────────────
+  // Put the source at the TOP of the user message so it shapes the
+  // model's attention from the start, instead of arriving after pages
+  // of audience/specialty/difficulty priming that pull it toward
+  // medical content.
+  if (input.sourceText) {
+    lines.push("=== SOURCE MATERIAL ===");
+    if (input.sourceFilename) {
+      lines.push(`Source filename: ${input.sourceFilename}`);
+    }
+    lines.push(input.sourceText);
+    lines.push("=== END SOURCE MATERIAL ===");
+    lines.push("");
+    lines.push(
+      "CRITICAL: Generate EVERY question STRICTLY from the source material above."
+    );
+    lines.push(
+      "• The source's subject domain (whether research methodology, history, statistics, philosophy, engineering, anything) is the ONLY subject you may write about."
+    );
+    lines.push(
+      "• DO NOT introduce facts, examples, patient cases, clinical scenarios, or any content that isn't explicitly in the source — even if you know it from training."
+    );
+    lines.push(
+      "• If you cannot find enough material in the source for the requested count, generate fewer questions. Quality and source-adherence beat quantity."
+    );
+    lines.push("");
+  }
+
   lines.push(`Language: ${language.promptName}`);
   if (examType) {
     lines.push(`Exam style: ${examType.label}`);
@@ -497,7 +542,10 @@ async function generateSingleFormat(
   }
   // Pick generic difficulty description for non-medical audiences so the AI
   // doesn't generate "ward scenarios" for math or law questions.
-  const useGenericDifficulty = audience === "NONMEDICAL" || audience === "PARAMEDICAL";
+  // Source-mode also uses the generic phrasing — the source determines the
+  // domain, so the medical-specific "ward scenarios" wording would mislead.
+  const useGenericDifficulty =
+    audience === "NONMEDICAL" || audience === "PARAMEDICAL" || hasSource;
   const guidance =
     (useGenericDifficulty && GENERIC_DIFFICULTY_GUIDANCE[input.difficulty]) ||
     DIFFICULTY_GUIDANCE[input.difficulty];
@@ -507,7 +555,9 @@ async function generateSingleFormat(
   // block. Without it, the model interprets "expert" as "label your usual
   // questions as expert"; with it, the model has explicit constructive
   // constraints (stem length, near-miss distractors, anti-patterns) that
-  // force genuinely tricky questions.
+  // force genuinely tricky questions. In source-mode we use the GENERIC
+  // amplifier — the medical one's clinical-vignette examples bias the
+  // model away from non-medical source material.
   const isExpertTier = EXPERT_LEVEL_DIFFICULTIES.has(input.difficulty);
   if (isExpertTier) {
     const amplifier = useGenericDifficulty
@@ -540,17 +590,14 @@ async function generateSingleFormat(
     );
   }
 
+  // Final reminder when source-mode — restated at the bottom of the prompt
+  // so it's the last thing the model sees before generating.
   if (input.sourceText) {
     lines.push(
-      "IMPORTANT: Generate questions strictly from the source material below. Each question must test understanding of facts, mechanisms, or recommendations explicitly present in the source. Do not introduce content that is not supported by the source."
+      "REMINDER: every question must be answerable using ONLY the source material above. No outside content."
     );
-    if (input.sourceFilename) {
-      lines.push(`Source filename: ${input.sourceFilename}`);
-    }
-    lines.push("---SOURCE MATERIAL BEGIN---");
-    lines.push(input.sourceText);
-    lines.push("---SOURCE MATERIAL END---");
   }
+
   lines.push("Return JSON matching the provided schema. No prose outside the JSON.");
 
   const jsonSchema = format === "SHORT_NOTES" ? SHORT_NOTES_JSON_SCHEMA : MCQ_JSON_SCHEMA;
