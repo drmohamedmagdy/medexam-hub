@@ -184,6 +184,46 @@ const EXPERT_TRUE_FALSE_STYLE = [
   "• Explanation must point to the specific word or phrase that determines the truth value — \"the trap is X; the correct phrasing would be Y\".",
 ];
 
+// Equation / quantitative-content guidance. Auto-attached whenever the
+// topic or source material looks math-heavy (Greek letters, formulas,
+// equals signs framed as definitions). Without this, the generator tends
+// to convert equation-rich pages into shallow recall ("define resistance")
+// instead of the worked-calculation questions the source actually warrants.
+const EQUATION_QUESTION_STYLE = [
+  "QUANTITATIVE / EQUATION QUESTIONS — when the topic or source involves formulas:",
+  "• FORMAT — output equations as Unicode-rendered plain text (the UI does NOT process LaTeX or MathJax):",
+  "   — Greek letters: paste the actual glyph: Δ, η, π, σ, μ, λ, Ω, ρ, θ, φ (NOT \\Delta, $\\Delta$, or \"Delta\").",
+  "   — Superscripts: prefer Unicode (r⁴, r², x³, 10⁻⁶) when the exponent is a small integer. For larger / symbolic exponents, fall back to caret notation (r^n, e^(-kt)).",
+  "   — Subscripts: prefer Unicode (r₁, r₂, V₀, P_atm). For longer subscripts use underscore (V_initial).",
+  "   — Multiplication: use × or · (never *). Division: / or fraction bar phrased inline (\"numerator / denominator\"). Parenthesise to disambiguate (\"8Lη / (πr⁴)\").",
+  "   — Relations: =, ≠, ≈, ≤, ≥, ∝, ∞.",
+  "• QUESTION TYPES — when an equation is the subject, write at least one of each kind across the exam:",
+  "   1. VARIABLE IDENTIFICATION — \"In R = 8Lη / (πr⁴), what does η represent?\" (options: viscosity / density / velocity / pressure).",
+  "   2. PROPORTIONALITY — \"In R = 8Lη / (πr⁴), if r is halved, R becomes…\" (×16, because (½)⁻⁴ = 16).",
+  "   3. UNITS / DIMENSIONS — \"What are the SI units of η in this equation?\" (Pa·s).",
+  "   4. CALCULATION — give numeric values, ask for the result. Show the working in the explanation.",
+  "   5. ANALOGY — \"ΔP = Q × R is analogous to which law?\" (Ohm's V = IR).",
+  "   6. DERIVATION / EDGE CASE — \"Why does r enter as r⁴ rather than r²?\" or \"Which assumption fails for blood (a non-Newtonian fluid)?\"",
+  "• SCALE DIFFICULTY TO THE TIER:",
+  "   — BEGINNER / STUDENT: variable identification, direct substitution into a given equation.",
+  "   — INTERN / RESIDENT: rearrange for an unknown, single proportionality step (\"if X doubles, Y…\").",
+  "   — SPECIALIST / CONSULTANT: multi-step ratios (e.g. (0.5)⁴ = 1/16 → R₁ × 16 = R₂), dimensional analysis, recognising the equation from a described scenario.",
+  "   — BOARD / Expert: derivations from first principles, identifying the assumption that breaks in a clinical edge case, combining two equations (e.g. Reynolds number ↔ Poiseuille, Starling forces ↔ filtration coefficient).",
+  "• EXPLANATIONS — for any quantitative question, show the substitution and the arithmetic explicitly, e.g. \"R₁/R₂ = r₂⁴/r₁⁴ = (0.5r₁)⁴ / r₁⁴ = (0.5)⁴ = 1/16, so R₂ = 16·R₁\". Don't skip steps.",
+];
+
+// Detect equation-rich content via Greek letters or common math operators.
+// Used to decide whether to attach EQUATION_QUESTION_STYLE to the prompt.
+const EQUATION_INDICATORS_RE =
+  /[αβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ∫∑∏∂∇±≈≠≤≥∞∝÷·]|[a-zA-Z]\^[0-9]|[xy]\s*=\s*[^=]/;
+
+function looksQuantitative(input: GenerateExamInput): boolean {
+  const haystack = [input.sourceText, input.topic, input.specialty]
+    .filter(Boolean)
+    .join(" ");
+  return EQUATION_INDICATORS_RE.test(haystack);
+}
+
 // JSON schema for MCQ + TRUE_FALSE outputs (both use options + correctId).
 const MCQ_JSON_SCHEMA = {
   type: "object",
@@ -600,6 +640,14 @@ async function generateSingleFormat(
   // graduate-level exam papers (precise word swaps, scope inversions, etc.).
   if (isExpertTier && format === "TRUE_FALSE") {
     lines.push("", ...EXPERT_TRUE_FALSE_STYLE, "");
+  }
+
+  // Equation-handling guidance: attach whenever the source, topic, or
+  // specialty hints at quantitative content (Greek letters, formulas,
+  // explicit variables). The model would otherwise default to definition-
+  // style recall on equation-rich pages.
+  if (looksQuantitative(input)) {
+    lines.push("", ...EQUATION_QUESTION_STYLE, "");
   }
 
   if (input.withImages) {
