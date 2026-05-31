@@ -90,9 +90,17 @@ const DIFFICULTY_GUIDANCE: Record<Difficulty, string> = {
   STUDENT: "Pre-clinical medical student level — definitions, mechanisms, common presentations.",
   INTERN: "Internship level — common ward scenarios, first-line management, basic differentials.",
   RESIDENT: "Residency level — specialty-specific decision making, guideline-based management.",
-  SPECIALIST: "Specialist level — nuanced clinical judgment, less common presentations, evidence interpretation.",
-  CONSULTANT: "Consultant level — complex multi-system cases, controversies, edge cases.",
-  BOARD: "Board exam level — high-yield, tricky distractors, current guideline alignment.",
+  SPECIALIST:
+    "Specialist level — nuanced clinical judgment, less common presentations, evidence interpretation. " +
+    "Questions should require integrating 2+ pieces of clinical information; the answer should not be obvious from a single sentence in the stem.",
+  CONSULTANT:
+    "Consultant level — complex multi-system cases, controversies, edge cases, and failure-of-first-line scenarios. " +
+    "Each question must demand long-term clinical reasoning — diagnosing despite atypical features, choosing the next step when the obvious one is wrong, or recognising the rare complication of a common drug or procedure.",
+  BOARD:
+    "Board exam level — the hardest possible standardised-exam questions. " +
+    "Stems should be long clinical vignettes (3–6 sentences) with red-herring information; correct answers should require multi-step reasoning, not pattern matching. " +
+    "Distractors must be plausible — each should be the correct answer to a slightly different version of the same scenario. " +
+    "Aim for the difficulty of USMLE Step 3 / MRCP Part 2 / Egyptian Board final-exam questions.",
 };
 
 // Generic, audience-agnostic difficulty descriptions used when audience is
@@ -101,9 +109,57 @@ const DIFFICULTY_GUIDANCE: Record<Difficulty, string> = {
 const GENERIC_DIFFICULTY_GUIDANCE: Partial<Record<Difficulty, string>> = {
   BEGINNER: "Beginner — basic recall and definitions, entry-level understanding.",
   INTERN: "Intermediate — application of concepts to typical scenarios and problems.",
-  SPECIALIST: "Advanced — nuanced reasoning, less common scenarios, deeper analysis.",
-  BOARD: "Expert — highest level, integrating multiple concepts, edge cases.",
+  SPECIALIST:
+    "Advanced — nuanced reasoning, less common scenarios, deeper analysis. " +
+    "Questions should require integrating multiple concepts; obvious surface-level recall is not enough.",
+  BOARD:
+    "Expert — the hardest difficulty. Questions should demand multi-step reasoning, " +
+    "integrate concepts from several sub-topics, and include distractors that test common misconceptions. " +
+    "Avoid one-step recall — every question must genuinely challenge an advanced learner.",
 };
+
+// Difficulties that get the expert-level amplifier block appended to the
+// prompt. The base DIFFICULTY_GUIDANCE line is a one-liner; this block
+// gives the model a long, explicit set of constructive constraints so it
+// actually writes hard questions instead of just labelling easy ones as
+// "expert".
+const EXPERT_LEVEL_DIFFICULTIES: ReadonlySet<Difficulty> = new Set([
+  "SPECIALIST",
+  "CONSULTANT",
+  "BOARD",
+]);
+
+const EXPERT_AMPLIFIER_MEDICAL = [
+  "EXPERT-LEVEL MANDATE — every question must satisfy ALL of the following:",
+  "1. STEM LENGTH: 3–6 sentences of clinical vignette. Include realistic patient context (age, sex, chronic conditions, medications, recent events) — not a one-line factoid.",
+  "2. NO PATTERN-MATCHING: the answer must NOT be deducible from a single keyword in the stem. The reader should have to integrate at least two clinical findings (e.g. lab + imaging, history + exam, drug + comorbidity) before arriving at the correct option.",
+  "3. NEAR-MISS DISTRACTORS: every incorrect option must be the *correct* answer to a slightly different version of the same scenario. Avoid obviously wrong options. The reader should be torn between at least 2 plausible choices.",
+  "4. CHALLENGE TYPES — favour the following over simple recall:",
+  "   • Atypical presentation of a common disease, or typical presentation of an uncommon one.",
+  "   • \"Next best step\" sequencing where order matters (diagnose first vs treat empirically vs refer).",
+  "   • Drug-interaction / contraindication / dose-adjustment scenarios (renal/hepatic impairment, pregnancy).",
+  "   • Complications of complications (e.g. AKI on chronic CKD after contrast on a patient on metformin).",
+  "   • Recognising failure of first-line therapy and choosing the second-line with reason.",
+  "   • Lab pattern recognition with overlapping conditions (e.g. mixed acid-base disorders).",
+  "   • Recent guideline updates that contradict older practice (cite the year of the guideline in the explanation).",
+  "5. ANTI-PATTERNS — DO NOT write any of these:",
+  "   • One-sentence definition questions (\"What is the most common cause of X?\").",
+  "   • Questions where one option is clearly absurd or off-topic.",
+  "   • Questions where the stem already contains the keyword that matches the answer.",
+  "   • Questions a 3rd-year medical student could answer from memorisation alone.",
+  "6. EXPLANATION: justify why the correct answer is right AND why each near-miss distractor is *almost* right — what one detail in the stem rules it out.",
+  "If a question doesn't meet ALL six criteria, do not include it — write a harder replacement instead.",
+];
+
+const EXPERT_AMPLIFIER_GENERIC = [
+  "EXPERT-LEVEL MANDATE — every question must satisfy ALL of the following:",
+  "1. The stem must require integrating at least two concepts or pieces of information; one-step recall is forbidden.",
+  "2. Every distractor must be the correct answer to a slightly altered version of the question — no obviously wrong options.",
+  "3. Favour: edge cases, exceptions to general rules, counterintuitive results, application of theory to novel scenarios, problems where naïve intuition gives the wrong answer.",
+  "4. The reader should have to think for 30+ seconds and consider 2–3 options seriously before answering.",
+  "5. Explanation: justify the correct answer AND explain what makes each distractor tempting but ultimately wrong.",
+  "If a question doesn't demand genuine long-term thinking, do not include it — write a harder replacement.",
+];
 
 // JSON schema for MCQ + TRUE_FALSE outputs (both use options + correctId).
 const MCQ_JSON_SCHEMA = {
@@ -423,6 +479,19 @@ async function generateSingleFormat(
     (useGenericDifficulty && GENERIC_DIFFICULTY_GUIDANCE[input.difficulty]) ||
     DIFFICULTY_GUIDANCE[input.difficulty];
   lines.push(`Difficulty: ${input.difficulty} — ${guidance}`);
+
+  // For the hardest difficulty tiers, append the expert-level amplifier
+  // block. Without it, the model interprets "expert" as "label your usual
+  // questions as expert"; with it, the model has explicit constructive
+  // constraints (stem length, near-miss distractors, anti-patterns) that
+  // force genuinely tricky questions.
+  if (EXPERT_LEVEL_DIFFICULTIES.has(input.difficulty)) {
+    const amplifier = useGenericDifficulty
+      ? EXPERT_AMPLIFIER_GENERIC
+      : EXPERT_AMPLIFIER_MEDICAL;
+    lines.push("", ...amplifier, "");
+  }
+
   lines.push(`Number of questions: ${input.numQuestions}`);
   lines.push(...formatInstructions[format]);
 
