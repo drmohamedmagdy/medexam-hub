@@ -161,6 +161,29 @@ const EXPERT_AMPLIFIER_GENERIC = [
   "If a question doesn't demand genuine long-term thinking, do not include it — write a harder replacement.",
 ];
 
+// Additional style guide appended ONLY for expert-tier True/False questions.
+// Captures the pattern seen in graduate-level Arabic exams (e.g. Dr. Ahmed
+// Ayyad's research-methodology paper): textbook-sounding statements with
+// one subtle trap that requires careful reading + precise mastery of
+// terminology to detect. Without this block, True/False at expert tier
+// devolves into obviously-true definitions which a 1st-year student can
+// answer at a glance.
+const EXPERT_TRUE_FALSE_STYLE = [
+  "TRUE/FALSE EXPERT STYLE — each statement must follow this pattern:",
+  "• Sounds like an authoritative textbook claim on first read; the trap (if any) is one carefully-chosen word.",
+  "• Common trap mechanics, mix several across the exam:",
+  "   – ABSOLUTE QUALIFIER misplaced: \"always / never / only / must / cannot\" applied to a claim that has exceptions.",
+  "   – NEAR-SYNONYM SWAP: a key technical term replaced by a related-but-wrong concept (e.g. induction↔deduction, validity↔reliability, dependent↔independent variable, induction-complete↔induction-partial).",
+  "   – SCOPE INVERSION: a claim that's true for one scope (e.g. quantitative research) stated as if it's true for the other (qualitative).",
+  "   – CAUSAL DIRECTION FLIP: \"X causes Y\" written when the textbook says Y causes X (or they correlate without causation).",
+  "   – NUMERIC OR ORDINAL TWEAK: \"the first / the second / 3 categories\" when the source says otherwise.",
+  "   – PARTIAL DEFINITION: a definition that's correct as far as it goes but omits a load-bearing condition (e.g. \"a hypothesis must be testable\" without \"and falsifiable\").",
+  "• Roughly balance true:false at 50/50 across the set — don't make all statements false-with-a-trap.",
+  "• Avoid trivially-true statements (\"research aims to discover new knowledge\") and trivially-false ones (\"experiments don't need a control group\").",
+  "• A graduate student should have to pause, reread, and recall the exact definition to answer correctly.",
+  "• Explanation must point to the specific word or phrase that determines the truth value — \"the trap is X; the correct phrasing would be Y\".",
+];
+
 // JSON schema for MCQ + TRUE_FALSE outputs (both use options + correctId).
 const MCQ_JSON_SCHEMA = {
   type: "object",
@@ -485,7 +508,8 @@ async function generateSingleFormat(
   // questions as expert"; with it, the model has explicit constructive
   // constraints (stem length, near-miss distractors, anti-patterns) that
   // force genuinely tricky questions.
-  if (EXPERT_LEVEL_DIFFICULTIES.has(input.difficulty)) {
+  const isExpertTier = EXPERT_LEVEL_DIFFICULTIES.has(input.difficulty);
+  if (isExpertTier) {
     const amplifier = useGenericDifficulty
       ? EXPERT_AMPLIFIER_GENERIC
       : EXPERT_AMPLIFIER_MEDICAL;
@@ -494,6 +518,14 @@ async function generateSingleFormat(
 
   lines.push(`Number of questions: ${input.numQuestions}`);
   lines.push(...formatInstructions[format]);
+
+  // True/False at expert tier gets an extra style guide. The base
+  // formatInstructions for TRUE_FALSE just says "write a clear declarative
+  // statement"; at expert tier we want the textbook-trap pattern from
+  // graduate-level exam papers (precise word swaps, scope inversions, etc.).
+  if (isExpertTier && format === "TRUE_FALSE") {
+    lines.push("", ...EXPERT_TRUE_FALSE_STYLE, "");
+  }
 
   if (input.withImages) {
     lines.push(
