@@ -50,13 +50,15 @@ export async function uploadFileAction(
     lowerName.endsWith(".pdf") ||
     lowerName.endsWith(".docx") ||
     lowerName.endsWith(".doc") ||
+    lowerName.endsWith(".pptx") ||
+    lowerName.endsWith(".ppt") ||
     lowerName.endsWith(".txt") ||
     lowerName.endsWith(".md");
   const isAcceptedMime = (ACCEPTED_MIME_TYPES as readonly string[]).includes(mimeType);
 
   if (!isAcceptedMime && !isAcceptedExtension) {
     return {
-      error: "Unsupported file type. Please upload a PDF, DOCX, TXT, or MD file.",
+      error: "Unsupported file type. Please upload a PDF, DOCX, PPTX, TXT, or MD file.",
     };
   }
 
@@ -166,6 +168,8 @@ export async function processUploadedBlobAction(
     lowerName.endsWith(".pdf") ||
     lowerName.endsWith(".docx") ||
     lowerName.endsWith(".doc") ||
+    lowerName.endsWith(".pptx") ||
+    lowerName.endsWith(".ppt") ||
     lowerName.endsWith(".txt") ||
     lowerName.endsWith(".md");
   const isAcceptedMime = (ACCEPTED_MIME_TYPES as readonly string[]).includes(

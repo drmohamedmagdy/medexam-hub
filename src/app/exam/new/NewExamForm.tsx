@@ -295,7 +295,7 @@ export default function NewExamForm({
             <input
               type="file"
               name="file"
-              accept=".pdf,.docx,.doc,.txt,.md"
+              accept=".pdf,.docx,.doc,.pptx,.ppt,.txt,.md"
               required
               className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
             />
