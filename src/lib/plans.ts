@@ -96,6 +96,33 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   },
 };
 
+// ─── Temporary FREE-plan question boost ───────────────────────────────
+// Time-windowed override: during this UTC window, FREE-plan users see
+// monthlyQuestions = FREE_BOOST_QUESTIONS instead of the default 20.
+// The window is the campaign run; once it passes the limit reverts
+// automatically with no DB cleanup required.
+//
+// Currently covers the 3-day Arabic Telegram campaign:
+//   2026-05-30 00:00 UTC → 2026-06-02 00:00 UTC  (i.e. May 30, May 31, Jun 1)
+const FREE_BOOST_START = new Date("2026-05-30T00:00:00.000Z");
+const FREE_BOOST_END = new Date("2026-06-02T00:00:00.000Z");
+const FREE_BOOST_QUESTIONS = 100;
+
+export function freeQuotaBoostActive(at: Date = new Date()): boolean {
+  return at >= FREE_BOOST_START && at < FREE_BOOST_END;
+}
+
+/**
+ * Effective monthly question limit for a given plan. Returns the FREE
+ * boost value while the temporary campaign window is active, otherwise
+ * the static PLAN_LIMITS value. Always call this instead of reading
+ * `PLAN_LIMITS[plan].monthlyQuestions` directly in quota code.
+ */
+export function effectiveMonthlyQuestions(plan: Plan, at: Date = new Date()): number {
+  if (plan === "FREE" && freeQuotaBoostActive(at)) return FREE_BOOST_QUESTIONS;
+  return PLAN_LIMITS[plan].monthlyQuestions;
+}
+
 // Plans that can download a completed exam as a PDF.
 export const PDF_EXPORT_PLANS: Plan[] = ["PRO", "PREMIUM"];
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { PLAN_LIMITS, currentYearMonth } from "@/lib/plans";
+import { PLAN_LIMITS, currentYearMonth, effectiveMonthlyQuestions } from "@/lib/plans";
 import { drainBonus, getBonusBalance } from "@/lib/credits";
 import type { Plan } from "@/generated/prisma/client";
 
@@ -30,7 +30,10 @@ export async function getMonthlyQuestionsUsage(
     getBonusBalance(userId, "questions"),
   ]);
   const used = agg._sum.count ?? 0;
-  const planLimit = PLAN_LIMITS[plan].monthlyQuestions;
+  // Use the effective limit (honours the time-windowed FREE boost) rather
+  // than the static PLAN_LIMITS value. Outside the boost window this is
+  // identical to PLAN_LIMITS[plan].monthlyQuestions.
+  const planLimit = effectiveMonthlyQuestions(plan);
 
   // Combined ceiling = plan monthly + perpetual bonus pool. The bonus pool
   // only actually drains once monthly usage exceeds planLimit (handled in
@@ -65,7 +68,9 @@ export async function recordQuestionsUsed(userId: string, count: number): Promis
     select: { plan: true },
   });
   if (!user) return;
-  const planLimit = PLAN_LIMITS[user.plan].monthlyQuestions;
+  // Mirror the effective limit used in getMonthlyQuestionsUsage so the
+  // overflow-into-bonus math agrees with what the user was told they had.
+  const planLimit = effectiveMonthlyQuestions(user.plan);
   const usedAfter = usedBefore + count;
   const overflowBefore = Math.max(0, usedBefore - planLimit);
   const overflowAfter = Math.max(0, usedAfter - planLimit);
