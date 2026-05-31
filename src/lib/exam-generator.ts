@@ -513,6 +513,31 @@ async function generateSingleFormat(
     lines.push(
       "• If you cannot find enough material in the source for the requested count, generate fewer questions. Quality and source-adherence beat quantity."
     );
+
+    // When the user gave a topic/scope alongside the file, treat it as a
+    // HARD filter on which portion of the source to use, not just a
+    // theme hint. Supports chapter ("Chapter 3", "الفصل الثالث"),
+    // section ("Section on hypothesis testing"), page range ("Pages
+    // 10-20"), or arbitrary topic phrase.
+    if (input.topic) {
+      lines.push("");
+      lines.push(`SCOPE WITHIN SOURCE: "${input.topic}"`);
+      lines.push(
+        "• Use ONLY the portion of the source material that matches the scope above. Ignore the rest of the source."
+      );
+      lines.push(
+        "• Chapter / section reference (e.g. \"Chapter 3\", \"الفصل الثالث\", \"Section 4.2\"): locate the heading in the source and use ONLY content between that heading and the next sibling heading."
+      );
+      lines.push(
+        "• Page range (e.g. \"Pages 10-20\", \"صفحات 10–20\"): if page numbers are preserved in the extracted text, use only that range; if not, approximate by position (e.g. for \"pages 10-20\" of a 30-page document, use the middle third of the source text)."
+      );
+      lines.push(
+        "• Topic phrase (e.g. \"hypothesis testing\", \"sampling methods\", \"الانحراف المعياري\"): use only paragraphs/sentences that explicitly address that topic."
+      );
+      lines.push(
+        "• If the scope can't be located in the source, generate fewer questions from the parts that come closest, rather than silently expanding to the whole source."
+      );
+    }
     lines.push("");
   }
 
