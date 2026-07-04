@@ -102,15 +102,14 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
 // The window is the campaign run; once it passes the limit reverts
 // automatically with no DB cleanup required.
 //
-// Extended through 15 June 2026 — covers the Arabic Telegram campaign
-// plus a follow-up acquisition push. End is exclusive (00:00 UTC on the
-// 16th means the boost ends as 15 June ends in Cairo, +3 UTC offset).
-// On 2026-06-16 the limit reverts to PLAN_LIMITS.FREE.monthlyQuestions
-// automatically; no DB cleanup needed.
-//   2026-05-30 00:00 UTC → 2026-06-16 00:00 UTC  (May 30 → Jun 15 inclusive)
-const FREE_BOOST_START = new Date("2026-05-30T00:00:00.000Z");
-const FREE_BOOST_END = new Date("2026-06-16T00:00:00.000Z");
-const FREE_BOOST_QUESTIONS = 100;
+// 3-day FREE-plan question boost. End is exclusive (00:00 UTC on the
+// day after the last included day). Once the window passes, the limit
+// reverts to PLAN_LIMITS.FREE.monthlyQuestions automatically — no DB
+// cleanup needed.
+//   2026-07-04 00:00 UTC → 2026-07-07 00:00 UTC  (Jul 4, 5, 6)
+const FREE_BOOST_START = new Date("2026-07-04T00:00:00.000Z");
+const FREE_BOOST_END = new Date("2026-07-07T00:00:00.000Z");
+const FREE_BOOST_QUESTIONS = 50;
 
 export function freeQuotaBoostActive(at: Date = new Date()): boolean {
   return at >= FREE_BOOST_START && at < FREE_BOOST_END;
