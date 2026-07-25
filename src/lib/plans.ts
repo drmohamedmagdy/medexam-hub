@@ -102,14 +102,14 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
 // The window is the campaign run; once it passes the limit reverts
 // automatically with no DB cleanup required.
 //
-// 3-day FREE-plan question boost. End is exclusive (00:00 UTC on the
+// 7-day FREE-plan question boost. End is exclusive (00:00 UTC on the
 // day after the last included day). Once the window passes, the limit
 // reverts to PLAN_LIMITS.FREE.monthlyQuestions automatically — no DB
 // cleanup needed.
-//   2026-07-04 00:00 UTC → 2026-07-07 00:00 UTC  (Jul 4, 5, 6)
+//   2026-07-04 00:00 UTC → 2026-07-11 00:00 UTC  (Jul 4 → Jul 10 inclusive)
 const FREE_BOOST_START = new Date("2026-07-04T00:00:00.000Z");
-const FREE_BOOST_END = new Date("2026-07-07T00:00:00.000Z");
-const FREE_BOOST_QUESTIONS = 50;
+const FREE_BOOST_END = new Date("2026-07-11T00:00:00.000Z");
+const FREE_BOOST_QUESTIONS = 100;
 
 export function freeQuotaBoostActive(at: Date = new Date()): boolean {
   return at >= FREE_BOOST_START && at < FREE_BOOST_END;
