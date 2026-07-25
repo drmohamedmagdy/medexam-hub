@@ -224,6 +224,60 @@ function looksQuantitative(input: GenerateExamInput): boolean {
   return EQUATION_INDICATORS_RE.test(haystack);
 }
 
+// Retry wrapper for OpenAI chat.completions.create.
+//
+// OpenAI's own SDK retries on some errors (429, 408, connection resets)
+// but NOT 500. A user reported "500 The server had an error processing
+// your request" bubbling straight into the exam-generation UI. That's
+// transient — the same request retried moments later almost always
+// succeeds. Wrap the call so 5xx / 429 / network errors are retried up
+// to 3 times with exponential backoff (2s, 4s, 8s) before giving up.
+const OPENAI_MAX_ATTEMPTS = 3;
+const OPENAI_BASE_BACKOFF_MS = 2000;
+
+function isRetryableOpenAIError(err: unknown): boolean {
+  const anyErr = err as { status?: number; code?: string; message?: string };
+  if (typeof anyErr?.status === "number" && anyErr.status >= 500) return true;
+  if (anyErr?.status === 429) return true;
+  if (anyErr?.status === 408) return true;
+  const msg = (anyErr?.message ?? "").toLowerCase();
+  return (
+    /server had an error|internal server|gateway|timeout|econnreset|network|fetch failed|socket hang up/.test(
+      msg
+    )
+  );
+}
+
+// Non-streaming completion type. We never pass `stream: true` so the
+// return is always a full ChatCompletion.
+type ChatCompletion = OpenAI.Chat.Completions.ChatCompletion;
+
+async function callOpenAIWithRetry(
+  client: OpenAI,
+  params: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming
+): Promise<ChatCompletion> {
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= OPENAI_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await client.chat.completions.create(params);
+    } catch (err) {
+      lastError = err;
+      if (attempt === OPENAI_MAX_ATTEMPTS || !isRetryableOpenAIError(err)) {
+        break;
+      }
+      const backoff = OPENAI_BASE_BACKOFF_MS * 2 ** (attempt - 1);
+      console.warn(
+        `[exam-generator] OpenAI attempt ${attempt}/${OPENAI_MAX_ATTEMPTS} failed, retrying in ${backoff}ms:`,
+        err instanceof Error ? err.message : err
+      );
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("OpenAI request failed after retries");
+}
+
 // JSON schema for MCQ + TRUE_FALSE outputs (both use options + correctId).
 const MCQ_JSON_SCHEMA = {
   type: "object",
@@ -675,7 +729,7 @@ async function generateSingleFormat(
 
   const jsonSchema = format === "SHORT_NOTES" ? SHORT_NOTES_JSON_SCHEMA : MCQ_JSON_SCHEMA;
 
-  const completion = await client.chat.completions.create({
+  const completion = await callOpenAIWithRetry(client, {
     model,
     temperature: 0.6,
     messages: [

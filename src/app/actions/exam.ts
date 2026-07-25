@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { generateExam } from "@/lib/exam-generator";
 import { generateQuestionImage } from "@/lib/question-image";
 import { getMonthlyQuestionsUsage, recordQuestionsUsed } from "@/lib/quota";
+import { rateLimit } from "@/lib/rate-limit";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { Difficulty, ExamMode, ExamStatus, QuestionFormat } from "@/generated/prisma/client";
 import { getAllExamTypeIds, findExamType } from "@/lib/exam-types";
@@ -52,6 +53,23 @@ export type NewExamState = { error?: string } | null;
 
 export async function createExamAction(_prev: NewExamState, formData: FormData): Promise<NewExamState> {
   const user = await requireUser();
+
+  // Exam generation fans out to multiple OpenAI calls (plus one image
+  // generation per question when `withImages` is on), so it's the most
+  // expensive action in the app. The monthly question quota caps total
+  // volume, but not burst rate — so cap concurrent/rapid generations here
+  // to stop a single account from running up the OpenAI bill via rage
+  // clicks, double-submits, or a naive script. 5/min is well above any
+  // genuine interactive use.
+  const rl = rateLimit({
+    key: `exam:${user.id}`,
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (!rl.ok) {
+    return { error: `Slow down — try again in ${rl.retryAfterSec}s.` };
+  }
+
   const parsed = NewExamSchema.safeParse({
     specialty: formData.get("specialty") ?? "",
     topic: formData.get("topic") ?? "",
@@ -280,8 +298,18 @@ export async function createExamAction(_prev: NewExamState, formData: FormData):
       where: { id: exam.id },
       data: { status: ExamStatus.FAILED },
     });
-    const msg = e instanceof Error ? e.message : "Failed to generate exam";
-    return { error: msg };
+    // Recognise upstream (OpenAI) errors — those already retry 3× inside
+    // the generator, so hitting this branch means they truly failed.
+    // Show a human-friendly message instead of the raw provider text
+    // (which contains request IDs, "contact help.openai.com" etc.).
+    const rawMsg = e instanceof Error ? e.message : "";
+    const lower = rawMsg.toLowerCase();
+    const isUpstreamFailure =
+      /server had an error|500|internal server|gateway|timeout|rate limit|429/.test(lower);
+    const friendly = isUpstreamFailure
+      ? "Our AI provider is having a hiccup right now. Please try again in a minute — your quota hasn't been used."
+      : rawMsg || "Failed to generate exam.";
+    return { error: friendly };
   }
 
   // Log if the AI still came short of the requested total after the
